@@ -28,12 +28,9 @@ else
 endif
 
 OPTIONS = $(OPTIMIZE) $(OPT)
-EXEC = RadioLensfit2-single2.x   
-#EXEC = GalaxyCatalog.x
+EXEC = RadioLensfit2.x   
  
-OBJS  = RadioLensfit2-single2.o utils.o read_coordinates.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o evaluate_image_lm_grid.o
-
-#OBJS = GalaxyCatalog.o generate_catalog.o distributions.o generate_random_values.o random_gaussian.o
+OBJS  = RadioLensfit2.o utils.o read_coordinates.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o 
 
  
 INCL   = *.h Makefile
