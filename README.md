@@ -17,6 +17,6 @@ This is version 2.0 of [RadioLensfit](https://github.com/marziarivi/RadioLensfit
 
 If you use RadioLensfit2 and find it useful, please consider citing the related papers:
 
-_Radio Weak Lensing Shear Measurement in the Visibility Domain I. Methodology_, Rivi M., Miller L., Makhathini S., Abdalla F. B., 2016, MNRAS, 463, 1881 - [arXiv:1603.04784](https://arxiv.org/abs/1603.04784)
+Rivi M., Miller L., Makhathini S., Abdalla F. B., 2016, MNRAS, 463, 1881 - [arXiv:1603.04784](https://arxiv.org/abs/1603.04784)
 
-_Radio Weak Lensing Shear Measurement in the Visibility Domain II. Source Exstraction_ ,Rivi M., Miller L., 2018, MNRAS, 476, 2053 - [arXiv:1709.01827](https://arxiv.org/abs/1709.01827)
+Rivi M., Miller L., 2018, MNRAS, 476, 2053 - [arXiv:1709.01827](https://arxiv.org/abs/1709.01827)
