@@ -8,8 +8,8 @@ This is version 2.0 of [RadioLensfit](https://github.com/marziarivi/RadioLensfit
 1. Simulation of a faint radio catalog populated by star-forming galaxies according to flux, scalelength, ellipticity distributions estimated by JVLA observations (SWIRE and COSMOS). The number of galaxies is dependent on the flux prior and provided flux-cut.
 2. Applying effect of an input reduced cosmic shear to galaxies ellipticity.
 3. Simulation of the corresponding visibilities observed by a radio telescope.
-4. Source extraction (providing source position and flux)
-5. Source shape measurement, according RadioLensfit methodology
+4. Source extraction (providing source position and flux).
+5. Source shape measurement, according to RadioLensfit methodology.  
 6. Shear measurement from the measured ellipticity of the galaxies in the field of view.
 
 
