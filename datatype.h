@@ -54,7 +54,6 @@ typedef struct{
     unsigned int ncoords;
     unsigned int nchannels;
     unsigned int nbaselines;
-    unsigned int ntimes;
     double band_factor;
     double acc_time;
     double* spec;

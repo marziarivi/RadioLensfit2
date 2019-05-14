@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2018 Marzia Rivi
+ * Copyright (c) 2016 Marzia Rivi
  *
- * This file is part of RadioLensfit2.
+ * This file is part of RadioLensfit.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 
 
-//  RadioLensfit2.cpp
+//  RadioLensfit.cpp
 //
 //  argv[1]  name of the file contaning u coordinates
 //  argv[2]  name of the file contaning v coordinates
@@ -86,10 +86,10 @@ int main(int argc, char *argv[])
     // Initialise input data
     unsigned int num_stations = 197;      // Number of stations
     unsigned int num_channels = 1;        // Number of frequency channels
-    unsigned int num_times = 480;         // Number of time samples
-    double freq_start_hz = 950e+6;        // Start Frequency, in Hz
+    unsigned int num_times = 480; //1920; // Number of time samples
+    double freq_start_hz = 1.4e+9;        // Start Frequency, in Hz
     //double freq_inc_hz = 1e+6;          // Frequency increment, in Hz
-    double full_bandwidth_hz = 240e+6;    // Frequency total bandwidth, in Hz
+    double full_bandwidth_hz = 50e+6;    // Frequency total bandwidth, in Hz
     double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
     int time_acc = 60; //15;     // accumulation time (sec)
     double efficiency = 0.9;     // system efficiency
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     
     double sizeGbytes, totGbytes = 0.;
     double fov_eff_arcmin = 60.;
-    double fov_eff = fov_eff_arcmin*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  
+    double fov_eff = fov_eff_arcmin*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // 1 degree field of view in RAD
     printf("field of view: %e [rad] %f [arcsec] \n",fov_eff,fov_eff/(ARCS2RAD));
     
     // Allocate and read uv coordinates ------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
     //double maxB = read_uv_txt(argv[1], argv[2], num_coords, uu_metres, vv_metres, &len);
     if (rank==0)
     {
-        cout << "max baseline: " << maxB << endl;
+        cout << "max baseline: " << maxB << " , " << len << endl;
         cout << "resolution: " << (1.22*C0/(freq_start_hz*maxB))/(ARCS2RAD) << " arcsec" << endl;
     }
     
@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
     double *l = new double[nge];
     double *m = new double[nge];
  
-    int NP = 5;    // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
+    int NP = 1;    // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
     unsigned long int mygalaxies = galaxy_catalog(nge, NP, fov_eff, Rmin, Rmax, Fmin, Fmax, gflux, gscale,ge1,ge2,l,m);
     cout << "num gal: " << mygalaxies << endl;
     
@@ -281,7 +281,6 @@ int main(int argc, char *argv[])
     par.rprior = rprior;
     par.nchannels = num_channels;
     par.nbaselines = num_baselines;
-    par.ntimes = num_times;
     par.band_factor = channel_bandwidth_hz*PI/C0;
     par.acc_time = time_acc;
     par.spec = spec;
