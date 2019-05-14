@@ -128,7 +128,7 @@ void gridding_visibilities(unsigned long int ncoords, double *u, double *v, comp
         unsigned int pv = (unsigned int) ((v[k] + len) / inc);
         unsigned long int pc = (unsigned long int) pv * sizeg + pu;
         
-        double wp = weight_func(u[k],v[k]);
+        double wp = 1.; //weight_func(u[k],v[k]);
  
         temp_grid_vis[pc].real += wp*vis[k].real;
         temp_grid_vis[pc].imag += wp*vis[k].imag;
