@@ -21,9 +21,10 @@
 //  RadioLensfit.cpp
 //
 //  argv[1]  filename Measurement Set
-//  argv[2]  minimum galaxy flux in muJy
-//  argv[3]  applied shear 1st component
-//  argv[4]  applied shear 2nd component
+//  argv[2]  filename source catalog containing l,m,flux
+//  argv[3]  number of sources
+//  argv[4]  applied shear 1st component
+//  argv[5]  applied shear 2nd component
 
 
 #ifdef USE_MPI
@@ -45,7 +46,7 @@
 #include "utils.h"
 #include "measurement_set.h"
 #include "data_simulation.h"
-#include "generate_catalog.h"
+#include "read_catalog.h"
 #include "galaxy_fitting.h"
 #include "galaxy_visibilities.h"
 #include "distributions.h"
@@ -215,12 +216,9 @@ int main(int argc, char *argv[])
     if (Ro[nRo-1]>Rmax) Rmax=Ro[nRo-1];
     
     //---------------------------------------------------------------------------------------------------------------------------------------------------
-    // Generate galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
+    // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
 
-    double Fmin = atof(argv[2]);
-    double Fmax = 200.;
-    
-    unsigned long int nge = ceil((flux_CDF(beta, Fmax) - flux_CDF(beta, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
+    unsigned long int nge = atof(argv[3]);
     
     double *gflux = new double[nge];
     double *gscale = new double[nge];
@@ -228,12 +226,11 @@ int main(int argc, char *argv[])
     double *ge2 = new double[nge];
     double *l = new double[nge];
     double *m = new double[nge];
+    double *SNR_vis = new double[nge];
  
     int NP = 1;    // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
-    unsigned long int mygalaxies = galaxy_catalog(nge, NP, fov_eff, Rmin, Rmax, Fmin, Fmax, gflux, gscale,ge1,ge2,l,m);
+    unsigned long int mygalaxies = read_catalog(nge, argv[2], gflux, gscale,ge1,ge2,l,m);
     cout << "num gal: " << mygalaxies << endl;
-    
-    double *SNR_vis = new double[mygalaxies];
     
 #ifdef USE_MPI
     double data_time = 0.;
@@ -248,15 +245,18 @@ int main(int argc, char *argv[])
 #endif
     
     // Visibilities Simulation --------------------------------------------------------------------------------------------------------------------------
-    double g1 = atof(argv[3]);  // shear to be applied
-    double g2 = atof(argv[4]);
+    double g1 = atof(argv[4]);  // shear to be applied
+    double g2 = atof(argv[5]);
     
     double sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
     if (rank==0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
     
     data_simulation(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
                     sigma, mygalaxies, g1, g2, ge1, ge2, gflux, gscale, l, m, SNR_vis, num_coords, uu_metres, vv_metres,
-                    visGal, visSkyMod, visData);
+                    visGal, visData);
+
+    sky_model(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
+                    mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, visGal, visSkyMod);
     
 #ifdef USE_MPI
     end_data = MPI_Wtime();
