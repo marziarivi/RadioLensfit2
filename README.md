@@ -12,6 +12,8 @@ This is version 2.0 of [RadioLensfit](https://github.com/marziarivi/RadioLensfit
 5. Source shape measurement, according to RadioLensfit methodology.  
 6. Shear measurement from the measured ellipticity of the galaxies in the field of view.
 
+**Required CASACORE library for I/O on the Measurement Set**
+
 
 # Citing RadioLensfit2
 
