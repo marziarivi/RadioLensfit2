@@ -2,23 +2,22 @@
 #                                                             #
 ###############################################################
 
-#-------------------------------------------------------------------------  
-# OpenMP compiler switch
- OMP = -fopenmp
+#------------------------------------------------------------------------- 
+ OMP  = -fopenmp  # OpenMP compiler switch
 
 #OPT += -DUSE_MPI
 
  OPT += -DFACET  #fitting by faceting
+ifeq (FACET,$(findstring FACET,$(OPT)))
+ OPT += -DGRID
+endif
+
 # OPT += -DGRID
 
 #------------------------------------------------------------------------- 
 
 CASACORE_INC =  -I/iranet/arcsoft/casacore/casacore-2.4.1/include -I/iranet/arcsoft/casacore/casacore-2.4.1/include/casacore
 CASACORE_LIB =  -L/iranet/arcsoft/casacore/casacore-2.4.1/lib -lcasa_casa -lcasa_measures -lcasa_tables -lcasa_ms -std=c++11
-
-ifeq (FACET,$(findstring FACET,$(OPT)))
- OPT += -DGRID
-endif
 
 SUP_INCL = -I. $(CASACORE_INC)
 OPTIMIZE = -O3 -g 
@@ -30,10 +29,15 @@ else
 endif
 
 OPTIONS = $(OPTIMIZE) $(OPT)
-EXEC = RadioLensfit2-MS.x   
-
-OBJS  = RadioLensfit2-MS.o utils.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o ms_reader.o ms_utils.o
+EXEC1 = RadioLensfit2-MS.x   
+OBJS1  = RadioLensfit2-MS.o utils.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o ms_reader.o ms_utils.o
  
+EXEC2 = Simulate.x
+OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_values.o random_gaussian.o galaxy_visibilities.o ms_reader.o ms_utils.o data_simulation.o
+ 
+OBJS = RadioLensfit2-MS.o Simulate.o utils.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o ms_reader.o ms_utils.o
+
+
 #OBJS  = RadioLensfit2.o utils.o read_coordinates.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o 
 
  
@@ -55,9 +59,17 @@ LIBS   = $(LIB_OPT) $(OMP)
 .cpp.o:
 	$(CC) -c $(CPPFLAGS) -o "$@" "$<"
 
+RadioLensfit: $(OBJS1)
+	$(CC)  $(OBJS1)  $(OPTIONS) $(LIBS) -o $(EXEC1)
 
-$(EXEC): $(OBJS)
-	$(CC)  $(OBJS)  $(OPTIONS) $(LIBS) -o $(EXEC)
+$(OBJS1): $(INCL)
+
+Simulate: $(OBJS2)
+	$(CC)  $(OBJS2)  $(OPTIONS) $(LIBS) -o $(EXEC2)
+
+all: $(OBJS)
+	$(CC)  $(OBJS1)  $(OPTIONS) $(LIBS) -o $(EXEC1)
+	$(CC)  $(OBJS2)  $(OPTIONS) $(LIBS) -o $(EXEC2)
 
 $(OBJS): $(INCL)
 
@@ -65,5 +77,5 @@ clean:
 	rm -f $(OBJS) 
 
 realclean: clean
-	rm -f $(EXEC) 
+	rm -f $(EXEC1) $(EXEC2) 
 

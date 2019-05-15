@@ -40,7 +40,7 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
                      double channel_bandwidth_hz, int time_acc, unsigned int num_channels, unsigned int num_baselines, double sigma,
                      unsigned long int n_gal, double g1, double g2, double *ge1, double *ge2, double *gflux, double *gscale,
                      double *l, double *m, double *SNR_vis, unsigned long int num_coords, double *uu_metres, double *vv_metres,
-                     complexd *visGal, complexd* visSkyMod, complexd* visData)
+                     complexd *visGal, complexd* visData)
 {
     
     //setup random number generator
@@ -59,7 +59,6 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
     for (unsigned long int g=0; g<n_gal; g++)
     {
         
-        double R_mu = exp(scale_mean(gflux[g]));
         l0 = l[g];
         m0 = m[g];
             
@@ -103,17 +102,6 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
                 visData[i].real += visGal[i].real;
                 visData[i].imag += visGal[i].imag;
             }
-                
-            // compute corresponding small round source to be used as source model for removing its effect
-            data_galaxy_visibilities(spec[ch], wavenumbers[ch], band_factor, time_acc, 0., 0.,R_mu,
-                                         gflux[g], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
-                
-            // add it to the sky model
-            for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
-            {
-                    visSkyMod[i].real += visGal[i].real;
-                    visSkyMod[i].imag += visGal[i].imag;
-            }
         }
         SNR_vis[g] /= sigma;
         SNR_vis[g] = sqrt(SNR_vis[g]);
@@ -135,3 +123,52 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
     free(sigmab);
     
 }
+
+
+// Simulate sky model visibilities
+void sky_model(double freq_start, double ref_freq, double *wavenumbers, double *spec,
+                     double channel_bandwidth_hz, int time_acc, unsigned int num_channels, unsigned int num_baselines,
+                     unsigned long int n_gal, double *gflux,  double *l, double *m, unsigned long int num_coords, 
+                     double *uu_metres, double *vv_metres, complexd *visGal, complexd* visMod)
+{
+
+    //setup random number generator
+    const gsl_rng_type * G;
+    gsl_rng * gen;
+    G = gsl_rng_mt19937;  // Mersenne Twister
+    gen = gsl_rng_alloc(G);
+
+    unsigned long int seed = random_seed();
+    gsl_rng_set(gen,seed);
+
+    double l0,m0,den;
+    double band_factor = channel_bandwidth_hz*PI/C0;
+
+    for (unsigned long int g=0; g<n_gal; g++)
+    {
+
+        double R_mu = exp(scale_mean(gflux[g]));
+        l0 = l[g];
+        m0 = m[g];
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+        for (unsigned int ch = 0; ch < num_channels; ch++)
+        {
+            // generate galaxy visibilities
+            unsigned long int ch_vis = ch*num_coords;
+            data_galaxy_visibilities(spec[ch], wavenumbers[ch], band_factor, time_acc, 0., 0., R_mu,
+                                         gflux[g], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
+            
+            for (unsigned long int i= ch_vis; i<ch_vis+num_coords; i++)
+            {
+                visMod[i].real += visGal[i].real;
+                visMod[i].imag += visGal[i].imag;
+            }
+        }
+    }
+
+    gsl_rng_free(gen);
+}
+
