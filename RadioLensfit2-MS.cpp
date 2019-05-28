@@ -19,13 +19,22 @@
 
 
 //  RadioLensfit.cpp
-//
-//  argv[1]  filename Measurement Set
-//  argv[2]  filename source catalog containing l,m,flux
-//  argv[3]  number of sources
-//  argv[4]  applied shear 1st component
-//  argv[5]  applied shear 2nd component
+/*
+    Measure star forming galaxy ellipticies from a radio weak lensing observation.
+    A model fitting approach is adopted where the likelihood is marginalised over position, 
+    flux and scalelength source parameters.
 
+    Data visibilities and observation configuration must be provided in a Measurement Set.
+    The number of galaxies and the corresponding source catalog (ordered by decreasing flux) 
+    containing source position and flux must be provided.  
+
+    A text file containg the list of the galaxies with the measured ellipticities will be generated.
+ 
+    Command line input parameters:
+    argv[1]  filename Measurement Set
+    argv[2]  filename source catalog 
+    argv[3]  number of sources
+*/
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -52,6 +61,10 @@
 #include "distributions.h"
 #include "evaluate_uv_grid.h"
 
+#define RMIN 0.3
+#define RMAX 3.5
+#define NUM_R 29
+#define REF_FREQ 1.4e+9
 
 using namespace std;
 
@@ -76,18 +89,30 @@ int main(int argc, char *argv[])
     if (rank==0) cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif
     
-    if (argc < 5)
+    if (argc < 3)
     {
         cout << "ERROR: parameter missing!" << endl;
-        cout << "usage: RadioLensfit.x <filename MS> <min flux> <shear1> <shear2> " << endl;
+        cout << "usage: RadioLensfit2-MS.x <filename MS> <num_sources> " << endl;
         exit(EXIT_FAILURE);
     }
+
+#ifdef USE_MPI
+    double data_time = 0.;
+    double fitting_time = 0.;
+    double start_data,end_data,start_fitting,end_fitting;
+    start_data = MPI_Wtime();
+#else
+    double data_time = 0;
+    double fitting_time = 0;
+    long long start_data,end_data,start_fitting,end_fitting;
+    start_data = current_timestamp();
+#endif
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     RL_MeasurementSet* ms = ms_open(argv[1]);
 
-    double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
-    double Dec = ms_phase_centre_dec_rad(ms);   
+    //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
+    //double Dec = ms_phase_centre_dec_rad(ms);   
     unsigned int num_stations = ms_num_stations(ms);        // Number of stations
     unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
     unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
@@ -100,7 +125,7 @@ int main(int argc, char *argv[])
     double SEFD_SKA = 400e+6;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
     double SEFD_MKT = 551e+6;    // SEFD of each MeerKat antenna (in micro-Jy)
 
-    double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
+    double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
     if (rank==0)
@@ -111,12 +136,10 @@ int main(int argc, char *argv[])
         cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
         cout << "Starting frequency (Hz): " << freq_start_hz << endl;
         cout << "Accumulation time (sec): " << time_acc << endl;
+        cout << "Number of rows: " << num_rows << endl;
     }
     
     double sizeGbytes, totGbytes = 0.;
-    double fov_eff_arcmin = 60.;
-    double fov_eff = fov_eff_arcmin*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // 1 degree field of view in RAD
-    printf("field of view: %e [rad] %f [arcsec] \n",fov_eff,fov_eff/(ARCS2RAD));
     
     // Allocate and read uv coordinates 
     unsigned long int num_coords = ms_num_rows(ms);
@@ -130,94 +153,28 @@ int main(int argc, char *argv[])
     int status;
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
     
-    ms_close(ms);
     delete[] ww_metres;
-  
-    // Pre-compute wavenumber and spectral factor for each channel ---------------------------------------------------------------------
-    // They corresponds to the central frequency of each channel
-    
-    double *wavenumbers = new double[num_channels];
-    double ch_freq = freq_start_hz + 0.5*channel_bandwidth_hz;
-    double *spec = new double[num_channels];
-    
-    for (unsigned int ch = 0; ch < num_channels; ch++)
-    {
-        wavenumbers[ch] = 2.0 * PI * ch_freq / C0;
-        spec[ch] = pow(ch_freq/ref_frequency_hz,-0.7);
-        ch_freq += channel_bandwidth_hz;
-    }
  
-    
-    // Allocate Galaxy and Raw Data Visibilities -----------------------------------------------------------------------------------------------------------------------
-    unsigned long int num_rawvis  = (unsigned long int) num_channels * num_coords;
-    complexd *visGal, *visData;
-    try
-    {
-        visGal = new complexd[num_rawvis];
-        sizeGbytes = num_rawvis*sizeof(complexd)/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated galaxy visibilities: " << num_rawvis << ", size = " << sizeGbytes  << " GB" << endl;
-        totGbytes += sizeGbytes;
-    }
-    catch (bad_alloc& ba)
-    {
-        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
-    }
-    
-    try
-    {
-        visData = new complexd[num_rawvis];
-        cout << "rank " << rank << ": allocated original data visibilities: " << num_rawvis << ", size = " << sizeGbytes  << " GB" << endl;
-        totGbytes += sizeGbytes;
-    }
-    catch (bad_alloc& ba)
-    {
-        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
-    }
-    memset(visData, 0, num_rawvis*sizeof(complexd));
-    
-    // Allocate Sky Model Visibilities ------------------------------------------------------------------------------------------
+    // Allocate and read Data visibilities
     unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
-    complexd *visSkyMod;
+    complexd *visData;
     try
     {
-        visSkyMod = new complexd[num_vis];
+        visData = new complexd[num_vis];
         sizeGbytes = num_vis*sizeof(complexd)/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated sky model visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated original data visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
     {
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
-    
-    memset(visSkyMod, 0, num_vis*sizeof(complexd));
 
-    // define steps in galaxy scalelength (Ro in ARCSEC) --------------------------------------------------------------------------
-    double Rmin = 0.3;
-    double Rmax = 3.5;
-    int numR = 29;
-    double* Ro = new double[numR];
-    double* rprior = new double[numR];
-    Ro[0] = 0.;
-    Ro[1] = Rmin;
-    
-    rprior[0]= 0.;
-    int nRo=2;
-    
-    while (nRo<numR && Ro[nRo-1] < Rmax)
-    {
-        // quadratic spacing of samples
-        double Rinterval = 0.08 + 0.4*pow( ((Ro[nRo-1]-Rmin)/(Rmax-Rmin)), 2);
-        Ro[nRo] = Ro[nRo-1] + Rinterval;
-        nRo++;
-    }
-    
-    numR = nRo;
-    if (Ro[nRo-1]>Rmax) Rmax=Ro[nRo-1];
-    
-    //---------------------------------------------------------------------------------------------------------------------------------------------------
+    ms_read_vis(ms, 0, 0, num_channels, num_rows, "DATA", visData, &status);
+    ms_close(ms);
+ 
+
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
-
     unsigned long int nge = atof(argv[3]);
     
     double *gflux = new double[nge];
@@ -228,35 +185,8 @@ int main(int argc, char *argv[])
     double *m = new double[nge];
     double *SNR_vis = new double[nge];
  
-    int NP = 1;    // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
-    unsigned long int mygalaxies = read_catalog(nge, argv[2], gflux, gscale,ge1,ge2,l,m);
-    cout << "num gal: " << mygalaxies << endl;
-    
-#ifdef USE_MPI
-    double data_time = 0.;
-    double fitting_time = 0.;
-    double start_data,end_data,start_fitting,end_fitting;
-    start_data = MPI_Wtime();
-#else
-    double data_time = 0;
-    double fitting_time = 0;
-    long long start_data,end_data,start_fitting,end_fitting;
-    start_data = current_timestamp();
-#endif
-    
-    // Visibilities Simulation --------------------------------------------------------------------------------------------------------------------------
-    double g1 = atof(argv[4]);  // shear to be applied
-    double g2 = atof(argv[5]);
-    
-    double sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
-    if (rank==0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
-    
-    data_simulation(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
-                    sigma, mygalaxies, g1, g2, ge1, ge2, gflux, gscale, l, m, SNR_vis, num_coords, uu_metres, vv_metres,
-                    visGal, visData);
-
-    sky_model(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
-                    mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, visGal, visSkyMod);
+    unsigned long int mygalaxies = read_catalog(nge, argv[2], gflux, gscale,ge1,ge2,l,m,SNR_vis);
+    cout << "rank " << rank << ": " << mygalaxies << "galaxies " << endl;
     
 #ifdef USE_MPI
     end_data = MPI_Wtime();
@@ -266,9 +196,72 @@ int main(int argc, char *argv[])
     data_time = (double)(end_data - start_data)/1000.;
 #endif
     
-   //---------------------------------------------------------------------------------------------------------------------------------------------------
-   //---------------------------------------------------------------------------------------------------------------------------------------------------
+    // Sky model visibilities computation --------------------------------------------------------------------------------------------------------------------------
+    // Allocate Galaxy and Sky Model Visibilities
+    complexd *visGal, *visSkyMod;
+    try
+    {
+        visGal = new complexd[num_vis];
+        cout << "rank " << rank << ": allocated galaxy visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
+
+    try
+    {
+        visSkyMod = new complexd[num_vis];
+        cout << "rank " << rank << ": allocated sky model visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
+
+    memset(visSkyMod, 0, num_vis*sizeof(complexd));    
+
+    // Pre-compute wavenumber and spectral factor for each channel 
+    // They corresponds to the central frequency of each channel
+
+    double *wavenumbers = new double[num_channels];
+    double ch_freq = freq_start_hz + 0.5*channel_bandwidth_hz;
+    double *spec = new double[num_channels];
+
+    for (unsigned int ch = 0; ch < num_channels; ch++)
+    {
+        wavenumbers[ch] = 2.0 * PI * ch_freq / C0;
+        spec[ch] = pow(ch_freq/ref_frequency_hz,-0.7);
+        ch_freq += channel_bandwidth_hz;
+    }
+
+    sky_model(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
+                    mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, visGal, visSkyMod);
     
+    // Setup Model Fitting ----------------------------------------------------------------------------------------------------------------------------------------
+    // define steps in galaxy scalelength (Ro in ARCSEC)
+    double Rmin = RMIN;
+    double Rmax = RMAX;
+    int numR = NUM_R;
+    double* Ro = new double[numR];
+    double* rprior = new double[numR];
+    Ro[0] = 0.;
+    Ro[1] = Rmin;
+
+    rprior[0]= 0.;
+    int nRo=2;
+    while (nRo<numR && Ro[nRo-1] < Rmax)
+    {
+        // quadratic spacing of samples
+        double Rinterval = 0.08 + 0.4*pow( ((Ro[nRo-1]-Rmin)/(Rmax-Rmin)), 2);
+        Ro[nRo] = Ro[nRo-1] + Rinterval;
+        nRo++;
+    }
+    numR = nRo;
+    if (Ro[nRo-1]>Rmax) Rmax=Ro[nRo-1];
+ 
     int num_models = numR-1;
     
     // Set likelihood computation parameters
@@ -282,8 +275,9 @@ int main(int argc, char *argv[])
     par.acc_time = time_acc;
     par.spec = spec;
     par.wavenumbers = wavenumbers; // wavenumbers for the model
-    par.sigma = sigma; // visibility noise variance
-    
+    par.sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
+    if (rank==0) cout << "sigma_vis  = " << sqrt(par.sigma) << " muJy" << endl;
+       
 #ifdef FACET
     // lower limit flux
     double threshold_flux[10];
@@ -374,6 +368,7 @@ int main(int argc, char *argv[])
     {
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
+
     par.ncoords = num_coords;
     par.uu = uu_metres;
     par.vv = vv_metres;
@@ -388,8 +383,12 @@ int main(int argc, char *argv[])
     start_fitting = current_timestamp();
 #endif
     
-    if (rank==0) cout << "Total Visibilities GBytes per rank: " << totGbytes << endl;
-
+    if (rank==0) 
+    {
+      cout << "Total Visibilities GBytes per rank: " << totGbytes << endl;
+      cout << "sigma_vis  = " << sqrt(par.sigma) << " muJy" << endl;
+    }
+ 
     // Data Fitting -----------------------------------------------------------------------------------------------------------------------------------
     FILE *pFile;
     char filename[100];
@@ -432,7 +431,7 @@ int main(int argc, char *argv[])
           double var_e1, var_e2, oneDimvar;
           int error = source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
  
-          cout << "rank:" << rank << " n. " << g << " flux = " << gflux[g] << " scalelength = " << gscale[g] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): measured e = " << mes_e1 << "," << mes_e2 <<  ",  original e = " << ge1[g] << "," << ge2[g] << endl;
+          cout << "rank " << rank << ": n. " << g << " flux = " << gflux[g] << " scalelength = " << gscale[g] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): measured e = " << mes_e1 << "," << mes_e2 <<  ",  original e = " << ge1[g] << "," << ge2[g] << endl;
           
           if (error)
           {
@@ -481,8 +480,7 @@ int main(int argc, char *argv[])
     }
     
     // Re-fitting bad sources again -------------------------------------------------------------------------------------------------------------------------------------
-    cout << "bad sources: " << bad << endl << endl;
-    cout << "Re-fitting bad sources" << endl;
+    cout << "rank " << rank << ": Re-fitting " << bad << " bad sources" << endl;
     
     int nsources = bad;
     bad = 0;
@@ -513,7 +511,7 @@ int main(int argc, char *argv[])
         double var_e1, var_e2, oneDimvar;
         int error = source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
         
-        cout << "rank:" << rank << " n. " << gal << " flux = " << flux << " scalelength = " << gscale[gal] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): measured e = " << mes_e1 << "," << mes_e2 <<  ",  original e = " << ge1[gal] << "," << ge2[gal] << endl;
+        cout << "rank " << rank << ": n. " << gal << " flux = " << flux << " scalelength = " << gscale[gal] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): measured e = " << mes_e1 << "," << mes_e2 <<  ",  original e = " << ge1[gal] << "," << ge2[gal] << endl;
         
         fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",flux,gscale[gal],ge1[gal],mes_e1,sqrt(var_e1), ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
         
@@ -538,12 +536,11 @@ int main(int argc, char *argv[])
                 // remove it from original data
                 visData[i].real -= visGal[i].real;
                 visData[i].imag -= visGal[i].imag;
-                
             }
         }
     }
     
-    cout << "rank: " << rank << " removed " << bad << " bad data galaxies" << endl << endl;
+    cout << "rank " << rank << ": removed " << bad << " bad data galaxies" << endl << endl;
     if (pFile != 0) fclose(pFile);
     
 #ifdef USE_MPI
@@ -558,10 +555,10 @@ int main(int argc, char *argv[])
     double total_time = (double)(end_tot - start_tot)/1000.;
 #endif
 
-    cout << "rank: " << rank << " set up time (sec): " << total_time - data_time - fitting_time << endl;
-    cout << "rank: " << rank << " data generation time (sec): " << data_time << endl;
-    cout << "rank: " << rank << " data fitting computation time (sec): " << fitting_time << endl;
-    cout << "rank: " << rank << " Total time (sec): " << total_time << endl;
+    cout << "rank " << rank << ": set up time (sec): " << total_time - data_time - fitting_time << endl;
+    cout << "rank " << rank << ": data reading time (sec): " << data_time << endl;
+    cout << "rank " << rank << ": data fitting computation time (sec): " << fitting_time << endl;
+    if (rank == 0) cout << " Total time (sec): " << total_time << endl;
     
     // free memory ----------------------------------------------------------------------------------------------------------------
     delete[] visMod;
