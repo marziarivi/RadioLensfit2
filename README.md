@@ -36,15 +36,13 @@ Usage: *shear.py* (filename measured ellipticities)
 
 Requirements:
 - CASACORE library for Measurement Set I/O
-- GSL library and 
+- GSL library 
 
 1. Edit the Makefile:
 
-enable/disable OpenMP (default: enabled)
+- enable/disable OpenMP (default: enabled)
 
-enable/disable gridding (default: gridding enabled)
-
-set the compiler and compilation flags you want to use (default: GNU)
+- set the compiler and compilation flags you want to use (default: GNU)
 
 2. make all
 
