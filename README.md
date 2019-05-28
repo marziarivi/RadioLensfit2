@@ -42,6 +42,7 @@ Requirements:
 
 - enable/disable OpenMP (default: enabled)
 
+- update CASACORE include and library path
 - set the compiler and compilation flags you want to use (default: GNU)
 
 2. make all
