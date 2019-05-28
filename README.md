@@ -47,6 +47,8 @@ Requirements:
 
 2. make all
 
+MPI is not enabled yet...
+
 # Citing RadioLensfit2
 
 If you use RadioLensfit2 and find it useful, please consider citing the related papers:
