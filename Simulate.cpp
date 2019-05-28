@@ -24,9 +24,9 @@
     Radio telescope configuration and observing time sampling must be provided in a Measurement Set.
   
     The simulated visibilities are stored in the DATA column of the same Measurement Set.
-    The text file called RWL_galaxy_catalog_<FoV>_<n>.txt containing the simulated sourse catalog is also created, 
-    where <FoV> is the field of view provided in arcmin and <n> is the number of sources simulated.
-    The number <n> is estimated from the flux prior, the size of the field of view and the flux threshold.
+    The text file called RWL_galaxy_catalog_<FoV>_<Fmin>.txt containing the simulated sourse catalog is created, 
+    where <FoV> is the field of view provided in arcmin and <Fmin> is the flux threshold in uJy.
+    The number of sources is estimated from the flux prior, the size of the field of view and Fmin.
 
     Sources are simulated according the ring test to avoid shape noise: same source flux and size for 2*NUM_ORIENT 
     ellipiticity values simmetrically distributed along the same ring. 
@@ -240,13 +240,13 @@ int main(int argc, char *argv[])
        // Write catalog: positions [rad], flux [uJy], scalelength [arcsec]
        FILE *pf;
        char filename[200];
-       sprintf(filename,"RWL_galaxy_catalog_%.1f_%.1f_uJy.txt",fov_eff_arcmin,Fmin);
+       sprintf(filename,"RWL_galaxy_catalog_%.1f_%.1f.txt",fov_eff_arcmin,Fmin);
        pf = fopen(filename,"w");
-       // fprintf(pf, "l | m | flux | scale | e1 | e2 | SNR \n");
+       // fprintf(pf, "SNR | l | m | flux | scale | e1 | e2 \n");
 
        for (unsigned long int g = 0; g<mygalaxies; g++)
        {
-         fprintf(pf, "%f %f %f %f %f %f %f \n",l[g],m[g],gflux[g],gscale[g],ge1[g],ge2[g],SNR_vis[g]);
+         fprintf(pf, "%f %f %f %f %f %f %f \n",SNR_vis[g],l[g],m[g],gflux[g],gscale[g],ge1[g],ge2[g]);
        }
        fclose(pf);
     }
