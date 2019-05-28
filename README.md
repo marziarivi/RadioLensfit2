@@ -38,14 +38,14 @@ Requirements:
 - CASACORE library for Measurement Set I/O
 - GSL library 
 
-1. Edit the Makefile:
+Edit the Makefile:
 
 - enable/disable OpenMP (default: enabled)
 
 - update CASACORE include and library path
 - set the compiler and compilation flags you want to use (default: GNU)
 
-2. make all
+*make all*
 
 MPI is not enabled yet...
 
