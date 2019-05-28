@@ -39,8 +39,11 @@ Requirements:
 - GSL library and 
 
 1. Edit the Makefile:
+
 enable/disable OpenMP (default: enabled)
+
 enable/disable gridding (default: gridding enabled)
+
 set the compiler and compilation flags you want to use (default: GNU)
 
 2. make all
