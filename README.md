@@ -5,7 +5,7 @@
 This is version 2.0 of [RadioLensfit](https://github.com/marziarivi/RadioLensfit).
 Three tools are provided:
 
-*Simulate*
+**Simulate**
 
 Simulation of a radio weak lensing observation with a given reduced cosmic shear and a source flux threshold Fmin.
 Radio telescope configuration and observing time sampling must be provided in a Measurement Set.
@@ -17,7 +17,7 @@ The corresponding simulated visibilities observed by the radio telescope are wri
   
 Usage: *Simulate* (filename MS) (effective field of view [arcmin]) (min flux [muJy]) (shear coord_1) (shear coord_2)
  
-*RadioLensfit2-MS*
+**RadioLensfit2-MS**
 
 Measurement of star forming galaxy ellipticies from a radio weak lensing observation.
 Data visibilities and observation configuration must be provided in a Measurement Set. 
@@ -26,7 +26,7 @@ The list of galaxies with the measured ellipticities is written in a text file c
 
 Usage: *RadioLensfit2-MS* (filename MS) (filename source catalog) (num_sources)
  
-*shear.py* 
+**shear.py** 
 
 Shear measurement from weighted average of the measured ellipticity of the galaxies in the field of view.
 
