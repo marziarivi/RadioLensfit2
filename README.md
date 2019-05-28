@@ -12,7 +12,7 @@ Radio telescope configuration and observing time sampling must be provided in a 
 
 The simulated faint radio catalog is populated by star-forming galaxies according to flux, scalelength, ellipticity distributions estimated by JVLA observations (SWIRE and COSMOS). The number of galaxies is dependent on the flux prior and provided flux-cut.
 Sources are simulated according the RING TEST to avoid shape noise: same source flux and size for a fixed number of ellipticity values simmetrically distributed on the same ring. The effect of the input reduced cosmic shear is applied to galaxies ellipticity.
-This source catalog is written in a text file called *RWL_galaxy_catalog_<FoV>_<Fmin>.txt*, where FoV is the provided effective field of view. 
+This source catalog is written in a text file called *RWL_galaxy_catalog_(FoV)_(Fmin).txt*, where FoV is the provided effective field of view. 
 The corresponding simulated visibilities observed by the radio telescope are written in the DATA column of the same Measurement Set (I stokes component). The instrument noise is added. NO primary beam effect is currently considered.
   
 Usage: *Simulate* (filename MS) (effective field of view [arcmin]) (min flux [muJy]) (shear coord_1) (shear coord_2)
