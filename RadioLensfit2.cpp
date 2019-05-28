@@ -18,14 +18,17 @@
  */
 
 
-//  RadioLensfit.cpp
-//
-//  argv[1]  name of the file contaning u coordinates
-//  argv[2]  name of the file contaning v coordinates
-//  argv[3]  minimum galaxy flux in muJy
-//  argv[4]  applied shear 1st component
-//  argv[5]  applied shear 2nd component
-
+//  RadioLensfit2.cpp
+/*
+   Simulation + model fitting
+   uv points read from separated text files
+   
+   argv[1]  name of the file contaning u coordinates
+   argv[2]  name of the file contaning v coordinates
+   argv[3]  minimum galaxy flux in muJy
+   argv[4]  applied shear 1st component
+   argv[5]  applied shear 2nd component
+*/
 
 #ifdef USE_MPI
 #include <mpi.h>
