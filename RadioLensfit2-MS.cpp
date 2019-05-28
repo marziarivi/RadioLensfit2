@@ -26,7 +26,7 @@
 
     Data visibilities and observation configuration must be provided in a Measurement Set.
     The number of galaxies and the corresponding source catalog (ordered by decreasing flux) 
-    containing source position and flux must be provided.  
+    containing source SNR, position and flux must be provided.  
 
     A text file containg the list of the galaxies with the measured ellipticities will be generated.
  
@@ -178,14 +178,11 @@ int main(int argc, char *argv[])
     unsigned long int nge = atof(argv[3]);
     
     double *gflux = new double[nge];
-    double *gscale = new double[nge];
-    double *ge1 = new double[nge];
-    double *ge2 = new double[nge];
     double *l = new double[nge];
     double *m = new double[nge];
     double *SNR_vis = new double[nge];
  
-    unsigned long int mygalaxies = read_catalog(nge, argv[2], gflux, gscale,ge1,ge2,l,m,SNR_vis);
+    unsigned long int mygalaxies = read_catalog(nge, argv[2], gflux,l,m,SNR_vis);
     cout << "rank " << rank << ": " << mygalaxies << "galaxies " << endl;
     
 #ifdef USE_MPI
@@ -225,7 +222,6 @@ int main(int argc, char *argv[])
 
     // Pre-compute wavenumber and spectral factor for each channel 
     // They corresponds to the central frequency of each channel
-
     double *wavenumbers = new double[num_channels];
     double ch_freq = freq_start_hz + 0.5*channel_bandwidth_hz;
     double *spec = new double[num_channels];
@@ -394,7 +390,7 @@ int main(int argc, char *argv[])
     char filename[100];
     sprintf(filename,"ellipticities%d.txt",rank);
     pFile = fopen(filename,"w");
-    fprintf(pFile, "flux | scale | e1 | m_e1 | err1 | e2 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
+    fprintf(pFile, "flux | m_e1 | err1 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
     
     double l0,m0;
     unsigned long int bad_list[mygalaxies];
@@ -431,7 +427,7 @@ int main(int argc, char *argv[])
           double var_e1, var_e2, oneDimvar;
           int error = source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
  
-          cout << "rank " << rank << ": n. " << g << " flux = " << gflux[g] << " scalelength = " << gscale[g] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): measured e = " << mes_e1 << "," << mes_e2 <<  ",  original e = " << ge1[g] << "," << ge2[g] << endl;
+          cout << "rank " << rank << ": n. " << g << " flux = " << gflux[g] << ": measured e = " << mes_e1 << "," << mes_e2 << endl;
           
           if (error)
           {
@@ -439,7 +435,7 @@ int main(int argc, char *argv[])
               bad_list[bad] = g;  // store index bad sources to try to fit again at the end
               bad++;
           }
-          else fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],gscale[g],ge1[g],mes_e1,sqrt(var_e1), ge2[g],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[g],l0/(ARCS2RAD),m0/(ARCS2RAD));
+          else fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],mes_e1,sqrt(var_e1), mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[g],l0/(ARCS2RAD),m0/(ARCS2RAD));
               
           
 #ifdef _OPENMP
@@ -511,9 +507,8 @@ int main(int argc, char *argv[])
         double var_e1, var_e2, oneDimvar;
         int error = source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
         
-        cout << "rank " << rank << ": n. " << gal << " flux = " << flux << " scalelength = " << gscale[gal] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): measured e = " << mes_e1 << "," << mes_e2 <<  ",  original e = " << ge1[gal] << "," << ge2[gal] << endl;
-        
-        fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",flux,gscale[gal],ge1[gal],mes_e1,sqrt(var_e1), ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
+        cout << "rank " << rank << ": n. " << gal << " flux = " << flux << "): measured e = " << mes_e1 << "," << mes_e2 << endl;
+        fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f  \n",flux,mes_e1,sqrt(var_e1), mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
         
         if (error)
         {
@@ -567,10 +562,7 @@ int main(int argc, char *argv[])
     delete[] visData;
     delete[] Ro;
     delete[] rprior;
-    delete[] ge1;
-    delete[] ge2;
     delete[] gflux;
-    delete[] gscale;
     delete[] l;
     delete[] m;
     delete[] SNR_vis;
