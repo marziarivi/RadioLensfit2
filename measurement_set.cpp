@@ -19,7 +19,7 @@ RL_MeasurementSet* ms_open(const char* filename)
     {
         // Create the MeasurementSet. Storage managers are recreated as needed.
         p->ms = new MeasurementSet(filename,
-                                   TableLock(TableLock::PermanentLocking), Table::Update);
+                                   TableLock(TableLock::NoLocking), Table::Update);
 
         // Create the MSMainColumns and MSColumns objects for accessing data
         // in the main table and subtables.
