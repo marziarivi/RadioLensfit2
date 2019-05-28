@@ -19,13 +19,26 @@
 
 
 //  Simulate.cpp
-//
-//  argv[1]  filename Measurement Set
-//  argv[2]  effective field of view [arcmin]
-//  argv[3]  minimum galaxy flux [muJy]
-//  argv[4]  applied shear 1st component
-//  argv[5]  applied shear 2nd component
+/*  
+    Simulate a radio weak lensing observation with a given reduced cosmic shear and a source flux threshold.
+    Radio telescope configuration and observing time sampling must be provided in a Measurement Set.
+  
+    The simulated visibilities are stored in the DATA column of the same Measurement Set.
+    The text file called RWL_galaxy_catalog_<FoV>_<n>.txt containing the simulated sourse catalog is also created, 
+    where <FoV> is the field of view provided in arcmin and <n> is the number of sources simulated.
+    The number <n> is estimated from the flux prior, the size of the field of view and the flux threshold.
 
+    Sources are simulated according the ring test to avoid shape noise: same source flux and size for 2*NUM_ORIENT 
+    ellipiticity values simmetrically distributed along the same ring. 
+  
+    Command line input parameters:  
+
+    argv[1]  filename Measurement Set
+    argv[2]  effective field of view [arcmin]
+    argv[3]  minimum galaxy flux [muJy]
+    argv[4]  applied shear 1st component
+    argv[5]  applied shear 2nd component
+*/
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -46,6 +59,11 @@
 #include "data_simulation.h"
 #include "generate_catalog.h"
 #include "distributions.h"
+
+#define NUM_ORIENT 1  // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module 
+#define FMAX 200      // maximum source flux [uJy]
+#define RMIN 0.3      // minimum source scalelength [arcsec]
+#define RMAX 3.5      // maximun source scalelength [arcsec]
 
 using namespace std;
 
@@ -112,7 +130,7 @@ int main(int argc, char *argv[])
     
     double sizeGbytes, totGbytes = 0.;
     double fov_eff_arcmin = atof(argv[2]);
-    double fov_eff = fov_eff_arcmin*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // 1 degree field of view in RAD
+    double fov_eff = fov_eff_arcmin*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // field of view in RAD
     printf("field of view: %e [rad] %f [arcsec] \n",fov_eff,fov_eff/(ARCS2RAD));
     
     // Allocate and read uv coordinates 
@@ -127,7 +145,6 @@ int main(int argc, char *argv[])
     int status;
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
     
-    ms_close(ms);
     delete[] ww_metres;
   
     // Allocate Galaxy and Sky Visibilities -----------------------------------------------------------------------------------------------------------------------
@@ -169,11 +186,7 @@ int main(int argc, char *argv[])
     // Generate galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
 
     double Fmin = atof(argv[3]);
-    double Fmax = 200.;
-    double Rmin = 0.3;
-    double Rmax = 3.5;   
- 
-    unsigned long int nge = ceil((flux_CDF(beta, Fmax) - flux_CDF(beta, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
+    unsigned long int nge = ceil((flux_CDF(beta, FMAX) - flux_CDF(beta, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
     
     double *gflux = new double[nge];
     double *gscale = new double[nge];
@@ -182,11 +195,8 @@ int main(int argc, char *argv[])
     double *l = new double[nge];
     double *m = new double[nge];
  
-    int NP = 1;    // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
-    unsigned long int mygalaxies = galaxy_catalog(nge, NP, fov_eff, Rmin, Rmax, Fmin, Fmax, gflux, gscale,ge1,ge2,l,m);
-    cout << "num gal: " << mygalaxies << endl;
-    
-    double *SNR_vis = new double[mygalaxies];
+    unsigned long int mygalaxies = galaxy_catalog(nge, NUM_ORIENT, fov_eff, RMIN, RMAX, Fmin, FMAX, gflux, gscale,ge1,ge2,l,m);
+    cout << "rank " << rank <<": num gal: " << mygalaxies << endl;
     
     // Visibilities Simulation --------------------------------------------------------------------------------------------------------------------------
     double g1 = atof(argv[4]);  // shear to be applied
@@ -194,6 +204,8 @@ int main(int argc, char *argv[])
     
     double sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
     if (rank==0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
+    
+    double *SNR_vis = new double[mygalaxies];
 
     // Pre-compute wavenumber and spectral factor for each channel 
     // They corresponds to the central frequency of each channel
@@ -220,21 +232,25 @@ int main(int argc, char *argv[])
     double data_time = (double)(end_data - start_data)/1000.;
 #endif
 
-    //ms_write_vis(ms,visData);
-
-    // Write catalog: positions [rad], flux [uJy], scalelength [arcsec]
-    FILE *pf;
-    char filename[200];
-    sprintf(filename,"galaxy_catalog_%.1f_%.1f_uJy.txt",fov_eff_arcmin,Fmin);
-    pf = fopen(filename,"w");
-    fprintf(pf, "l | m | flux | scale | e1 | e2 | SNR \n");
-
-    for (unsigned long int g = 0; g<mygalaxies; g++)
+    if (rank == 0)
     {
-        fprintf(pf, "%f %f %f %f %f %f %f \n",l[g],m[g],gflux[g],gscale[g],ge1[g],ge2[g],SNR_vis[g]);
-    }
-    fclose(pf);
+       // Write visibilities on the DATA column of the Measurement Set
+       ms_write_vis(ms,0,0,num_channels,num_coords,visData);
 
+       // Write catalog: positions [rad], flux [uJy], scalelength [arcsec]
+       FILE *pf;
+       char filename[200];
+       sprintf(filename,"RWL_galaxy_catalog_%.1f_%.1f_uJy.txt",fov_eff_arcmin,Fmin);
+       pf = fopen(filename,"w");
+       // fprintf(pf, "l | m | flux | scale | e1 | e2 | SNR \n");
+
+       for (unsigned long int g = 0; g<mygalaxies; g++)
+       {
+         fprintf(pf, "%f %f %f %f %f %f %f \n",l[g],m[g],gflux[g],gscale[g],ge1[g],ge2[g],SNR_vis[g]);
+       }
+       fclose(pf);
+    }
+ 
 #ifdef USE_MPI
     end_tot = MPI_Wtime();
     double total_time = end_tot - start_tot;
@@ -243,9 +259,15 @@ int main(int argc, char *argv[])
     double total_time = (double)(end_tot - start_tot)/1000.;
 #endif
    
-    cout << "rank: " << rank << " I/O time (sec): " << total_time - data_time << endl;
-    cout << "rank: " << rank << " Data generation time (sec): " << data_time << endl;
-    cout << "rank: " << rank << " Total time (sec): " << total_time << endl;
+    cout << "rank " << rank << ": Data generation time (sec): " << data_time << endl;
+    
+    ms_close(ms);
+    
+    if (rank == 0)
+    {
+       cout << "rank " << rank << ": I/O time (sec): " << total_time - data_time << endl;
+       cout << "rank " << rank << ": Total time (sec): " << total_time << endl;
+    }
     
     // free memory ----------------------------------------------------------------------------------------------------------------
     delete[] visData;
