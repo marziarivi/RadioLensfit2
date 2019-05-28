@@ -18,7 +18,7 @@
  */
 
 
-//  RadioLensfit.cpp
+//  RadioLensfit2-MS.cpp
 /*
     Measure star forming galaxy ellipticies from a radio weak lensing observation.
     A model fitting approach is adopted where the likelihood is marginalised over position, 
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     if (argc < 3)
     {
         cout << "ERROR: parameter missing!" << endl;
-        cout << "usage: RadioLensfit2-MS.x <filename MS> <num_sources> " << endl;
+        cout << "usage: RadioLensfit2-MS <filename MS> <filename source catalog> <num_sources> " << endl;
         exit(EXIT_FAILURE);
     }
 

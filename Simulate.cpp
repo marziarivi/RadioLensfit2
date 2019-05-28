@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     if (argc < 5)
     {
         cout << "ERROR: parameter missing!" << endl;
-        cout << "usage: Simulate.x <filename MS> <effective field of view [arcmin]> <min flux [muJy]> <shear1> <shear2> " << endl;
+        cout << "usage: Simulate <filename MS> <effective field of view [arcmin]> <min flux [muJy]> <shear1> <shear2> " << endl;
         exit(EXIT_FAILURE);
     }
 
