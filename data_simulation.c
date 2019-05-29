@@ -29,7 +29,7 @@
 #include <gsl/gsl_rng.h>
  
 #include "generate_random_values.h"
-#include "random_gaussian.h"
+#include "utils.h"
 #include "galaxy_visibilities.h"
 #include "distributions.h"
 #include "data_simulation.h"

@@ -26,8 +26,6 @@
 #include <stdio.h>
 #include <gsl/gsl_rng.h>
 
-
-#include "random_gaussian.h"
 #include "generate_random_values.h"
 #include "distributions.h"
 

@@ -24,7 +24,7 @@
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_rng.h>
 
-#include "random_gaussian.h"
+#include "utils.h"
 #include "distributions.h"
 #include "generate_random_values.h"
 #include "generate_catalog.h"

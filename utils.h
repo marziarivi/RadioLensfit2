@@ -20,6 +20,18 @@
 #ifndef ____utils__
 #define ____utils__
 
+#include <gsl/gsl_rng.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 long long current_timestamp();
+unsigned long int random_seed();
+double random_gaussian(double* another, gsl_rng * gen);
+    
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* defined(____utils__) */

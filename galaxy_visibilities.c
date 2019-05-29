@@ -28,7 +28,7 @@
 #include <gsl/gsl_rng.h>
 
 #include "galaxy_visibilities.h"
-#include "random_gaussian.h"
+#include "utils.h"
 
 
 #ifdef __cplusplus

@@ -30,15 +30,15 @@ endif
 
 OPTIONS = $(OPTIMIZE) $(OPT)
 EXEC1 = RadioLensfit2-MS   
-OBJS1  = RadioLensfit2-MS.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o measurement_set.o 
+OBJS1  = RadioLensfit2-MS.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o galaxy_fitting.o likelihood.o marginalise_r.o measurement_set.o 
  
 EXEC2 = Simulate
-OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_values.o random_gaussian.o galaxy_visibilities.o measurement_set.o data_simulation.o
+OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_values.o galaxy_visibilities.o measurement_set.o data_simulation.o
  
-OBJS = RadioLensfit2-MS.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o measurement_set.o
+OBJS = RadioLensfit2-MS.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
 
 
-#OBJS  = RadioLensfit2.o utils.o read_coordinates.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o random_gaussian.o marginalise_r.o 
+#OBJS  = RadioLensfit2.o utils.o read_coordinates.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o marginalise_r.o 
 
  
 INCL   = *.h Makefile
