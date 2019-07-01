@@ -138,15 +138,13 @@ int main(int argc, char *argv[])
     double* uu_metres = new double[num_coords];
     double* vv_metres = new double[num_coords];
     double* ww_metres = new double[num_coords];
-    sizeGbytes = 2*num_coords*sizeof(double)/((double)(1024*1024*1024));
+    sizeGbytes = 3*num_coords*sizeof(double)/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated original coordinates: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
     
     int status;
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
     
-    delete[] ww_metres;
-  
     // Allocate Galaxy and Sky Visibilities -----------------------------------------------------------------------------------------------------------------------
     unsigned long int num_rawvis  = (unsigned long int) num_channels * num_coords;
     complexd *visGal, *visData;
@@ -222,7 +220,7 @@ int main(int argc, char *argv[])
     
     data_simulation(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, 
                     num_baselines, sigma, mygalaxies, g1, g2, ge1, ge2, gflux, gscale, l, m, SNR_vis, num_coords, 
-                    uu_metres, vv_metres, visGal, visData);
+                    uu_metres, vv_metres, ww_metres, visGal, visData);
     
 #ifdef USE_MPI
     end_data = MPI_Wtime();
@@ -281,6 +279,7 @@ int main(int argc, char *argv[])
     delete[] SNR_vis;
     delete[] uu_metres;
     delete[] vv_metres;
+    delete[] ww_metres;
     delete[] wavenumbers;
     delete[] spec;
 

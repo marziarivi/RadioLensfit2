@@ -24,9 +24,11 @@
 #include "datatype.h"
 
 #ifdef FACET
-void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, unsigned long int num_coords, double *uu_metres, double *vv_metres, int facet_size, double len);
+void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
+                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, int facet_size, double len);
 #else
-void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, unsigned long int num_coords, double *uu_metres, double *vv_metres);
+void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
+                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres);
 #endif
 
 int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes_e2, double *var_e1, double *var_e2, double *oneDimvar, double *maxL);

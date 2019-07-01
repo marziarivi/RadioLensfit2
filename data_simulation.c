@@ -40,7 +40,7 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
                      double channel_bandwidth_hz, int time_acc, unsigned int num_channels, unsigned int num_baselines, double sigma,
                      unsigned long int n_gal, double g1, double g2, double *ge1, double *ge2, double *gflux, double *gscale,
                      double *l, double *m, double *SNR_vis, unsigned long int num_coords, double *uu_metres, double *vv_metres,
-                     complexd *visGal, complexd* visData)
+                     double *ww_metres, complexd *visGal, complexd* visData)
 {
     
     //setup random number generator
@@ -85,7 +85,7 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
             // generate galaxy visibilities
             unsigned long int ch_vis = ch*num_coords;
             data_galaxy_visibilities(spec[ch], wavenumbers[ch], band_factor, time_acc, ee1, ee2, gscale[g],
-                                         gflux[g], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
+                                         gflux[g], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                 
             // compute signal-to-noise
             double SNR_ch = 0.;
@@ -129,7 +129,7 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
 void sky_model(double freq_start, double ref_freq, double *wavenumbers, double *spec,
                      double channel_bandwidth_hz, int time_acc, unsigned int num_channels, unsigned int num_baselines,
                      unsigned long int n_gal, double *gflux,  double *l, double *m, unsigned long int num_coords, 
-                     double *uu_metres, double *vv_metres, complexd *visGal, complexd* visMod)
+                     double *uu_metres, double *vv_metres, double *ww_metres, complexd *visGal, complexd* visMod)
 {
 
     //setup random number generator
@@ -159,7 +159,7 @@ void sky_model(double freq_start, double ref_freq, double *wavenumbers, double *
             // generate galaxy visibilities
             unsigned long int ch_vis = ch*num_coords;
             data_galaxy_visibilities(spec[ch], wavenumbers[ch], band_factor, time_acc, 0., 0., R_mu,
-                                         gflux[g], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
+                                         gflux[g], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
             
             for (unsigned long int i= ch_vis; i<ch_vis+num_coords; i++)
             {

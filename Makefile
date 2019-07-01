@@ -19,7 +19,10 @@ endif
 CASACORE_INC =  -I/iranet/arcsoft/casacore/casacore-2.4.1/include -I/iranet/arcsoft/casacore/casacore-2.4.1/include/casacore
 CASACORE_LIB =  -L/iranet/arcsoft/casacore/casacore-2.4.1/lib -lcasa_casa -lcasa_measures -lcasa_tables -lcasa_ms -std=c++11
 
-SUP_INCL = -I. $(CASACORE_INC)
+GSL_INC = -I/iranet/arcsoft/gsl/gsl-2.5/include
+GSL_LIB = -L/iranet/arcsoft/gsl/gsl-2.5/lib
+
+SUP_INCL = -I. $(CASACORE_INC) $(GSL_INC)
 OPTIMIZE = -O3 -g 
 
 ifeq (USE_MPI,$(findstring USE_MPI,$(OPT)))
@@ -42,7 +45,7 @@ OBJS = RadioLensfit2-MS.o Simulate.o utils.o generate_catalog.o read_catalog.o d
 
  
 INCL   = *.h Makefile
-LIB_OPT = -lgsl -lgslcblas -lm $(CASACORE_LIB)
+LIB_OPT = $(GSL_LIB) -lgsl -lgslcblas -lm $(CASACORE_LIB)
 
 CPPFLAGS = $(OPTIONS) $(SUP_INCL)  $(OMP)
 

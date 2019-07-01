@@ -146,15 +146,13 @@ int main(int argc, char *argv[])
     double* uu_metres = new double[num_coords];
     double* vv_metres = new double[num_coords];
     double* ww_metres = new double[num_coords];
-    sizeGbytes = 2*num_coords*sizeof(double)/((double)(1024*1024*1024));
+    sizeGbytes = 3*num_coords*sizeof(double)/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated original coordinates: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
     
     int status;
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
     
-    delete[] ww_metres;
- 
     // Allocate and read Data visibilities
     unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
     complexd *visData;
@@ -234,7 +232,7 @@ int main(int argc, char *argv[])
     }
 
     sky_model(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
-                    mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, visGal, visSkyMod);
+                    mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
     
     // Setup Model Fitting ----------------------------------------------------------------------------------------------------------------------------------------
     // define steps in galaxy scalelength (Ro in ARCSEC)
@@ -418,9 +416,9 @@ int main(int argc, char *argv[])
           l0 = l[g];  m0 = m[g];
           
 #ifdef FACET
-          source_extraction(l0, m0, gflux[g], exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, facet, len);
+          source_extraction(l0, m0, gflux[g], exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres, facet, len);
 #else
-          source_extraction(l0, m0, gflux[g], exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres);
+          source_extraction(l0, m0, gflux[g], exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
  
           double mes_e1, mes_e2, maxL;
@@ -449,7 +447,7 @@ int main(int argc, char *argv[])
                   // Try fitting at the end (when almost all galaxies are fitted and removed from the data):
                   // add current source model back to the sky model
                   data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, 0., 0., R_mu,
-                                           gflux[g], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
+                                           gflux[g], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                   
                   for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
                   {
@@ -462,7 +460,7 @@ int main(int argc, char *argv[])
               {
                   // get current source model fit
                   data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, mes_e1, mes_e2, R_mu,
-                                           gflux[g], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
+                                           gflux[g], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                   
                   for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
                   {
@@ -498,9 +496,9 @@ int main(int argc, char *argv[])
         facet = facet_size[ind];
         par.ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
         
-        source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, facet, len);
+        source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres, facet, len);
 #else
-        source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres);
+        source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
         
         double mes_e1, mes_e2, maxL;
@@ -524,7 +522,7 @@ int main(int argc, char *argv[])
             unsigned long int ch_vis = ch*num_coords;
             // get current source model fit
             data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, mes_e1, mes_e2, R_mu,
-                                     flux, l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
+                                     flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
  
             for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
             {
@@ -568,6 +566,7 @@ int main(int argc, char *argv[])
     delete[] SNR_vis;
     delete[] uu_metres;
     delete[] vv_metres;
+    delete[] ww_metres;
     delete[] wavenumbers;
     delete[] spec;
 #ifdef FACET

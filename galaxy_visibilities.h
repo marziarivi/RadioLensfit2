@@ -43,7 +43,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
     
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
                               double e1, double e2, double scalelength, double flux, double l, double m,
-                              unsigned long int num_coords, double* uu_metres, double* vv_metres,
+                              unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres,
                               complexd* vis);
     
 //void add_system_noise(gsl_rng * gen, unsigned int num_baselines, unsigned int num_times, complexd* vis, double* sigma);
@@ -51,7 +51,7 @@ void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, dou
 
     
 void data_visibilities_phase_shift(double wavenumber, double l, double m, unsigned long int num_coords,
-                                       double* uu_metres, double* vv_metres, complexd* vis);
+                                       double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis);
     
 #ifdef __cplusplus
 }

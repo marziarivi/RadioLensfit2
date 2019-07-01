@@ -36,9 +36,11 @@
 // Notice: instructions execution order is important as arrays are reused!!!!
 
 #ifdef FACET
-void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, unsigned long int num_coords, double *uu_metres, double *vv_metres, int facet_size, double len)
+void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
+                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, int facet_size, double len)
 #else
-void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, unsigned long int num_coords, double *uu_metres, double *vv_metres)
+void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
+                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres)
 #endif
 {
 
@@ -50,7 +52,7 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
      unsigned long int ch_vis = ch*num_coords;
      // get small round source at the current position and flux
      data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, e1, e2, mu,
-                              flux, l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
+                              flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
     
      for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
      {
@@ -65,7 +67,7 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
     
 #ifdef FACET
      // Phase shift data visibilities (to be done after gridding because real data will be gridded)
-     data_visibilities_phase_shift((par->wavenumbers)[ch], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
+     data_visibilities_phase_shift((par->wavenumbers)[ch], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
        
      // gridding visibilities
      unsigned int ch_visfacet = ch*par->ncoords;

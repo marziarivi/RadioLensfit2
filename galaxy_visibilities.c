@@ -154,20 +154,22 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
 // Compute data galaxy visibilities per channel  
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
                               double e1, double e2, double scalelength, double flux, double l, double m,
-                              unsigned long int num_coords, double* uu_metres, double* vv_metres, complexd* vis)
+                              unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis)
 {
-        double den,u,v,k1,k2,phase,shape;
+        double den,u,v,w,k1,k2,phase,shape;
         double detA = 1.-e1*e1-e2*e2;
         double scale = scalelength*ARCS2RAD;  // scale in rad
         double scale_factor = (scale*scale)/(detA*detA);
         double wavenumber2 = wavenumber*wavenumber;
+        double n = sqrt(1-l*l-m*m) - 1;
     
         for (unsigned long int i = 0; i < num_coords; ++i)
         {
             u = uu_metres[i];
             v = vv_metres[i];
+            w = ww_metres[i];
             
-            phase = u*l+v*m;
+            phase = u*l+v*m+w*n;
             /*if (phase !=0.)
             {
                smear = band_factor*phase;
@@ -216,19 +218,22 @@ void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, dou
 // there only the real part contains galaxy signal, the imaginary part contains only noise
 // so take only the real part for shape fitting
 void data_visibilities_phase_shift(double wavenumber, double l, double m,
-                                   unsigned long int num_coords, double* uu_metres, double* vv_metres,
+                                   unsigned long int num_coords, 
+                                   double* uu_metres, double* vv_metres, double* ww_metres,
                                    complexd* vis)
 {
-    double u,v,phase, sp,cp;
+    double u,v,w,phase, sp,cp;
     double ch_freq = wavenumber*C0/(2.0*PI);
     complexd temp;
-    
+    double n = sqrt(1-l*l-m*m) - 1;    
+
     for (unsigned long int i = 0; i < num_coords; ++i)
     {
         u = uu_metres[i];
         v = vv_metres[i];
+        w = ww_metres[i];
         
-        phase = u*l+v*m;
+        phase = u*l+v*m+w*n;
         phase *= wavenumber;
         sp = sin(phase);
         cp = cos(phase);
