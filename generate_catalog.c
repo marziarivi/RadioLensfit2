@@ -51,7 +51,7 @@ unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, 
 #else
     unsigned long int my_gal = nge;
 #endif
-    unsigned long int diffgal = my_gal/2*NP;
+    unsigned long int diffgal = my_gal/(2*NP);
     my_gal = diffgal*2*NP;
     
     // generate flux values
