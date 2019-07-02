@@ -161,7 +161,7 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
         double scale = scalelength*ARCS2RAD;  // scale in rad
         double scale_factor = (scale*scale)/(detA*detA);
         double wavenumber2 = wavenumber*wavenumber;
-        double n = sqrt(1-l*l-m*m) - 1;
+        double n = sqrt(1.-l*l-m*m) - 1.;
     
         for (unsigned long int i = 0; i < num_coords; ++i)
         {
@@ -225,7 +225,7 @@ void data_visibilities_phase_shift(double wavenumber, double l, double m,
     double u,v,w,phase, sp,cp;
     double ch_freq = wavenumber*C0/(2.0*PI);
     complexd temp;
-    double n = sqrt(1-l*l-m*m) - 1;    
+    double n = sqrt(1.-l*l-m*m) - 1.;    
 
     for (unsigned long int i = 0; i < num_coords; ++i)
     {

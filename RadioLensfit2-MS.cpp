@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
     double *SNR_vis = new double[nge];
  
     unsigned long int mygalaxies = read_catalog(nge, argv[2], gflux,l,m,SNR_vis);
-    cout << "rank " << rank << ": " << mygalaxies << "galaxies " << endl;
+    cout << "rank " << rank << ": " << mygalaxies << " galaxies" << endl;
     
 #ifdef USE_MPI
     end_data = MPI_Wtime();

@@ -60,8 +60,8 @@
 #include "generate_catalog.h"
 #include "distributions.h"
 
-#define NUM_ORIENT 1  // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module 
-#define FMAX 200      // maximum source flux [uJy]
+#define NUM_ORIENT 5  // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module 
+#define FMAX 300      // maximum source flux [uJy]
 #define RMIN 0.3      // minimum source scalelength [arcsec]
 #define RMAX 3.5      // maximun source scalelength [arcsec]
 
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 
     double Fmin = atof(argv[3]);
     unsigned long int nge = ceil((flux_CDF(beta, FMAX) - flux_CDF(beta, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
-    
+   
     double *gflux = new double[nge];
     double *gscale = new double[nge];
     double *ge1 = new double[nge];
