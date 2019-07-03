@@ -28,11 +28,13 @@ const double scale_std = 0.3136;  // scalelength standard deviation
 const double beta = -1.34; // flux prior: S^beta
 
 double e_pdf(double e);
-double flux_CDF(double alpha, double flux);
-double scale_mean(double flux);
-double r_CDF(double mean, double r);
 double rfunc (const double mu, const double sigma, double r);
- 
+
+double scale_mean(double flux);
+
+double CDF(double (*pdf)(double), double b);
+double flux_CDF(double alpha, double flux);
+double r_CDF(double mean, double r);
     
 #ifdef __cplusplus
 }

@@ -25,10 +25,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
+
 void generate_random_data(gsl_rng * gen, int nr, double *data, double min_value, double max_value, double (*CDFunc)(double,double), double param);
 void generate_ellipticity(gsl_rng * gen, int ne, int NP, double *e1, double *e2);
-double CDF(double (*pdf)(double), double e);
 
 #ifdef __cplusplus
 }
