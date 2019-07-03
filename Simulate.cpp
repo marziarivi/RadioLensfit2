@@ -163,7 +163,6 @@ int main(int argc, char *argv[])
 
     double Fmin = atof(argv[3]);
     unsigned long int nge = ceil((flux_CDF(beta, FMAX) - flux_CDF(beta, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
-    cout << "nge " << nge << endl;
    
     double *gflux = new double[nge];
     double *gscale = new double[nge];
