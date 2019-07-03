@@ -35,6 +35,7 @@ int read_coords_oskar(const char* filename, unsigned long int ncoords, double* x
     char *token;
     char line[100];
     unsigned long int index, i = 0;
+
     double maxx = 0.;
     double minx = 0.;
     double maxy = 0.;
@@ -104,12 +105,10 @@ double read_coord_ska(const char* filename1, const char* filename2, unsigned int
     double* temp_vv = (double *) malloc (num_coords*sizeof(double));
     unsigned long int* index = (unsigned long int *) malloc(num_coords*sizeof(unsigned long int));
     
-#ifdef GRID
     double maxx = 0.;
     double minx = 0.;
     double maxy = 0.;
     double miny = 0.;
-#endif
     unsigned int newbaselines, nt;
     unsigned long int i = 0, k=0;
     double xp,yp,modulus;
@@ -154,12 +153,10 @@ double read_coord_ska(const char* filename1, const char* filename2, unsigned int
                 x[k*ntimes]=xp;
                 y[k*ntimes]=yp;
                 k++;
-#ifdef GRID
                 if(xp>maxx) maxx = xp;
                 if(xp<minx) minx = xp;
                 if(yp>maxy) maxy = yp;
                 if(yp<miny) miny = yp;
-#endif
                 
             }
         }
@@ -176,12 +173,10 @@ double read_coord_ska(const char* filename1, const char* filename2, unsigned int
             xp = temp_uu[start+index[i]];
             yp = temp_vv[start+index[i]];
  
-#ifdef GRID
             if(xp>maxx) maxx = xp;
             if(xp<minx) minx = xp;
             if(yp>maxy) maxy = yp;
             if(yp<miny) miny = yp;
-#endif
             k = i*ntimes+nt;
             x[k]=xp; y[k]=yp;
         }
@@ -195,9 +190,7 @@ double read_coord_ska(const char* filename1, const char* filename2, unsigned int
     free(index);
 
     *nbaselines = newbaselines;
-#ifdef GRID
     *len = ceil(fmax(fmax(maxx,-minx),fmax(maxy,-miny)));  // return max coordinate for the uv grid
-#endif
 
     return maxB;
 }
@@ -211,12 +204,10 @@ unsigned long int read_uv_txt(const char* filename1, const char* filename2, unsi
         char *token;
         char line[100];
         
-#ifdef GRID
         double maxx = 0.;
         double minx = 0.;
         double maxy = 0.;
         double miny = 0.;
-#endif
         double xp,yp, modulus;
         
         /* Open the file. */
@@ -253,12 +244,11 @@ unsigned long int read_uv_txt(const char* filename1, const char* filename2, unsi
                 x[i]=xp;
                 y[i]=yp;
             
-#ifdef GRID
                 if(xp>maxx) maxx = xp;
                 if(xp<minx) minx = xp;
                 if(yp>maxy) maxy = yp;
                 if(yp<miny) miny = yp;
-#endif
+                
                 modulus = sqrt(xp*xp+yp*yp);
                 if(modulus > maxB) maxB = modulus;
                 i++;
@@ -268,9 +258,7 @@ unsigned long int read_uv_txt(const char* filename1, const char* filename2, unsi
         fclose(fp1);
         fclose(fp2);
         
-#ifdef GRID
         *len = ceil(fmax(fmax(maxx,-minx),fmax(maxy,-miny)));  // return max coordinate for the uv grid
-#endif
         
         return i;
     }
@@ -290,12 +278,10 @@ double read_uvw_txt(const char* filename1, const char* filename2, const char* fi
         double* temp_vv = (double *) malloc (num_coords*sizeof(double));
         double* temp_ww = (double *) malloc (num_coords*sizeof(double));
         
-#ifdef GRID
         double maxx = 0.;
         double minx = 0.;
         double maxy = 0.;
         double miny = 0.;
-#endif
         double xp,yp,wp, modulus;
         
         /* Open the file. */
@@ -342,12 +328,10 @@ double read_uvw_txt(const char* filename1, const char* filename2, const char* fi
             temp_vv[i]=yp;
             temp_ww[i]=wp;
             
-#ifdef GRID
             if(xp>maxx) maxx = xp;
             if(xp<minx) minx = xp;
             if(yp>maxy) maxy = yp;
             if(yp<miny) miny = yp;
-#endif
             modulus = sqrt(xp*xp+yp*yp);
             if(modulus > maxB) maxB = modulus;
             i++;
@@ -361,9 +345,7 @@ double read_uvw_txt(const char* filename1, const char* filename2, const char* fi
         free(temp_vv);
         free(temp_ww);
         
-#ifdef GRID
         *len = ceil(fmax(fmax(maxx,-minx),fmax(maxy,-miny)));  // return max coordinate for the uv grid
-#endif
         
         return maxB;
         

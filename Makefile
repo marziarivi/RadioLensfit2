@@ -8,11 +8,6 @@
 #OPT += -DUSE_MPI
 
  OPT += -DFACET  #fitting by faceting
-ifeq (FACET,$(findstring FACET,$(OPT)))
- OPT += -DGRID
-endif
-
-# OPT += -DGRID
 
 #------------------------------------------------------------------------- 
 
