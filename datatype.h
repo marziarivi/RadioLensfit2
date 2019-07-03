@@ -70,6 +70,7 @@ typedef struct{
     double* mod;
 #else
     complexd* mod;
+    double* ww;
 #endif
 } likelihood_params;
 

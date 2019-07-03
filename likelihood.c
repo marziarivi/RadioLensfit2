@@ -122,7 +122,11 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
     {
        unsigned long int index = (nRo-1)*(par->ncoords)*(par->nchannels);
 
+#ifdef FACET
        L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->data, &((par->mod)[index]));
+#else
+       L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->ww, par->data, &((par->mod)[index]));
+#endif
     }
     
     // marginalisation over scalelength
@@ -157,14 +161,14 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                 double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
                 double scale, unsigned long int n_uv_coords, unsigned long int* count,
-                const double variance, double* uu_metres, double* vv_metres, complexd* visData, complexd* visM)
+                const double variance, double* uu_metres, double* vv_metres, double* ww_metres, complexd* visData, complexd* visM)
 #endif
 {
     // generate model
 #ifdef FACET
     model_galaxy_visibilities_at_zero(nchannels, spec, wavenumbers, ee1, ee2, scale, radius, n_uv_coords, uu_metres, vv_metres, count, visM);
 #else
-    model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, radius, n_uv_coords, uu_metres, vv_metres, count, visM);
+    model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, radius, n_uv_coords, uu_metres, vv_metres, ww_metres, count, visM);
 #endif
         
     // Compute log(likelihood) dependend only on ellipticity and scale-length
