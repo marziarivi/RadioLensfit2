@@ -29,8 +29,9 @@ Usage: *RadioLensfit2-MS* (filename MS) (filename source catalog) (num_sources)
 **shear.py** 
 
 Shear measurement from weighted average of the measured ellipticity of the galaxies in the field of view.
+The code reads files called *ellipticitiesN.txt* where N is a progressive integer.
 
-Usage: *shear.py* (filename measured ellipticities)
+Usage: *shear.py* -nf (number of files)
 
 # Installation
 
