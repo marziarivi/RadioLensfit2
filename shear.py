@@ -1,17 +1,22 @@
-#
-#  shear.py
-#  Author: Marzia Rivi (2018)
-#
-#  arguments: -nf number of files with name ellipticities<n>.txt
+"""
+  shear.py
+  Author: Marzia Rivi (2018)
 
-# Compute shear as a weighted mean of the galaxies ellipticity
-# use bootstrap to compute standard deviation
+  arguments: -nf number of files with name ellipticities<n>.txt
+
+  Compute shear as a weighted mean of the galaxies ellipticity
+  use bootstrap to compute standard deviation
+  Use data simulations where shapes are generated to be zero on average.
+  Opposite ellipticities are consecutives. Therefore for each bad data,
+  the opposite is removed too from the shear computation.
+
+"""
 
 import sys
 import argparse
 import math
 import numpy as np
-from pylab import *
+#from pylab import *
 import astropy.stats as astro
 
 parser = argparse.ArgumentParser(description='bootstrap_std')
@@ -31,71 +36,56 @@ def prior_ellipticity(ee1,ee2):
 # read ellipticities
 me1=[]
 me2=[]
-oe1=[]
-oe2=[]
 err1=[]
 err2=[]
 SNR=[]
 w=[]
 k=0
-last_e1 = 0.
-last_e2 = 0.
 remove = 0
 nfiles=args.nfiles
 bad = 0
 num=0
+ngal = 10000
+
 try:
     while num<nfiles:
         name = "ellipticities%d.txt"%(num)
-        file=open(name,'r')
-        data=file.readlines()
-        ngal=10000
-        i=1
+        print name
+        data=np.loadtxt(name, skiprows=1, delimiter='|',usecols=(1,2,3,4,5,6))
+        i=0
         while i<len(data) and k<ngal:
-            line = data[i]
-            ls=line.split('|')
-            e1 = float(ls[2])
-            e2 = float(ls[5])
-            error1 = float(ls[4])
-            error2 = float(ls[7])
-            flux = float(ls[0])
-            SNRvalue = float(ls[9])
-            #angle = np.arctan(float(ls[5])/float(ls[2]))
-            var = float(ls[8])
+            error1 = data[i,1]
+            error2 = data[i,3]
+            var = data[i,4]
+            SNRvalue = data[i,5]
+            
             if var > 1e-5 and error1>1e-3 and error2>1e-3 and SNRvalue >= 10:
                 if remove == 1:
-                    me1[k] = float(ls[3])
+                    me1[k] = data[i,0]
                     err1[k] = error2
-                    me2[k] = float(ls[6])
+                    me2[k] = data[i,2]
                     err1[k] = error1
-                    oe1[k] = e1
-                    oe2[k] = e2
                     w[k] = var*e_max*e_max/(e_max*e_max-2*var)
-                    SNR[k] = float(ls[9])  # 8
+                    SNR[k] = SNRvalue
                 else:
-                    me1.append(float(ls[3]))
+                    me1.append(data[i,0])
                     err1.append(error2)
-                    me2.append(float(ls[6]))
+                    me2.append(data[i,2])
                     err1.append(error1)
-                    oe1.append(e1)
-                    oe2.append(e2)
                     w.append(var*e_max*e_max/(e_max*e_max-2*var))
                     SNR.append(SNRvalue) # 8
                 k = k+1
                 remove = 0
-                last_e1 = e1
-                last_e2 = e2
             else:  # remove the opposite too
                 if i%2 == 0:  # even line: opposite is the previous one
                     remove = 1  # remove previous element by overlapping it with the following
                     k = k-1
                 else:         # odd line: opposite is the next one
                     i = i+1     # skip next data line
-                print "bad measure:",line
+                print "bad measure:",data[i,:]
                 bad = bad + 1
             i=i+1
-        num = num+1
-        file.close()
+        num = num + 1
 except:
     print 'ERROR!'
 
@@ -104,8 +94,6 @@ if remove == 1:
     k = k-2
     me1 = np.delete(me1,k)
     me2 = np.delete(me2,k)
-    oe1 = np.delete(oe1,k)
-    oe2 = np.delete(oe2,k)
     SNR = np.delete(SNR,k)
     w = np.delete(w,k)
 
@@ -114,8 +102,6 @@ print "ngal: ", len(me1)," bad: ",bad
 print "min SNR",np.min(SNR)
 
 print 'measured mean: ',np.mean(me1), np.mean(me2)
-print 'original mean: ',np.mean(oe1), np.mean(oe2)
-
 
 # compute shape noise
 pe = prior_ellipticity(me1,me2)
@@ -128,7 +114,7 @@ mean22 = np.average(np.multiply(me2,me2),weights=pe)
 var1 = mean11 - mean1*mean1
 var2 = mean22 - mean2*mean2
 
-sigma_shape = sqrt(var1*var2-var12*var12)
+sigma_shape = np.sqrt(var1*var2-var12*var12)
 print "shape noise: ",sigma_shape
 
 # compute shear
