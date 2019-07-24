@@ -70,7 +70,7 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
             shape = /*beam_pattern*/spectra/(den*sqrt(den));
             Modvis[nv] = shape;
             
-#ifdef GRID
+#ifdef FACET
           //  sum += Modvis[nv]*Modvis[nv]/count[i];
             sum += Modvis[nv]*Modvis[nv]*count[i];
 #else
@@ -91,14 +91,15 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scalelength, double l,
                                double m, double radius, unsigned long int num_coords, double* uu_metres,
-                               double* vv_metres,
+                               double* vv_metres, double* ww_metres,
                                unsigned long int* count, complexd* Modvis)
 {
-    double wavenumber,wavenumber2,den,uu,vv,k1,k2,spectra,shape,phase,smear,ch_freq,beam_pattern;
+    double wavenumber,wavenumber2,den,uu,vv,ww,k1,k2,spectra,shape,phase,smear,ch_freq,beam_pattern;
     double detA = 1.-e1*e1-e2*e2;
     double scale = scalelength*ARCS2RAD;
     double scale_factor = (scale*scale)/(detA*detA);
-    
+    double n = sqrt(1.-l*l-m*m) - 1.;     
+
     double sum = 0.;
     unsigned long int nv = 0;
  
@@ -116,8 +117,9 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
         {
           uu = uu_metres[i];
           vv = vv_metres[i];
+          ww = ww_metres[i];
             
-          phase = uu*l+vv*m;
+          phase = uu*l+vv*m+ww*n;
           /*if (phase != 0.)
           {
              smear = band_factor*phase;
@@ -135,11 +137,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
           Modvis[nv].real = shape*cos(phase); //*smear;
           Modvis[nv].imag = shape*sin(phase); //*smear;
  
-#ifdef GRID
-          sum += (Modvis[nv].real*Modvis[nv].real + Modvis[nv].imag*Modvis[nv].imag)*count[i];
-#else
           sum += (Modvis[nv].real*Modvis[nv].real + Modvis[nv].imag*Modvis[nv].imag);
-#endif
           nv++;
         }
     }

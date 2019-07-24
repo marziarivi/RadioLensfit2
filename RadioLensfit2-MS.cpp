@@ -366,8 +366,9 @@ int main(int argc, char *argv[])
     par.ncoords = num_coords;
     par.uu = uu_metres;
     par.vv = vv_metres;
+    par.ww = ww_metres;
     par.data = visGal;
-    par.count = 0.;
+    par.count = 0;
     par.mod = visMod;
 #endif
     

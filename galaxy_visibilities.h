@@ -39,7 +39,7 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scalelength, double l,
                                double m, double radius, unsigned long int num_coords, double* uu_metres,
-                               double* vv_metres, unsigned long int* count, complexd* Modvis);
+                               double* vv_metres, double* ww_metres, unsigned long int* count, complexd* Modvis);
     
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
                               double e1, double e2, double scalelength, double flux, double l, double m,

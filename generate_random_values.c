@@ -33,15 +33,13 @@
 #define PI 3.14159265358979323846
 #endif
 
-#define EPS 1.0e-5
-#define JMAX 30
 #define N 1000
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
-    
+
+
 // Generate random data in the range [min_value,max_value] according to a distribution with a given Cumulative Distribution Function CDFunc(param, x)
 void generate_random_data(gsl_rng * gen, int nr, double *data, double min_value, double max_value, double (*CDFunc)(double,double), double param)
 {
@@ -123,35 +121,6 @@ void generate_ellipticity(gsl_rng * gen, int ne, int NP, double *e1, double *e2)
     free(F);
  
 }
- 
-
-// Cumulative Distribution Function: \int_0^b e_pdf(x)
-// apply an extended trapezoidal rule (Numerical Recipes p.137)
-double CDF(double (*pdf)(double), double b)
-{
-    double x, tnm, del, sum;
-    double s, olds = 0.;
-    int it,j,k;
-    
-    s=0.5*b*(*pdf)(b);
-    for (k=2; k<=JMAX; k++)
-    {
-        for (it=1,j=1;j<k-1;j++) it <<= 1;
-        tnm = (double) it;
-        del = b/tnm;      //This is the spacing of the points to be added.
-        x = 0.5*del;
-        for (sum=0.,j=1; j<it; j++,x+=del) sum += (*pdf)(x);
-        s = 0.5*(s+del*sum);  //This replaces s by its refined value. NB. pdf(0)=0
-    
-        if (k > 5)          //Avoid spurious early convergence.
-            if (fabs(s-olds) < EPS*fabs(olds) ||
-                (s == 0.0 && olds == 0.0)) return s;
-        olds=s;
-    }
-    printf("\n CDF: Too many steps\n");
-    return 0.0;
-}
-    
 
     
 #ifdef __cplusplus

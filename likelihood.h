@@ -46,7 +46,7 @@ int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                        double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
                        double scale, unsigned long int n_uv_coords, unsigned long int* count,
-                       const double variance, double* uu_metres, double* vv_metres, complexd* visData, complexd* visM);
+                       const double variance, double* uu_metres, double* vv_metres, double* ww_metres, complexd* visData, complexd* visM);
     
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
                        unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,

@@ -51,14 +51,13 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
     
     unsigned long int seed = random_seed();
     gsl_rng_set(gen,seed);
-    
+   
     double ee1,ee2,l0,m0,den;
-    complexd z1,z2;
+    complexd z1,z2; 
     double band_factor = channel_bandwidth_hz*PI/C0;
- 
+
     for (unsigned long int g=0; g<n_gal; g++)
     {
-        
         l0 = l[g];
         m0 = m[g];
             
@@ -76,10 +75,10 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
         ge2[g] = ee2;
             
         SNR_vis[g] = 0.;
-            
+
 #ifdef _OPENMP
 #pragma omp parallel for
-#endif
+#endif            
         for (unsigned int ch = 0; ch < num_channels; ch++)
         {
             // generate galaxy visibilities
@@ -93,7 +92,7 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
                 SNR_ch += visGal[vs].real*visGal[vs].real + visGal[vs].imag*visGal[vs].imag;
 #ifdef _OPENMP
 #pragma omp critical
-#endif
+#endif 
             SNR_vis[g] += SNR_ch;
                 
             // add visibilities of current galaxy to data vis
@@ -112,7 +111,7 @@ void data_simulation(double freq_start, double ref_freq, double *wavenumbers, do
     
     double* sigmab = (double *) malloc(sizeof(double)*num_baselines);
     for (unsigned int b=0; b<num_baselines; b++) sigmab[b] = sqrt(sigma);
-    
+   
     for (unsigned int ch = 0; ch < num_channels; ch++)
     {
         unsigned long int ch_vis = ch*num_coords;
@@ -131,23 +130,13 @@ void sky_model(double freq_start, double ref_freq, double *wavenumbers, double *
                      unsigned long int n_gal, double *gflux,  double *l, double *m, unsigned long int num_coords, 
                      double *uu_metres, double *vv_metres, double *ww_metres, complexd *visGal, complexd* visMod)
 {
-
-    //setup random number generator
-    const gsl_rng_type * G;
-    gsl_rng * gen;
-    G = gsl_rng_mt19937;  // Mersenne Twister
-    gen = gsl_rng_alloc(G);
-
-    unsigned long int seed = random_seed();
-    gsl_rng_set(gen,seed);
-
-    double l0,m0,den;
+    double R_mu, l0, m0;
     double band_factor = channel_bandwidth_hz*PI/C0;
 
     for (unsigned long int g=0; g<n_gal; g++)
     {
 
-        double R_mu = exp(scale_mean(gflux[g]));
+        R_mu = exp(scale_mean(gflux[g]));
         l0 = l[g];
         m0 = m[g];
 
@@ -168,7 +157,5 @@ void sky_model(double freq_start, double ref_freq, double *wavenumbers, double *
             }
         }
     }
-
-    gsl_rng_free(gen);
 }
 
