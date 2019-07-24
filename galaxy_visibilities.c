@@ -231,8 +231,8 @@ void data_visibilities_phase_shift(double wavenumber, double l, double m,
         v = vv_metres[i];
         w = ww_metres[i];
         
-        phase = u*l+v*m+w*n;
-        phase *= -wavenumber;
+        phase = -u*l+v*m+w*n;
+        phase *= wavenumber;
         sp = sin(phase);
         cp = cos(phase);
         
