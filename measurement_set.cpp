@@ -240,11 +240,6 @@ void ms_read_vis(RL_MeasurementSet* p,
         *status = ERR_MS_COLUMN_NOT_FOUND;
         return;
     }
-    if (strcmp(column, "DATA") && strcmp(column, "CORRECTED_DATA"))
-    {
-        *status = ERR_MS_COLUMN_NOT_FOUND;
-        return;
-    }
 
     // Check that the row is within the table bounds.
     unsigned int total_rows = p->ms->nrow();

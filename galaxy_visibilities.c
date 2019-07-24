@@ -125,7 +125,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
           }
           else smear = 1.;
           */
-          phase = -wavenumber*phase;
+          phase = wavenumber*phase;
  
           k1 = (1.+e1)*uu + e2*vv;
           k2 = e2*uu + (1.-e1)*vv;
@@ -177,7 +177,7 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
             }
             else smear = 1.;
             */
-            phase = -wavenumber*phase;
+            phase = wavenumber*phase;
             
             k1 = (1.+e1)*u + e2*v;
             k2 = e2*u + (1.-e1)*v;
@@ -234,7 +234,7 @@ void data_visibilities_phase_shift(double wavenumber, double l, double m,
         w = ww_metres[i];
         
         phase = u*l+v*m+w*n;
-        phase *= wavenumber;
+        phase *= -wavenumber;
         sp = sin(phase);
         cp = cos(phase);
         
