@@ -219,6 +219,101 @@ double ms_read_coords(RL_MeasurementSet* p,
     return ceil(fmax(umax,vmax));
 }
 
+
+/*
+   Reads noise sigtma from the main table of the Measurement Set.
+   The sigma array must be allocated to the correct size on entry.
+*/
+
+void ms_read_sigma(RL_MeasurementSet* p,
+                      unsigned int start_row, unsigned int num_coords,
+                      float* sigma2, int* status)
+{
+    if (!p->ms || !p->msmc || num_coords == 0) return;
+
+    // Check that the row is within the table bounds.
+    unsigned int total_rows = p->ms->nrow();
+    if (start_row >= total_rows)
+    {
+        *status = ERR_MS_OUT_OF_RANGE;
+        return;
+    }
+    if (start_row + num_coords > total_rows)
+        num_coords = total_rows - start_row;
+
+    // Read the coordinate data and copy it into the supplied arrays.
+    Slice slice(start_row, num_coords, 1);
+    Array<Float> column_range = p->msmc->sigma().getColumnRange(slice);
+
+    const float* in = (const float*) column_range.data();
+    for (unsigned int i = 0; i < num_coords; ++i)
+    {
+        sigma2[i] = in[i]*in[i];
+    }
+}
+
+
+/*
+ *    Read a block of flags from the specified column of the main table of t
+ *    he Measurement Set.
+ *       
+ *    It is assumed the MS contains a single polarization component: the flux I.
+ *    The dimensionality of the boolean flag block is: num_channels * num_coords 
+ *    with num_coords the fastest varying dimension, and num_channels the slowest.
+ *    The flag array must be allocated to the correct size on entry. 
+ */
+void ms_read_Flag(RL_MeasurementSet* p,
+		  unsigned int start_row, unsigned int start_channel,
+	          unsigned int num_channels, unsigned int num_coords,
+	          const char* column, bool* flag, int* status)
+{
+  if (!p->ms || !p->msmc || num_coords == 0 || num_channels == 0) return;
+  
+  // Check that the column exists.
+  if (!p->ms->tableDesc().isColumn(column))
+  {
+    *status = ERR_MS_COLUMN_NOT_FOUND;
+    return;
+  }
+
+  // Check that the row is within the table bounds.
+  unsigned int total_rows = p->ms->nrow();
+  if (start_row >= total_rows)
+  {
+    *status = ERR_MS_OUT_OF_RANGE;
+    return;
+  }
+  if (start_row + num_coords > total_rows)
+    num_coords = total_rows - start_row;
+
+    // Create the slicers for the column.
+    unsigned int num_pols = 1;
+    IPosition start1(1, start_row);
+    IPosition length1(1, num_coords);
+    Slicer row_range(start1, length1);
+    IPosition start2(2, 0, start_channel);
+    IPosition length2(2, num_pols, num_channels);
+    Slicer array_section(start2, length2);
+
+    // Read the data.
+    ArrayColumn<Bool> ac(*(p->ms), column);
+    Array<Bool> column_range = ac.getColumnRange(row_range, array_section);
+
+    // Copy the visibility data into the supplied array,
+    // swapping coords and channel dimensions.
+    const bool* in = (const bool*) column_range.data();
+    for (unsigned int c = 0; c < num_channels; ++c)
+    {
+       for (unsigned int b = 0; b < num_coords; ++b)
+       {
+         unsigned int i = (b * num_channels + c);
+         unsigned int j = (c * num_coords + b);
+         flag[j] = in[i];
+       }
+    }
+}
+
+
 /*
    Read a block of visibilities from the specified column of the main table of the Measurement Set.
    

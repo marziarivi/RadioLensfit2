@@ -7,9 +7,9 @@
 
 enum MS_ERROR_CODES
 {
-        ERR_MS_COLUMN_NOT_FOUND        = -200,
-        ERR_MS_OUT_OF_RANGE            = -201,
-        ERR_MS_NO_DATA                 = -203
+        ERR_MS_COLUMN_NOT_FOUND        = -1,
+        ERR_MS_OUT_OF_RANGE            = -2,
+        ERR_MS_NO_DATA                 = -3
 };
 
 struct RL_MeasurementSet
@@ -43,6 +43,15 @@ double ms_time_inc_sec(const RL_MeasurementSet* p);
 double ms_read_coords(RL_MeasurementSet* p,
                       unsigned int start_row, unsigned int num_coords,
                       double* uu, double* vv, double* ww, int* status);
+
+void ms_read_sigma(RL_MeasurementSet* p,
+                      unsigned int start_row, unsigned int num_coords,
+                      float* sigma2, int* status);
+
+void ms_read_Flag(RL_MeasurementSet* p,
+		  unsigned int start_row, unsigned int start_channel,
+                  unsigned int num_channels, unsigned int num_coords,
+		  const char* column, bool* flag, int* status);
 
 void ms_read_vis(RL_MeasurementSet* p,
                  unsigned int start_row, unsigned int start_channel,
