@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
         ch_freq += channel_bandwidth_hz;
     }
     
-    data_simulation(ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, 
+    data_simulation(wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, 
                     num_baselines, sigma, mygalaxies, g1, g2, ge1, ge2, gflux, gscale, l, m, SNR_vis, num_coords, 
                     uu_metres, vv_metres, ww_metres, visGal, visData);
     
