@@ -241,14 +241,12 @@ int main(int argc, char *argv[])
     
     double *SNR_vis = new double[mygalaxies];
     
-#ifdef USE_MPI
     double data_time = 0.;
     double fitting_time = 0.;
+#ifdef USE_MPI
     double start_data,end_data,start_fitting,end_fitting;
     start_data = MPI_Wtime();
 #else
-    double data_time = 0;
-    double fitting_time = 0;
     long long start_data,end_data,start_fitting,end_fitting;
     start_data = current_timestamp();
 #endif
@@ -260,7 +258,7 @@ int main(int argc, char *argv[])
     double sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
     if (rank==0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
     
-    data_simulation(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
+    data_simulation(ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
                     sigma, mygalaxies, g1, g2, ge1, ge2, gflux, gscale, l, m, SNR_vis, num_coords, uu_metres, vv_metres,
                     visGal, visSkyMod, visData);
     
