@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
     double sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
     if (rank==0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
     
-    data_simulation(ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
+    data_simulation(wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
                     sigma, mygalaxies, g1, g2, ge1, ge2, gflux, gscale, l, m, SNR_vis, num_coords, uu_metres, vv_metres,
                     visGal, visSkyMod, visData);
     
