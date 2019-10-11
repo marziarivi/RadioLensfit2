@@ -96,14 +96,12 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-#ifdef USE_MPI
     double data_time = 0.;
     double fitting_time = 0.;
+#ifdef USE_MPI
     double start_data,end_data,start_fitting,end_fitting;
     start_data = MPI_Wtime();
 #else
-    double data_time = 0;
-    double fitting_time = 0;
     long long start_data,end_data,start_fitting,end_fitting;
     start_data = current_timestamp();
 #endif
@@ -231,7 +229,7 @@ int main(int argc, char *argv[])
         ch_freq += channel_bandwidth_hz;
     }
 
-    sky_model(freq_start_hz,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
+    sky_model(rank,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
                     mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
     
     // Setup Model Fitting ----------------------------------------------------------------------------------------------------------------------------------------
