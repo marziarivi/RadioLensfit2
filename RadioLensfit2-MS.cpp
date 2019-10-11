@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
         ch_freq += channel_bandwidth_hz;
     }
 
-    sky_model(rank,ref_frequency_hz, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
+    sky_model(rank, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
                     mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
     
     // Setup Model Fitting ----------------------------------------------------------------------------------------------------------------------------------------
