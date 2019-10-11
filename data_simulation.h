@@ -23,14 +23,14 @@
  
 #include "datatype.h"
 
-void data_simulation(double freq_start, double ref_freq, double *wavenumbers,
+void data_simulation(double ref_freq, double *wavenumbers,
                      double *spec, double channel_bandwidth_hz, int time_acc, unsigned int num_channels,
                      unsigned int num_baselines, double sigma, unsigned long int n_gal, double g1, double g2,
                      double *ge1, double *ge2, double *gflux, double *gscale, double *l, double *m,
                      double *SNR_vis, unsigned long int num_coords, double *uu_metres, double *vv_metres,
                      double *ww_metres, complexd *visGal, complexd* visData);
 
-void sky_model(double freq_start, double ref_freq, double *wavenumbers, double *spec,
+void sky_model(int rank, double ref_freq, double *wavenumbers, double *spec,
                      double channel_bandwidth_hz, int time_acc, unsigned int num_channels, unsigned int num_baselines,
                      unsigned long int n_gal, double *gflux,  double *l, double *m, unsigned long int num_coords,
                      double *uu_metres, double *vv_metres, double *ww_metres, complexd *visGal, complexd* visMod);
