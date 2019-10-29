@@ -58,7 +58,7 @@
 #include "distributions.h"
 
 #define NUM_ORIENT 5  // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module 
-#define FMAX 300      // maximum source flux [uJy]
+#define FMAX 200      // maximum source flux [uJy]
 #define RMIN 0.3      // minimum source scalelength [arcsec]
 #define RMAX 3.5      // maximun source scalelength [arcsec]
 
