@@ -41,6 +41,83 @@ double weight_func(double u, double v)
     return w;
 }
 
+
+// Compute CIRCULAR grid of u,v coordinates (coordinates are defined in the centre of the cell)
+unsigned long int evaluate_uv_circular_grid(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, double** grid_u, double** grid_v, unsigned long int* count)
+{
+    unsigned int i,j;
+    unsigned long int p,n;
+    unsigned long int size = sizeg*sizeg;
+    memset(count, 0, size*sizeof(unsigned long int));
+
+    printf("size %d \n",sizeg);
+    // compute uv coordinates of the circular grid defined using temporary polar coordinates
+    double* r_grid = (double *) malloc(sizeg*sizeof(double));
+    double* ang_grid = (double *) malloc(sizeg*sizeof(double));
+
+    double inc = ray/sizeg;
+    double theta = 2.*PI/sizeg;
+    for (i = 0; i < sizeg; ++i) r_grid[i] = (i+0.5)*inc;
+    for (i = 0; i < sizeg; ++i) ang_grid[i] = (i+0.5)*theta;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for (unsigned long int k = 0; k < ncoords; k++)
+    {
+       double uu = u[k];
+       double vv = v[k];
+       // compute corresponding polar coordinates
+       double r = sqrt(uu*uu + vv*vv);
+       double ang = atan(vv/uu);
+       if (uu < 0.) ang += PI;
+       else if (vv < 0.) ang += 2.*PI;
+       unsigned int pr = (unsigned int) (r / inc);
+       unsigned int pa = (unsigned int) (ang / theta);
+       unsigned long int pc = (unsigned long int) pa * sizeg + pr;
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+      {
+         count[pc]++;
+      }
+    }
+
+    n=0;
+    for (p=0; p < size; p++)  if (count[p]) n++;
+
+    if (!(*grid_u))
+    {
+        *grid_u = (double *) malloc(n*sizeof(double));
+        *grid_v = (double *) malloc(n*sizeof(double));
+     //   *weights = (double *) malloc(n*sizeof(double));
+
+    }
+
+    n=0;
+    for (p = 0; p < size; p++)
+    {
+        if (count[p])
+        {
+           j = p/sizeg;
+           i = p%sizeg;
+           (*grid_u)[n] = r_grid[i]*cos(ang_grid[j]);
+           (*grid_v)[n] = r_grid[i]*sin(ang_grid[j]);
+           //(*weights[n] = r_grid[i]; 
+           count[n] = count[p];
+           n++;
+        }
+    }
+    printf("size uv grid %u \n",n); 
+
+    free(r_grid);
+    free(ang_grid);
+
+    return n;
+}
+
+
+
 // Compute grid of u,v coordinates (coordinates are put in the center of the cell).
 unsigned long int evaluate_uv_grid(double len, unsigned long int ncoords, double* u, double* v, int sizeg, double** grid_u, double** grid_v, unsigned long int* count)
 {
@@ -105,6 +182,57 @@ unsigned long int evaluate_uv_grid(double len, unsigned long int ncoords, double
     
     return n;
 }
+
+
+/*
+ Compute visibilities at the pg = (ug,vg) grid points
+ by adding all the original visibilities at the (u,v)
+ points falling in the box centered in pg
+ This is a gridding by convolution with the pillbox function 
+ (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
+ */
+
+void circular_gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double ray, int sizeg, complexd *new_vis, unsigned long int *count)
+{
+    unsigned long int p,c;
+    double inc = ray/sizeg;
+    double theta = 2*PI/sizeg;
+    unsigned long int size = sizeg*sizeg;
+
+    complexd* temp_grid_vis = (complexd *) calloc(size,sizeof(complexd));
+
+    for (unsigned long int k = 0; k < ncoords; k++)
+    {
+       double uu = u[k];
+       double vv = v[k];
+       // compute corresponding polar coordinates
+       double r = sqrt(uu*uu + vv*vv);
+       double ang = atan(vv/uu);
+       if (uu < 0.) ang += PI;
+       else if (vv < 0.) ang += 2.*PI;
+       unsigned int pr = (unsigned int) (r / inc);
+       unsigned int pa = (unsigned int) (ang / theta);
+       unsigned long int pc = (unsigned long int) pa * sizeg + pr;
+
+       temp_grid_vis[pc].real += vis[k].real;
+       temp_grid_vis[pc].imag += vis[k].imag;
+    }
+
+    c=0;
+    for (p = 0; p < size; p++)
+    {
+        if (temp_grid_vis[p].real)
+        {
+            new_vis[c].real = temp_grid_vis[p].real/count[c];
+            new_vis[c].imag = temp_grid_vis[p].imag/count[c];
+
+            c++;
+        }
+    }
+    free(temp_grid_vis);
+}
+
+
 
     
 /*

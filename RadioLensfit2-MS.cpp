@@ -167,6 +167,11 @@ int main(int argc, char *argv[])
     }
 
     ms_read_vis(ms, 0, 0, num_channels, num_rows, "DATA", visData, &status);
+    if (status) 
+    {
+        cout << "ERROR reading MS" << endl;
+        exit(EXIT_FAILURE);
+    } 
     ms_close(ms);
  
 
@@ -176,9 +181,11 @@ int main(int argc, char *argv[])
     double *gflux = new double[nge];
     double *l = new double[nge];
     double *m = new double[nge];
+    double *ge1 = new double[nge];
+    double *ge2 = new double[nge];
     double *SNR_vis = new double[nge];
  
-    unsigned long int mygalaxies = read_catalog(nge, argv[2], gflux,l,m,SNR_vis);
+    unsigned long int mygalaxies = read_catalog(nge, argv[2],gflux,ge1,ge2,l,m,SNR_vis);
     cout << "rank " << rank << ": " << mygalaxies << " galaxies" << endl;
     
 #ifdef USE_MPI
@@ -300,7 +307,7 @@ int main(int argc, char *argv[])
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     
-    unsigned long int facet_ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
+    unsigned long int facet_ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
@@ -387,7 +394,7 @@ int main(int argc, char *argv[])
     char filename[100];
     sprintf(filename,"ellipticities%d.txt",rank);
     pFile = fopen(filename,"w");
-    fprintf(pFile, "flux | m_e1 | err1 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
+    fprintf(pFile, "flux | e1 | m_e1 | err1 | e2 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
     
     double l0,m0;
     unsigned long int bad_list[mygalaxies];
@@ -402,7 +409,7 @@ int main(int argc, char *argv[])
         if (gflux[g] < threshold_flux[ind])
         {
             ind++; facet = facet_size[ind];
-            par.ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
+            par.ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
             if (rank==0) cout << " new facet size: " << facet << endl;
         }
 #endif
@@ -432,7 +439,7 @@ int main(int argc, char *argv[])
               bad_list[bad] = g;  // store index bad sources to try to fit again at the end
               bad++;
           }
-          else fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],mes_e1,sqrt(var_e1), mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[g],l0/(ARCS2RAD),m0/(ARCS2RAD));
+          else fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],ge1[g],mes_e1,sqrt(var_e1),ge2[g],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[g],l0/(ARCS2RAD),m0/(ARCS2RAD));
               
           
 #ifdef _OPENMP
@@ -493,7 +500,7 @@ int main(int argc, char *argv[])
         ind = 0;
         while (flux < threshold_flux[ind]) ind++;
         facet = facet_size[ind];
-        par.ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
+        par.ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
         
         source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres, facet, len);
 #else
@@ -505,7 +512,7 @@ int main(int argc, char *argv[])
         int error = source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
         
         cout << "rank " << rank << ": n. " << gal << " flux = " << flux << "): measured e = " << mes_e1 << "," << mes_e2 << endl;
-        fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f  \n",flux,mes_e1,sqrt(var_e1), mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
+        fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f  \n",flux,ge1[gal],mes_e1,sqrt(var_e1),ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
         
         if (error)
         {
@@ -560,6 +567,8 @@ int main(int argc, char *argv[])
     delete[] Ro;
     delete[] rprior;
     delete[] gflux;
+    delete[] ge1;
+    delete[] ge2;
     delete[] l;
     delete[] m;
     delete[] SNR_vis;

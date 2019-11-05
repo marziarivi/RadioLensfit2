@@ -28,7 +28,7 @@ extern "C" {
 #endif
     
 //int read_catalog(unsigned long int nge, char *filename, double *gflux, double *gscale, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
-int read_catalog(unsigned long int nge, char *filename, double *gflux, double *l, double *m, double *SNR_vis)
+int read_catalog(unsigned long int nge, char *filename, double *gflux, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
 {
     FILE *fp;
     char *token;
@@ -43,21 +43,20 @@ int read_catalog(unsigned long int nge, char *filename, double *gflux, double *l
     }
     // SNR | l | m | flux | scale | e1 | e2 (last 3 param are provided for simulatations)
     double SNR,ll,mm,flux;
-    // double scale,e1,e2;
+    double scale,e1,e2;
     
     unsigned long int g = 0;
     while (!feof(fp) && g<nge)
     {
         fgets(line, 1000, fp);
-        //sscanf(line, "%lf %lf %lf %lf %lf %lf %lf",&SNR,&ll,&mm,&flux,&scale, &e1, &e2);
-        sscanf(line, "%lf %lf %lf %lf",&SNR,&ll,&mm,&flux);        
+        sscanf(line, "%lf %lf %lf %lf %lf %lf %lf",&SNR,&ll,&mm,&flux,&scale, &e1, &e2);
 
         l[g] = ll;
         m[g] = mm;
         gflux[g] = flux;
         //gscale[g] = scale;
-        //ge1[g] = e1;
-        //ge2[g] = e2;
+        ge1[g] = e1;
+        ge2[g] = e2;
         SNR_vis[g] = SNR;
  
         g++;

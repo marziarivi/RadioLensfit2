@@ -71,7 +71,7 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
        
      // gridding visibilities
      unsigned int ch_visfacet = ch*par->ncoords;
-     gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),len,facet_size,&((par->data)[ch_visfacet]),par->count);
+     circular_gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),len,facet_size,&((par->data)[ch_visfacet]),par->count);
 #else
      par->l0 = l0;
      par->m0 = m0;

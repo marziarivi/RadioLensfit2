@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-int read_catalog(unsigned long int nge, char *filename, double *gflux, double *l, double *m, double *SNR_vis);
+int read_catalog(unsigned long int nge, char *filename, double *gflux, double *ge1, double *ge2, double *l, double *m, double *SNR_vis);
 
 #ifdef __cplusplus
 }
