@@ -221,7 +221,7 @@ double ms_read_coords(RL_MeasurementSet* p,
 
 
 /*
-   Reads noise sigtma from the main table of the Measurement Set.
+   Reads noise sigma from the main table of the Measurement Set.
    The sigma array must be allocated to the correct size on entry.
 */
 
