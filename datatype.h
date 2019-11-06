@@ -68,6 +68,7 @@ typedef struct{
     complexd* data;
 #ifdef FACET
     double* mod;
+    double* weights;
 #else
     complexd* mod;
     double* ww;

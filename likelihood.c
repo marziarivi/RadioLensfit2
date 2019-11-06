@@ -123,7 +123,7 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
        unsigned long int index = (nRo-1)*(par->ncoords)*(par->nchannels);
 
 #ifdef FACET
-       L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->data, &((par->mod)[index]));
+       L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->weights, par->data, &((par->mod)[index]));
 #else
        L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->ww, par->data, &((par->mod)[index]));
 #endif
@@ -156,7 +156,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
                        double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
                        double scale,
                        unsigned long int n_uv_coords, unsigned long int* count, const double variance,
-                       double* uu_metres, double* vv_metres, complexd* visData, double* visM)
+                       double* uu_metres, double* vv_metres, double* weights, complexd* visData, double* visM)
 #else
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                 double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
@@ -173,7 +173,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
         
     // Compute log(likelihood) dependend only on ellipticity and scale-length
     double L_er,ho, det_sigma;
-    int error = cross_correlation(nchannels, wavenumbers, n_uv_coords, count, uu_metres, vv_metres, visData, visM, &ho, &det_sigma);
+    int error = cross_correlation(nchannels, wavenumbers, n_uv_coords, count, uu_metres, vv_metres, weights, visData, visM, &ho, &det_sigma);
  //   if (det_sigma <= 0) L_er = -1.e10; //printf("det_sigma = %e\n",det_sigma);fflush(stdout);}
     if (error) L_er = -1.e10;
     else
@@ -194,7 +194,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
  */
 #ifdef FACET
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
-                           unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,
+                           unsigned long int* count, double* uu_metres, double* vv_metres, double* weights, complexd* visData,
                            double* visMod, double* ho, double* det_sigma)
 #else
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,

@@ -43,14 +43,13 @@ double weight_func(double u, double v)
 
 
 // Compute CIRCULAR grid of u,v coordinates (coordinates are defined in the centre of the cell)
-unsigned long int evaluate_uv_circular_grid(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, double** grid_u, double** grid_v, unsigned long int* count)
+unsigned long int evaluate_uv_circular_grid(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, double** grid_u, double** grid_v, double** weights, unsigned long int* count)
 {
     unsigned int i,j;
     unsigned long int p,n;
     unsigned long int size = sizeg*sizeg;
     memset(count, 0, size*sizeof(unsigned long int));
 
-    printf("size %d \n",sizeg);
     // compute uv coordinates of the circular grid defined using temporary polar coordinates
     double* r_grid = (double *) malloc(sizeg*sizeof(double));
     double* ang_grid = (double *) malloc(sizeg*sizeof(double));
@@ -84,13 +83,13 @@ unsigned long int evaluate_uv_circular_grid(double ray, unsigned long int ncoord
     }
 
     n=0;
-    for (p=0; p < size; p++)  if (count[p]) n++;
+    for (p=0; p < size; p++)  if (count[p]) n++; 
 
     if (!(*grid_u))
     {
         *grid_u = (double *) malloc(n*sizeof(double));
         *grid_v = (double *) malloc(n*sizeof(double));
-     //   *weights = (double *) malloc(n*sizeof(double));
+//        *weights = (double *) malloc(n*sizeof(double));
 
     }
 
@@ -103,12 +102,12 @@ unsigned long int evaluate_uv_circular_grid(double ray, unsigned long int ncoord
            i = p%sizeg;
            (*grid_u)[n] = r_grid[i]*cos(ang_grid[j]);
            (*grid_v)[n] = r_grid[i]*sin(ang_grid[j]);
-           //(*weights[n] = r_grid[i]; 
+
            count[n] = count[p];
+//           (*weights)[n] = 
            n++;
         }
     }
-    printf("size uv grid %u \n",n); 
 
     free(r_grid);
     free(ang_grid);

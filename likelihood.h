@@ -37,10 +37,10 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
                            double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
                            double scale,
                            unsigned long int n_uv_coords, unsigned long int* count, const double variance,
-                           double* uu_metres, double* vv_metres, complexd* visData, double* visM);
+                           double* uu_metres, double* vv_metres, double* weights, complexd* visData, double* visM);
     
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
-                           unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,
+                           unsigned long int* count, double* uu_metres, double* vv_metres, double* weights, complexd* visData,
                            double* visMod, double* ho, double* det_sigma);
 #else
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,

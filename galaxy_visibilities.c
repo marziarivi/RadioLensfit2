@@ -38,7 +38,8 @@ extern "C" {
 // Compute flux independent model galaxy visibilities analitically
 // model a galaxy at the phase centre: visibilities are real numbers (smearing? as data vis are shifted at zero...)
 void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, double* wavenumbers,
-                        double e1, double e2, double scalelength, double radius, unsigned long int num_coords, double* uu_metres, double* vv_metres, unsigned long int* count, double* Modvis)
+                        double e1, double e2, double scalelength, double radius, unsigned long int num_coords, double* uu_metres, 
+                        double* vv_metres, unsigned long int* count, double* Modvis)
 {
     double wavenumber,wavenumber2,den,uu,vv,k1,k2,spectra,shape,phase,ch_freq,beam_pattern;
     double detA = 1.-e1*e1-e2*e2;

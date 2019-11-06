@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
     cout << "rank " << rank << ": allocated original coordinates: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
     
-    int status;
+    int status = 0;
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
     
     // Allocate and read Data visibilities
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
     ms_read_vis(ms, 0, 0, num_channels, num_rows, "DATA", visData, &status);
     if (status) 
     {
-        cout << "ERROR reading MS" << endl;
+        cout << "ERROR reading MS: " << status << endl;
         exit(EXIT_FAILURE);
     } 
     ms_close(ms);
@@ -304,10 +304,11 @@ int main(int argc, char *argv[])
     int facet = facet_size[ind];
     double* facet_u = 0;
     double* facet_v = 0;
+    double* weights = 0;
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     
-    unsigned long int facet_ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
+    unsigned long int facet_ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, &weights, count);
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
@@ -349,6 +350,7 @@ int main(int argc, char *argv[])
     par.ncoords = facet_ncoords;
     par.uu = facet_u;
     par.vv = facet_v;
+    par.weights = weights;
     par.data = facet_visData;
     par.count = count;
     par.mod = visMod;
@@ -409,7 +411,7 @@ int main(int argc, char *argv[])
         if (gflux[g] < threshold_flux[ind])
         {
             ind++; facet = facet_size[ind];
-            par.ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
+            par.ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, &weights, count);
             if (rank==0) cout << " new facet size: " << facet << endl;
         }
 #endif
@@ -500,7 +502,7 @@ int main(int argc, char *argv[])
         ind = 0;
         while (flux < threshold_flux[ind]) ind++;
         facet = facet_size[ind];
-        par.ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
+        par.ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, &weights, count);
         
         source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres, facet, len);
 #else
@@ -580,6 +582,7 @@ int main(int argc, char *argv[])
 #ifdef FACET
     delete[] facet_u;
     delete[] facet_v;
+    delete[] weights;
     delete[] facet_visData;
 #endif
 
