@@ -45,15 +45,17 @@ remove = 0
 nfiles=args.nfiles
 bad = 0
 num=0
-ngal = 10000
+#ngal = 10000
 
 try:
     while num<nfiles:
         name = "ellipticities%d.txt"%(num)
-        print name
-        data=np.loadtxt(name, skiprows=1, delimiter='|',usecols=(1,2,3,4,5,6))
+#        data=np.loadtxt(name, skiprows=1, delimiter='|',usecols=(1,2,3,4,5,6))
+        data=np.loadtxt(name, skiprows=1, delimiter='|',usecols=(2,3,5,6,7,8))
+        ngal = len(data)
+        print ngal
         i=0
-        while i<len(data) and k<ngal:
+        while i<len(data): # and k<ngal:
             error1 = data[i,1]
             error2 = data[i,3]
             var = data[i,4]
@@ -77,10 +79,10 @@ try:
                 k = k+1
                 remove = 0
             else:  # remove the opposite too
-                if i%2 == 0:  # even line: opposite is the previous one
+                if i%2 != 0:  # odd line: opposite is the previous one
                     remove = 1  # remove previous element by overlapping it with the following
                     k = k-1
-                else:         # odd line: opposite is the next one
+                else:         # even line: opposite is the next one
                     i = i+1     # skip next data line
                 print "bad measure:",data[i,:]
                 bad = bad + 1
@@ -91,7 +93,7 @@ except:
 
 # if last line is bad measure
 if remove == 1:
-    k = k-2
+    k = k-1
     me1 = np.delete(me1,k)
     me2 = np.delete(me2,k)
     SNR = np.delete(SNR,k)
