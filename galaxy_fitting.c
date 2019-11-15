@@ -144,6 +144,7 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
         *oneDimvar = sqrt((*var_e1)*(*var_e2)-cov_e*cov_e);
         if (error) printf("ERROR likelihood sampling!\n");
     }
+    else error = 1;
     
     gsl_vector_free(x);
     gsl_vector_free(sx);
