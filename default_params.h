@@ -38,8 +38,9 @@
 // Parameter for catalog simulation
 #define FMAX 200     // flux range maximum [micro-Jy]
 #define NUM_ORIENT 5 // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
+#define N_POINTS 1000 // number of points of the cumulative distribution function for random data generation    
 
-// Parameters for numerical likelihood marginalisation of scalelength
+// Parameters for numerical likelihood marginalisation of scalelength 
 // scalelength range
 #define RMIN 0.3   // scalelength range minimum [arcsec]
 #define RMAX 3.5   // scalelength range maximum [arcsec]
