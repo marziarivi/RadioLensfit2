@@ -32,14 +32,21 @@
 // Frequency reference of the source flux
 #define REF_FREQ 1.4e+9
 
+// Conversion of the beam frequency measure unit in GHz
+#define BEAM_const 65e-9   
+
+// Parameter for catalog simulation
+#define FMAX 200     // flux range maximum [micro-Jy]
+#define NUM_ORIENT 5 // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
+
 // Parameters for numerical likelihood marginalisation of scalelength
 // scalelength range
-#define RMIN 0.3   // scalelength range minimum
-#define RMAX 3.5   // scalelength range maximum
+#define RMIN 0.3   // scalelength range minimum [arcsec]
+#define RMAX 3.5   // scalelength range maximum [arcsec]
 #define NUM_R 29   // number of scalelength bins 
 
-// Parameters of source scalelength-flux relation: alpha[arcsec] = K_FAC*flux[uJy]^ESP
-#define K_FAC 0.3945
+// Parameters of source scalelength-flux relation: log(alpha[arcsec]) = ADD + ESP*log(flux[uJy])
+#define ADD -0.93
 #define ESP 0.33
 
 // Parameters for facet size computation
@@ -48,7 +55,7 @@
 
 // Prior distributions parameters
 #define R_STD 0.3136  // scalelength prior - lognormal standard deviation
-#define BETA -1.34    // flux prior - exponent of the flux power law    
+#define M_EXP -1.34     // flux prior - exponent of the flux power law: p(S) \propto S^(-M_EXP)    
 #define NORM_S 3.0825 // flux prior - normalisation factor over a square degree
 
 #define E_MAX 0.804   // ellipticity modulus prior - cutoff
