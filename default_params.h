@@ -39,11 +39,25 @@
 #define NUM_R 29   // number of scalelength bins 
 
 // Parameters of source scalelength-flux relation: alpha[arcsec] = K_FAC*flux[uJy]^ESP
-#define K_FAC 0.39
+#define K_FAC 0.3945
 #define ESP 0.33
 
 // Parameters for facet size computation
 #define NUM_S 10      // number of flux bins
 #define PSF_NAT 38.5  // PSF factor for natural weighting 
+
+// Prior distributions parameters
+#define R_STD 0.3136  // scalelength prior - lognormal standard deviation
+#define BETA -1.34    // flux prior - exponent of the flux power law    
+#define NORM_S 3.0825 // flux prior - normalisation factor over a square degree
+
+#define E_MAX 0.804   // ellipticity modulus prior - cutoff
+#define E_0 0.0732    // ellipticity modulus prior - circularity parameter
+#define DISP 0.2298   // ellipticity modulus prior - dispersion
+#define NORM_E 2.595  // ellipticity modulus prior - normalisation factor 
+
+// Parameters for the computation of the cumulative distribution (numerical integration)
+#define JMAX 30
+#define EPS 1.0e-5
 
 #endif
