@@ -39,6 +39,8 @@ Requirements:
 - CASACORE library for Measurement Set I/O
 - GSL library 
 
+Possibly you can modify the fixed parameters defined in the default_params.h file
+
 Edit the Makefile:
 
 - enable/disable OpenMP (default: enabled)
