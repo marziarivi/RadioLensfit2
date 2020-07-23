@@ -27,8 +27,8 @@
 extern "C" {
 #endif
     
-//int read_catalog(unsigned long int nge, char *filename, double *gflux, double *gscale, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
-int read_catalog(unsigned long int nge, char *filename, double *gflux, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
+int read_catalog(unsigned long int nge, char *filename, double *gflux, double *gscale, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
+//int read_catalog(unsigned long int nge, char *filename, double *gflux, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
 {
     FILE *fp;
     char *token;
@@ -54,7 +54,7 @@ int read_catalog(unsigned long int nge, char *filename, double *gflux, double *g
         l[g] = ll;
         m[g] = mm;
         gflux[g] = flux;
-        //gscale[g] = scale;
+        gscale[g] = scale;
         ge1[g] = e1;
         ge2[g] = e2;
         SNR_vis[g] = SNR;
