@@ -40,7 +40,6 @@
 #define ARCS2RAD PI/648000.0
 #endif
 
-//#define NUMCHAN 8
 
 typedef struct{
     double real;

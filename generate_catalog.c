@@ -24,15 +24,12 @@
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_rng.h>
 
+#include "datatype.h"
 #include "utils.h"
 #include "default_params.h"
 #include "distributions.h"
 #include "generate_random_values.h"
 #include "generate_catalog.h"
-
-#ifndef ARCS2RAD
-#define ARCS2RAD PI/648000.0
-#endif
 
 // Generate galaxy catalog ordered by source flux
 // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module

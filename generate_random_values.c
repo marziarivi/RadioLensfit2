@@ -26,13 +26,10 @@
 #include <stdio.h>
 #include <gsl/gsl_rng.h>
 
+#include "datatype.h"
 #include "default_params.h"
 #include "generate_random_values.h"
 #include "distributions.h"
-
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
 
 #ifdef __cplusplus
 extern "C" {

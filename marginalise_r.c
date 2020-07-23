@@ -22,11 +22,8 @@
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
+#include "datatype.h"
 #include "marginalise_r.h"
-
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
 
 
 void set_posterior_values(int numR, double* L_r, double* rprior, double* Ro, double* xmarvals, double* ymarvals, int* numvals)
