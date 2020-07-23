@@ -24,9 +24,6 @@
 extern "C" {
 #endif
 
-const double scale_std = 0.3136;  // scalelength standard deviation
-const double beta = -1.34; // flux prior: S^beta
-
 double e_pdf(double e);
 double rfunc (const double mu, const double sigma, double r);
 

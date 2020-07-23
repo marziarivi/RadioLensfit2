@@ -22,10 +22,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gsl/gsl_sf_erf.h>
-#include "distributions.h"
 
-#define JMAX 30
-#define EPS 1.0e-5
+#include "distributions.h"
+#include "default_params.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,11 +34,11 @@ extern "C" {
 // parameters fitted from VLA-COSMOS
 double e_pdf(double e)
 {
-    double e_max = 0.804;   // ellipticity cutoff
-    double e_0 = 0.0732; //0.0256;    // circularity parameter
-    double a = 0.2298; //0.2539;      // dispersion
+    const double e_max = E_MAX;   // ellipticity cutoff
+    const double e_0 = E_0; //0.0256;    // circularity parameter
+    const double a = DISP; //0.2539;      // dispersion
         
-    double A = 2.595; //2.43180252985281; // A=1/0.4112176 normalization factor
+    const double A = NORM_E;  //2.43180252985281; // A=1/0.4112176 normalization factor
         
     double p_e = A*e*(1.-exp((e-e_max)/a))/((1.+e)*sqrt(e*e+e_0*e_0));
     return p_e;
@@ -49,16 +48,17 @@ double e_pdf(double e)
 // flux prior is a power law whose CDF is well know: x^{alpha + 1}/(alpha + 1)
 double flux_CDF(double alpha, double flux)
 {
-    double a = alpha+1.;
-    double norm = 1.37;  // norm = 1/729878 normalization factor referred to an area of 1600 arcmin^2
-    norm *= 2.25;  // = 3600/1600, to obtain % of N(<flux) per square degree
+    const double a = alpha+1.;
+    const double norm = NORM_S;  // normalisation factor over 1 square degree
+    // double norm = 1.37;  // norm = 1/729878 normalization factor referred to an area of 1600 arcmin^2
+    // norm *= 2.25;  // = 3600/1600, to obtain % of N(<flux) per square degree
     return norm*pow(flux,a)/a;
 }
 
 //power law relation between flux and scalelength
 double scale_mean(double flux)
 {
-    return -0.93+0.33*log(flux);
+    return ADD+ESP*log(flux);
 }
 
 
@@ -94,7 +94,7 @@ double rfunc (const double mu, const double sigma, double r)
 double r_CDF(double mean, double r)
 {
     //lognormal distribution
-    double x = (log(r) - mean)/(sqrt(2.)*scale_std);
+    double x = (log(r) - mean)/(sqrt(2.)*R_STD);
     
     double F_r = (1.+gsl_sf_erf(x))*0.5;
     return F_r;
