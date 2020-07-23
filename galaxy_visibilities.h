@@ -24,8 +24,6 @@
 #include <gsl/gsl_rng.h>
 #include "datatype.h"
 
-#define BEAM_const 65e-9   //include conversion of the frequency measure unit in GHz
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,6 +43,11 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
                               double e1, double e2, double scalelength, double flux, double l, double m,
                               unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres,
                               complexd* vis);
+
+void data_galaxy_visibilities2D(double spectra, double wavenumber, double band_factor, double acc_time,
+                              double e1, double e2, double scalelength, double flux, double l, double m,
+                              unsigned long int num_coords, double* uu_metres, double* vv_metres, complexd* vis);
+
     
 //void add_system_noise(gsl_rng * gen, unsigned int num_baselines, unsigned int num_times, complexd* vis, double* sigma);
 void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, double* sigma);
@@ -52,7 +55,9 @@ void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, dou
     
 void data_visibilities_phase_shift(double wavenumber, double l, double m, unsigned long int num_coords,
                                        double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis);
-    
+
+void data_visibilities_phase_shift2D(double wavenumber, double l, double m, unsigned long int num_coords,
+                                       double* uu_metres, double* vv_metres, complexd* vis);    
 #ifdef __cplusplus
 }
 #endif
