@@ -35,6 +35,9 @@
 // Conversion of the beam frequency measure unit in GHz
 #define BEAM_const 65e-9   
 
+// Parameters for facet size computation
+#define PSF_NAT 37  // PSF factor for natural weighting
+
 // Parameter for catalog simulation
 #define FMAX 200     // flux range maximum [micro-Jy]
 #define NUM_ORIENT 5 // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
@@ -50,22 +53,27 @@
 #define ADD -0.93
 #define ESP 0.33
 
-// Parameters for facet size computation
-#define NUM_S 10      // number of flux bins
-#define PSF_NAT 38.5  // PSF factor for natural weighting 
+// Parameter for catalog simulation
+#define FMAX 200     // flux range maximum [micro-Jy]
+#define NUM_ORIENT 5 // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
+#define N_POINTS 1000 // number of points of the cumulative distribution function for random data generation
 
 // Prior distributions parameters
 #define R_STD 0.3136  // scalelength prior - lognormal standard deviation
-#define M_EXP -1.34     // flux prior - exponent of the flux power law: p(S) \propto S^(-M_EXP)    
+
+#define M_EXP -1.34   // flux prior - exponent of the flux power law: p(S) \propto S^(-M_EXP)    
 #define NORM_S 3.0825 // flux prior - normalisation factor over a square degree
 
 #define E_MAX 0.804   // ellipticity modulus prior - cutoff
 #define E_0 0.0732    // ellipticity modulus prior - circularity parameter
 #define DISP 0.2298   // ellipticity modulus prior - dispersion
-#define NORM_E 2.595  // ellipticity modulus prior - normalisation factor 
+#define NORM_E 2.595  // ellipticity modulus prior - normalisation factor per square degree 
 
 // Parameters for the computation of the cumulative distribution (numerical integration)
 #define JMAX 30
 #define EPS 1.0e-5
+
+// Parameter for likelihood sampling
+#define NP_MAX 30  // min number of sampling points with likelihood above 5%ML
 
 #endif
