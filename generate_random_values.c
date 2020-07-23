@@ -26,14 +26,13 @@
 #include <stdio.h>
 #include <gsl/gsl_rng.h>
 
+#include "default_params.h"
 #include "generate_random_values.h"
 #include "distributions.h"
 
 #ifndef PI
 #define PI 3.14159265358979323846
 #endif
-
-#define N 1000
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,6 +45,7 @@ void generate_random_data(gsl_rng * gen, int nr, double *data, double min_value,
         
     int i,k;
     double u;
+    const unsigned int N = N_POINTS;
         
     // compute N points of the scalelength cumulative distribution function
     double *F = (double *) malloc((N+1)*sizeof(double));
@@ -77,6 +77,7 @@ void generate_random_data(gsl_rng * gen, int nr, double *data, double min_value,
 void generate_ellipticity(gsl_rng * gen, int ne, int NP, double *e1, double *e2)
 {
     int i,k,ind;
+    const unsigned int N = N_POINTS;
  
     // compute N points of the ellipticity cumulative distribution function
     double *F = (double *) malloc((N+1)*sizeof(double));
