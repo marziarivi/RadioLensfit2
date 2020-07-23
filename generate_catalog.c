@@ -25,6 +25,7 @@
 #include <gsl/gsl_rng.h>
 
 #include "utils.h"
+#include "default_params.h"
 #include "distributions.h"
 #include "generate_random_values.h"
 #include "generate_catalog.h"
@@ -56,7 +57,7 @@ unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, 
     
     // generate flux values
     double *gflux2 = new double[diffgal];
-    generate_random_data(gen,diffgal,gflux2,Fmin,Fmax,flux_CDF,beta);
+    generate_random_data(gen,diffgal,gflux2,Fmin,Fmax,flux_CDF,M_EXP);
     
     // sort flux values, so that to generate a population ordered by flux and therefore fitting sources by decreasing flux order
     gsl_sort(gflux2,1,diffgal); // sorting ascending order
