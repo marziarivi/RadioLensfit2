@@ -33,8 +33,8 @@ OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_va
  
 OBJS = RadioLensfit2-MS.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
 
-
-#OBJS  = RadioLensfit2.o utils.o read_coordinates.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o marginalise_r.o 
+EXEC3 = RadioLensfit2-single
+OBJS3  = RadioLensfit2-single.o utils.o read_coordinates.o generate_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o marginalise_r.o 
 
  
 INCL   = *.h Makefile
@@ -69,9 +69,14 @@ all: $(OBJS)
 
 $(OBJS): $(INCL)
 
+RadioLensfit2-single: $(OBJS3)
+	$(CC)  $(OBJS3)  $(OPTIONS) $(LIBS) -o $(EXEC3)
+
+$(OBJS3): $(INCL)
+
 clean:
-	rm -f $(OBJS) 
+	rm -f $(OBJS) $(OBJS3)
 
 realclean: clean
-	rm -f $(EXEC1) $(EXEC2) 
+	rm -f $(EXEC1) $(EXEC2) $(EXEC3) 
 
