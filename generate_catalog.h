@@ -21,14 +21,6 @@
 #ifndef ____generate_catalog__
 #define ____generate_catalog__
 
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
-
-#ifndef ARCS2RAD
-#define ARCS2RAD PI/648000.0
-#endif
-
 unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m);
 
 #endif /* defined(____generate_catalog__) */
