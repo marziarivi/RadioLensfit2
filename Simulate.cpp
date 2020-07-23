@@ -51,16 +51,13 @@
 #include <string.h>
 
 #include "datatype.h"
+#include "default_params.h"
 #include "utils.h"
 #include "measurement_set.h"
 #include "data_simulation.h"
 #include "generate_catalog.h"
 #include "distributions.h"
 
-#define NUM_ORIENT 5  // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module 
-#define FMAX 200      // maximum source flux [uJy]
-#define RMIN 0.3      // minimum source scalelength [arcsec]
-#define RMAX 3.5      // maximun source scalelength [arcsec]
 
 using namespace std;
 
@@ -88,21 +85,20 @@ int main(int argc, char *argv[])
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
-    unsigned int num_stations = ms_num_stations(ms);        // Number of stations
-    unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
-    unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
-    double freq_start_hz = ms_freq_start_hz(ms);            // Start Frequency, in Hz
-    double channel_bandwidth_hz = ms_freq_inc_hz(ms);       // Frequency channel bandwidth, in Hz
-    double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
-    int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
+    const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
+    const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
+    const unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
+    const double freq_start_hz = ms_freq_start_hz(ms);            // Start Frequency, in Hz
+    const double channel_bandwidth_hz = ms_freq_inc_hz(ms);       // Frequency channel bandwidth, in Hz
+    const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
+    const int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
 
-    double efficiency = 0.9;     // system efficiency
-    double SEFD_SKA = 400e+6;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
-    double SEFD_MKT = 551e+6;    // SEFD of each MeerKat antenna (in micro-Jy)
+    const double efficiency = EFFICIENCY;     // system efficiency
+    const double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
 
-    double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
+    const double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
     
-    unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
+    const unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
 
     cout << "Number baselines: " << num_baselines << endl;
     cout << "Number of channels: " << num_channels << endl;
@@ -114,7 +110,7 @@ int main(int argc, char *argv[])
     double sizeGbytes, totGbytes = 0.;
     double fov_eff_arcmin = atof(argv[2]);
     double fov_eff = fov_eff_arcmin*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // field of view in RAD
-    printf("field of view: %e [rad] %f [arcsec] \n",fov_eff,fov_eff/(ARCS2RAD));
+    cout << "field of view: " << fov_eff << " [rad] " << fov_eff/(ARCS2RAD) << " [arcsec]" << endl;
     
     // Allocate and read uv coordinates 
     unsigned long int num_coords = ms_num_rows(ms);
@@ -162,7 +158,7 @@ int main(int argc, char *argv[])
     // Generate galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
 
     double Fmin = atof(argv[3]);
-    unsigned long int nge = ceil((flux_CDF(beta, FMAX) - flux_CDF(beta, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
+    unsigned long int nge = ceil((flux_CDF(M_EXP, FMAX) - flux_CDF(M_EXP, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
    
     double *gflux = new double[nge];
     double *gscale = new double[nge];
@@ -178,7 +174,7 @@ int main(int argc, char *argv[])
     double g1 = atof(argv[4]);  // shear to be applied
     double g2 = atof(argv[5]);
     
-    double sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
+    double sigma = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
     cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
     
     double *SNR_vis = new double[mygalaxies];
