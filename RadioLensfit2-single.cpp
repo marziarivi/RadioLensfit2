@@ -212,8 +212,8 @@ int main(int argc, char *argv[])
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     
-    unsigned long int facet_ncoords = evaluate_max_uv_grid(len, num_coords, uu_metres, vv_metres, facet, count);
-    //unsigned long int facet_ncoords = evaluate_max_uv_circular_grid(len,num_coords, uu_metres, vv_metres, facet, count);
+    unsigned long int facet_ncoords = evaluate_max_uv_grid_size(len, num_coords, uu_metres, vv_metres, facet, count);
+    //unsigned long int facet_ncoords = evaluate_max_uv_circular_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
@@ -439,6 +439,8 @@ int main(int argc, char *argv[])
     
 #ifdef FACET
        facet = facet_size(R_mu,len);
+       par.ncoords = evaluate_uv_grid(num_coords,facet_u,facet_v,uu_metres,vv_metres,len,facet,count);
+       //par.ncoords = evaluate_uv_circular_grid(num_coords,facet_u,facet_v,uu_metres,vv_metres,len,facet,count);
 #endif
 
 #ifdef _OPENMP
@@ -469,9 +471,9 @@ int main(int argc, char *argv[])
             data_visibilities_phase_shift2D(wavenumbers[ch], l0, m0, num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
 
             // gridding visibilities
-            unsigned int ch_visfacet = ch*facet_ncoords;
-            par.ncoords = gridding_visibilities(num_coords,facet_u,facet_v,uu_metres,vv_metres,&(visData[ch_vis]),len,facet,&(facet_visData[ch_visfacet]),count,ch);
-            //par.ncoords = circular_gridding_visibilities(num_coords,facet_u,facet_v,uu_metres,vv_metres,&(visData[ch_vis]),len,facet,&(facet_visData[ch_visfacet]),count,ch);
+            unsigned int ch_visfacet = ch*par.ncoords;
+            gridding_visibilities(num_coords,uu_metres,vv_metres,&(visData[ch_vis]),len,facet,&(facet_visData[ch_visfacet]),count);
+            //circular_gridding_visibilities(num_coords,uu_metres,vv_metres,&(visData[ch_vis]),len,facet,&(facet_visData[ch_visfacet]),count);
 #else
             par.l0 = l0;
             par.m0 = m0;
