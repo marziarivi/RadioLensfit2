@@ -27,13 +27,18 @@ extern "C" {
 #include "datatype.h"
     
 double weight_func(double u, double v);
-    
-unsigned long int evaluate_uv_grid(double len, unsigned long int ncoords, double* u, double* v, int sizeg, double** grid_u, double** grid_v, unsigned long int* count);
-unsigned long int evaluate_uv_circular_grid(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, double** grid_u, double** grid_v, double** weights, unsigned long int* count);
-    
-void gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, unsigned long int* count);
-void circular_gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double ray, int sizeg, complexd *new_vis, unsigned long int* count);
 
+int facet_size(double theta_med, double len);
+
+
+unsigned long int evaluate_max_uv_grid_size(double len, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count);
+unsigned long int evaluate_uv_grid(unsigned long int ncoords, double* grid_u, double* grid_v, double *u, double *v, double len, int sizeg, unsigned long int *count);
+void gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, unsigned long int* count);
+    
+unsigned long int evaluate_max_uv_circular_grid_size(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count);
+unsigned long int evaluate_uv_circular_grid(unsigned long int ncoords, double* grid_u, double* grid_v, double *u, double *v, double ray, int sizeg, unsigned long int *count);
+void circular_gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double ray, int sizeg, complexd *new_vis, unsigned long int *count);
+    
     
 //void gridding_visibilities_sinc(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, double *count);
     

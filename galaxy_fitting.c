@@ -25,6 +25,7 @@
 #include <gsl/gsl_multimin.h>
 #include <gsl/gsl_rng.h>
 
+#include "default_params.h"
 #include "galaxy_visibilities.h"
 #include "likelihood.h"
 #include "marginalise_r.h"
@@ -37,13 +38,16 @@
 
 #ifdef FACET
 void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
-                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, int facet_size, double len)
+                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
 #else
 void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
                        unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres)
 #endif
 {
-
+   int facet = facet_size(mu,len);
+   par->ncoords = evaluate_uv_grid(num_coords, par->uu, par->vv, uu_metres, vv_metres, len, facet, par->count);
+   //par->ncoords = evaluate_uv_circular_grid(num_coords, par->uu, par->vv, uu_metres, vv_metres, len, facet, par->count); 
+ 
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -71,7 +75,8 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
        
      // gridding visibilities
      unsigned int ch_visfacet = ch*par->ncoords;
-     circular_gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),len,facet_size,&((par->data)[ch_visfacet]),par->count);
+     //circular_gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),len,facet,&((par->data)[ch_visfacet]),par->count);
+     gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),len,facet,&((par->data)[ch_visfacet]),par->count);
 #else
      par->l0 = l0;
      par->m0 = m0;
@@ -85,7 +90,7 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
 
 int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes_e2, double *var_e1, double *var_e2, double *oneDimvar, double *maxL)
 {
-    int np_max = 30;  // min number of sampling points with likelihood above 5%ML
+    int np_max = NP_MAX;  // min number of sampling points with likelihood above 5%ML
     
     gsl_multimin_function minex_func;
     minex_func.n = 2;

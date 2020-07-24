@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -28,11 +28,11 @@
     The number of galaxies and the corresponding source catalog (ordered by decreasing flux) 
     containing source SNR, position and flux must be provided.  
 
-    A text file containg the list of the galaxies with the measured ellipticities will be generated.
+    A text file containing the list of the galaxies with the measured ellipticities will be generated.
  
     Command line input parameters:
-    argv[1]  filename Measurement Set
-    argv[2]  filename source catalog 
+    argv[1]  Measurement Set filename
+    argv[2]  source catalog filename 
     argv[3]  number of sources
 */
 
@@ -52,6 +52,7 @@
 #include <gsl/gsl_multimin.h>
 
 #include "datatype.h"
+#include "default_params.h"
 #include "utils.h"
 #include "measurement_set.h"
 #include "data_simulation.h"
@@ -60,11 +61,6 @@
 #include "galaxy_visibilities.h"
 #include "distributions.h"
 #include "evaluate_uv_grid.h"
-
-#define RMIN 0.3
-#define RMAX 3.5
-#define NUM_R 29
-#define REF_FREQ 1.4e+9
 
 using namespace std;
 
@@ -92,17 +88,18 @@ int main(int argc, char *argv[])
     if (argc < 3)
     {
         cout << "ERROR: parameter missing!" << endl;
-        cout << "usage: RadioLensfit2-MS <filename MS> <filename source catalog> <num_sources> " << endl;
+        cout << "usage: RadioLensfit2-MS <MS filename> <source catalog filename> <num_sources> " << endl;
         exit(EXIT_FAILURE);
     }
 
     double data_time = 0.;
+    double extraction_time = 0.;
     double fitting_time = 0.;
 #ifdef USE_MPI
-    double start_data,end_data,start_fitting,end_fitting;
+    double start_data,end_data,start_fitting,end_fitting,start_extraction,end_extraction;
     start_data = MPI_Wtime();
 #else
-    long long start_data,end_data,start_fitting,end_fitting;
+    long long start_data,end_data,start_fitting,end_fitting,start_extraction,end_extraction;
     start_data = current_timestamp();
 #endif
 
@@ -111,19 +108,18 @@ int main(int argc, char *argv[])
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
-    unsigned int num_stations = ms_num_stations(ms);        // Number of stations
-    unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
-    unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
-    double freq_start_hz = ms_freq_start_hz(ms);            // Start Frequency, in Hz
-    double channel_bandwidth_hz = ms_freq_inc_hz(ms);       // Frequency channel bandwidth, in Hz
-    double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
-    int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
+    const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
+    const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
+    const unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
+    const double freq_start_hz = 1280e+6; //ms_freq_start_hz(ms);          // Start Frequency, in Hz
+    const double channel_bandwidth_hz = 240e+6; //ms_freq_inc_hz(ms);      // Frequency channel bandwidth, in Hz
+    const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
+    const int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
 
-    double efficiency = 0.9;     // system efficiency
-    double SEFD_SKA = 400e+6;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
-    double SEFD_MKT = 551e+6;    // SEFD of each MeerKat antenna (in micro-Jy)
+    const double efficiency = EFFICIENCY;     // system efficiency
+    const double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
 
-    double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
+    const double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
     if (rank==0)
@@ -183,17 +179,22 @@ int main(int argc, char *argv[])
     double *m = new double[nge];
     double *ge1 = new double[nge];
     double *ge2 = new double[nge];
+    double *gscale = new double[nge];
     double *SNR_vis = new double[nge];
  
-    unsigned long int mygalaxies = read_catalog(nge, argv[2],gflux,ge1,ge2,l,m,SNR_vis);
+    unsigned long int mygalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,SNR_vis);
     cout << "rank " << rank << ": " << mygalaxies << " galaxies" << endl;
-    
+   
+    delete[] gscale;   
+ 
 #ifdef USE_MPI
     end_data = MPI_Wtime();
     data_time = end_data - start_data;
+    double start_model = MPI_Wtime();
 #else
     end_data = current_timestamp();
     data_time = (double)(end_data - start_data)/1000.;
+    long long start_model = current_timestamp();
 #endif
     
     // Sky model visibilities computation --------------------------------------------------------------------------------------------------------------------------
@@ -237,11 +238,18 @@ int main(int argc, char *argv[])
     }
 
     sky_model(rank, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
-                    mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
+               mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
     
+#ifdef USE_MPI
+    double model_time = MPI_Wtime() - start_data;
+#else
+    long long end_model = current_timestamp();
+    double model_time = (double)(end_model - start_model)/1000.;
+#endif
+
     // Setup Model Fitting ----------------------------------------------------------------------------------------------------------------------------------------
     // define steps in galaxy scalelength (Ro in ARCSEC)
-    double Rmin = RMIN;
+    const double Rmin = RMIN;
     double Rmax = RMAX;
     int numR = NUM_R;
     double* Ro = new double[numR];
@@ -274,41 +282,21 @@ int main(int argc, char *argv[])
     par.acc_time = time_acc;
     par.spec = spec;
     par.wavenumbers = wavenumbers; // wavenumbers for the model
-    par.sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
-    if (rank==0) cout << "sigma_vis  = " << sqrt(par.sigma) << " muJy" << endl;
+    par.sigma = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
        
 #ifdef FACET
-    // lower limit flux
-    double threshold_flux[10];
-    threshold_flux[0] = 150.;
-    threshold_flux[1] = 100.;
-    threshold_flux[2] = 80.;
-    threshold_flux[3] = 60.;
-    threshold_flux[4] = 40.;
-    threshold_flux[5] = 20.;
-    threshold_flux[6] = 10.;
-    
-    // corresponding facet size
-    int facet_size[10];
-    facet_size[0] = 600;
-    facet_size[1] = 550;
-    facet_size[2] = 500;
-    facet_size[3] = 460;
-    facet_size[4] = 420;
-    facet_size[5] = 350;
-    facet_size[6] = 280;
-    
     // Faceting uv coordinates ----------------------------------------------------------------------------------------
-    int ind = 0;
-    while (gflux[0]<threshold_flux[ind]) ind++;
-    int facet = facet_size[ind];
-    double* facet_u = 0;
-    double* facet_v = 0;
-    double* weights = 0;
+    double Rmu_max = scale_mean(gflux[0]);
+    Rmu_max = exp(Rmu_max); 
+    int facet = facet_size(Rmu_max,len); 
+
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
-    
-    unsigned long int facet_ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, &weights, count);
+    //unsigned long int facet_ncoords = evaluate_max_uv_circular_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
+    unsigned long int facet_ncoords = evaluate_max_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
+
+    double* facet_u = new double[facet_ncoords];
+    double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
@@ -325,11 +313,6 @@ int main(int argc, char *argv[])
     catch (bad_alloc& ba)
     {
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
-    }
-    if (rank==0)
-    {
-        cout << "grid length = " << 2*len << ", grid size = " << facet << endl;
-        cout << num_models << " samples in galaxy scale-length, " << Rmin << " < r0 < " << Rmax << " arcsec" << endl;
     }
     
     // Allocate Facet Model Visibilities ------------------------------------------------------------------------------------------
@@ -350,7 +333,7 @@ int main(int argc, char *argv[])
     par.ncoords = facet_ncoords;
     par.uu = facet_u;
     par.vv = facet_v;
-    par.weights = weights;
+    //par.weights = weights;
     par.data = facet_visData;
     par.count = count;
     par.mod = visMod;
@@ -379,17 +362,18 @@ int main(int argc, char *argv[])
     par.mod = visMod;
 #endif
     
-#ifdef USE_MPI
-    start_fitting = MPI_Wtime();
-#else
-    start_fitting = current_timestamp();
-#endif
-    
     if (rank==0) 
     {
       cout << "Total Visibilities GBytes per rank: " << totGbytes << endl;
+      cout << num_models << " samples in galaxy scale-length, " << Rmin << " < r0 < " << Rmax << " arcsec" << endl;
       cout << "sigma_vis  = " << sqrt(par.sigma) << " muJy" << endl;
     }
+
+#ifdef USE_MPI
+    start_extraction = MPI_Wtime();
+#else
+    start_extraction = current_timestamp();
+#endif
  
     // Data Fitting -----------------------------------------------------------------------------------------------------------------------------------
     FILE *pFile;
@@ -405,30 +389,27 @@ int main(int argc, char *argv[])
     for (unsigned long int g=0; g<mygalaxies; g++)
     {
 
-      if (SNR_vis[g] >= 10.)
+    //  if (SNR_vis[g] >= 10.)
       {
-#ifdef FACET
-        if (gflux[g] < threshold_flux[ind])
-        {
-            ind++; facet = facet_size[ind];
-            par.ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, &weights, count);
-            if (rank==0) cout << " new facet size: " << facet << endl;
-        }
-#endif
-        // set log(prior) for scalelength
         double mu = scale_mean(gflux[g]);
-        for (int nRo=1; nRo<numR; nRo++)
-           rprior[nRo] = rfunc(mu,scale_std,Ro[nRo]);
         double R_mu = exp(mu);
+
+        // set log(prior) for scalelength
+        for (int nRo=1; nRo<numR; nRo++)
+           rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
         
-          l0 = l[g];  m0 = m[g];
-          
+        l0 = l[g];  m0 = m[g];
 #ifdef FACET
-          source_extraction(l0, m0, gflux[g], exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres, facet, len);
+        source_extraction(l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres, len);
 #else
-          source_extraction(l0, m0, gflux[g], exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres);
+        source_extraction(l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
- 
+
+#ifdef USE_MPI
+    start_fitting = MPI_Wtime();
+#else
+    start_fitting = current_timestamp();
+#endif 
           double mes_e1, mes_e2, maxL;
           double var_e1, var_e2, oneDimvar;
           int error = source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
@@ -443,7 +424,13 @@ int main(int argc, char *argv[])
           }
           else fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],ge1[g],mes_e1,sqrt(var_e1),ge2[g],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[g],l0/(ARCS2RAD),m0/(ARCS2RAD));
               
-          
+#ifdef USE_MPI
+    fitting_time += MPI_Wtime() - start_fitting;
+#else
+    fitting_time += (double) (current_timestamp() -start_fitting)/1000.;
+#endif         
+
+ 
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -490,25 +477,25 @@ int main(int argc, char *argv[])
     {
         unsigned long int gal = bad_list[b];
         double flux = gflux[gal];
-        
-        // set log(prior) for scalelength
         double mu = scale_mean(flux);
-        for (int nRo=1; nRo<numR; nRo++)
-            rprior[nRo] = rfunc(mu,scale_std,Ro[nRo]);
         double R_mu = exp(mu);
+
+        // set log(prior) for scalelength
+        for (int nRo=1; nRo<numR; nRo++)
+            rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
         
         l0 = l[gal];  m0 = m[gal];
 #ifdef FACET
-        ind = 0;
-        while (flux < threshold_flux[ind]) ind++;
-        facet = facet_size[ind];
-        par.ncoords = evaluate_uv_circular_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, &weights, count);
-        
-        source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres, facet, len);
+        source_extraction(l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres, len);
 #else
-        source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres);
+        source_extraction(l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
         
+#ifdef USE_MPI
+    start_fitting = MPI_Wtime();
+#else
+    start_fitting = current_timestamp();
+#endif
         double mes_e1, mes_e2, maxL;
         double var_e1, var_e2, oneDimvar;
         int error = source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
@@ -521,7 +508,13 @@ int main(int argc, char *argv[])
             mes_e1 = 0.; mes_e2 = 0.;
             bad++;
         }
-        
+      
+#ifdef USE_MPI
+    fitting_time += MPI_Wtime() - start_fitting;
+#else
+    fitting_time += (double) (current_timestamp() - start_fitting)/1000.;
+#endif
+  
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -545,19 +538,21 @@ int main(int argc, char *argv[])
     if (pFile != 0) fclose(pFile);
     
 #ifdef USE_MPI
-    end_fitting = MPI_Wtime();
-    fitting_time = end_fitting - start_fitting;
+    end_extraction = MPI_Wtime();
+    extraction_time = end_extraction - start_extraction - fitting_time;
     double end_tot = MPI_Wtime();
     double total_time = end_tot - start_tot;
 #else
-    end_fitting = current_timestamp();
-    fitting_time = (double)(end_fitting - start_fitting)/1000.;
+    end_extraction = current_timestamp();
+    extraction_time = (double)(end_extraction - start_extraction)/1000. - fitting_time;
     long long end_tot = current_timestamp();
     double total_time = (double)(end_tot - start_tot)/1000.;
 #endif
 
-    cout << "rank " << rank << ": set up time (sec): " << total_time - data_time - fitting_time << endl;
+    cout << "rank " << rank << ": set up time (sec): " << total_time - data_time - model_time - extraction_time - fitting_time << endl;
     cout << "rank " << rank << ": data reading time (sec): " << data_time << endl;
+    cout << "rank " << rank << ": sky model visibilities time (sec): " << model_time << endl;
+    cout << "rank " << rank << ": source extraction computation time (sec): " << extraction_time << endl;
     cout << "rank " << rank << ": data fitting computation time (sec): " << fitting_time << endl;
     if (rank == 0) cout << " Total time (sec): " << total_time << endl;
     
@@ -582,7 +577,6 @@ int main(int argc, char *argv[])
 #ifdef FACET
     delete[] facet_u;
     delete[] facet_v;
-    delete[] weights;
     delete[] facet_visData;
 #endif
 
