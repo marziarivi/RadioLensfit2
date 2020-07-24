@@ -394,7 +394,7 @@ int likelihood_sampling(int rank, double *mes_e1, double *mes_e2, double maxL, v
     likelihood_params *par = (likelihood_params *)params;
     
     double L = 1.;
-    double threshold = 0.05;
+    double threshold = 0.01; //0.05;
     double max_e1 = *mes_e1;
     double max_e2 = *mes_e2;
     average_1 = max_e1;
