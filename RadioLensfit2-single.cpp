@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     double full_bandwidth_hz = 240e+6;    // Frequency total bandwidth, in Hz
     double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
     int time_acc = 60; //15;     // accumulation time
-    double efficiency = 0.9;     // system efficiency
+    double efficiency = EFFICIENCY;     // system efficiency
     double SEFD = SEFD_SKA;      // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
@@ -293,10 +293,9 @@ int main(int argc, char *argv[])
     int mygalaxies = my_gal*2*NP;
 
     // generate flux values
-    const double beta = -1.34; // flux prior: S^beta
     double *gflux = new double[my_gal];
     double *gflux2 = new double[my_gal];
-    generate_random_data(gen,my_gal,gflux2,Fmin,Fmax,flux_CDF,beta);
+    generate_random_data(gen,my_gal,gflux2,Fmin,Fmax,flux_CDF,M_EXP);
     
     // sort flux values, so that to generate a population ordered by flux and therefore fitting sources by decreasing flux order
     gsl_sort(gflux2,1,my_gal); // sorting ascending order

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -47,6 +47,7 @@
 
 #include "datatype.h"
 #include "utils.h"
+#include "default_params.h"
 #include "read_coordinates.h"
 #include "data_simulation.h"
 #include "generate_catalog.h"
@@ -95,9 +96,8 @@ int main(int argc, char *argv[])
     double full_bandwidth_hz = 50e+6;    // Frequency total bandwidth, in Hz
     double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
     int time_acc = 60; //15;     // accumulation time (sec)
-    double efficiency = 0.9;     // system efficiency
-    double SEFD_SKA = 400e+6;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
-    double SEFD_MKT = 551e+6; // SEFD of each MeerKat antenna (in micro-Jy)
+    double efficiency = EFFICIENCY;     // system efficiency
+    double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
     double channel_bandwidth_hz = full_bandwidth_hz/num_channels; // Frequency channel bandwidth, in Hz
@@ -198,9 +198,9 @@ int main(int argc, char *argv[])
     memset(visSkyMod, 0, num_vis*sizeof(complexd));
 
     // define steps in galaxy scalelength (Ro in ARCSEC) --------------------------------------------------------------------------
-    double Rmin = 0.3;
-    double Rmax = 3.5;
-    int numR = 29;
+    double Rmin = RMIN;
+    double Rmax = RMAX;
+    int numR = NUM_R;
     double* Ro = new double[numR];
     double* rprior = new double[numR];
     Ro[0] = 0.;
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
     double Fmin = atof(argv[3]);
     double Fmax = 200.;
     
-    unsigned long int nge = ceil((flux_CDF(beta, Fmax) - flux_CDF(beta, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
+    unsigned long int nge = ceil((flux_CDF(M_EXP, Fmax) - flux_CDF(M_EXP, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
     
     double *gflux = new double[nge];
     double *gscale = new double[nge];
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
     double g1 = atof(argv[4]);  // shear to be applied
     double g2 = atof(argv[5]);
     
-    double sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
+    double sigma = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
     if (rank==0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
     
     data_simulation(wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
@@ -289,36 +289,15 @@ int main(int argc, char *argv[])
     par.sigma = sigma; // visibility noise variance
     
 #ifdef FACET
-    // lower limit flux
-    double threshold_flux[10];
-    threshold_flux[0] = 150.;
-    threshold_flux[1] = 100.;
-    threshold_flux[2] = 80.;
-    threshold_flux[3] = 60.;
-    threshold_flux[4] = 40.;
-    threshold_flux[5] = 20.;
-    threshold_flux[6] = 10.;
-    
-    // corresponding facet size
-    int facet_size[10];
-    facet_size[0] = 600;
-    facet_size[1] = 550;
-    facet_size[2] = 500;
-    facet_size[3] = 460;
-    facet_size[4] = 420;
-    facet_size[5] = 350;
-    facet_size[6] = 280;
-    
-    // Faceting uv coordinates ----------------------------------------------------------------------------------------
-    int ind = 0;
-    while (gflux[0]<threshold_flux[ind]) ind++;
-    int facet = facet_size[ind];
-    double* facet_u = 0;
-    double* facet_v = 0;
+    double Rmu_max = scale_mean(Fmax);
+    Rmu_max = exp(Rmu_max);
+    int facet = facet_size(Rmu_max,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     
-    unsigned long int facet_ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
+    unsigned long int facet_ncoords = evaluate_max_uv_grid_size(len, num_coords, uu_metres, vv_metres, facet, count);
+    double* facet_u = new double[facet_ncoords];
+    double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
@@ -399,7 +378,7 @@ int main(int argc, char *argv[])
     char filename[100];
     sprintf(filename,"ellipticities%d.txt",rank);
     pFile = fopen(filename,"w");
-    fprintf(pFile, "flux | scale | e1 | m_e1 | err1 | e2 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
+    fprintf(pFile, "flux | e1 | m_e1 | err1 | e2 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
     
     double l0,m0;
     unsigned long int bad_list[mygalaxies];
@@ -408,28 +387,20 @@ int main(int argc, char *argv[])
     for (unsigned long int g=0; g<mygalaxies; g++)
     {
 
-      if (SNR_vis[g] >= 10.)
+      //if (SNR_vis[g] >= 10.)
       {
-#ifdef FACET
-        if (gflux[g] < threshold_flux[ind])
-        {
-            ind++; facet = facet_size[ind];
-            par.ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
-            if (rank==0) cout << " new facet size: " << facet << endl;
-        }
-#endif
         // set log(prior) for scalelength
         double mu = scale_mean(gflux[g]);
         for (int nRo=1; nRo<numR; nRo++)
-           rprior[nRo] = rfunc(mu,scale_std,Ro[nRo]);
+           rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
         double R_mu = exp(mu);
         
           l0 = l[g];  m0 = m[g];
           
 #ifdef FACET
-          source_extraction(l0, m0, gflux[g], exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, facet, len);
+          source_extraction(l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, len);
 #else
-          source_extraction(l0, m0, gflux[g], exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres);
+          source_extraction(l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres);
 #endif
  
           double mes_e1, mes_e2, maxL;
@@ -444,7 +415,7 @@ int main(int argc, char *argv[])
               bad_list[bad] = g;  // store index bad sources to try to fit again at the end
               bad++;
           }
-          else fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],gscale[g],ge1[g],mes_e1,sqrt(var_e1), ge2[g],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[g],l0/(ARCS2RAD),m0/(ARCS2RAD));
+          else fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],ge1[g],mes_e1,sqrt(var_e1), ge2[g],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[g],l0/(ARCS2RAD),m0/(ARCS2RAD));
               
           
 #ifdef _OPENMP
@@ -457,7 +428,7 @@ int main(int argc, char *argv[])
               {
                   // Try fitting at the end (when almost all galaxies are fitted and removed from the data):
                   // add current source model back to the sky model
-                  data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, 0., 0., R_mu,
+                  data_galaxy_visibilities2D(spec[ch], wavenumbers[ch], par.band_factor, time_acc, 0., 0., R_mu,
                                            gflux[g], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
                   
                   for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
@@ -470,7 +441,7 @@ int main(int argc, char *argv[])
               else
               {
                   // get current source model fit
-                  data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, mes_e1, mes_e2, R_mu,
+                  data_galaxy_visibilities2D(spec[ch], wavenumbers[ch], par.band_factor, time_acc, mes_e1, mes_e2, R_mu,
                                            gflux[g], l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
                   
                   for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
@@ -498,19 +469,14 @@ int main(int argc, char *argv[])
         // set log(prior) for scalelength
         double mu = scale_mean(flux);
         for (int nRo=1; nRo<numR; nRo++)
-            rprior[nRo] = rfunc(mu,scale_std,Ro[nRo]);
+            rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
         double R_mu = exp(mu);
         
         l0 = l[gal];  m0 = m[gal];
 #ifdef FACET
-        ind = 0;
-        while (flux < threshold_flux[ind]) ind++;
-        facet = facet_size[ind];
-        par.ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, facet, &facet_u, &facet_v, count);
-        
-        source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, facet, len);
+        source_extraction(l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres, len);
 #else
-        source_extraction(l0, m0, flux, exp(mu), 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres);
+        source_extraction(l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, num_coords, uu_metres, vv_metres);
 #endif
         
         double mes_e1, mes_e2, maxL;
@@ -519,7 +485,7 @@ int main(int argc, char *argv[])
         
         cout << "rank:" << rank << " n. " << gal << " flux = " << flux << " scalelength = " << gscale[gal] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): measured e = " << mes_e1 << "," << mes_e2 <<  ",  original e = " << ge1[gal] << "," << ge2[gal] << endl;
         
-        fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",flux,gscale[gal],ge1[gal],mes_e1,sqrt(var_e1), ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
+        fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",flux,ge1[gal],mes_e1,sqrt(var_e1), ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
         
         if (error)
         {
@@ -534,7 +500,7 @@ int main(int argc, char *argv[])
         {
             unsigned long int ch_vis = ch*num_coords;
             // get current source model fit
-            data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, mes_e1, mes_e2, R_mu,
+            data_galaxy_visibilities2D(spec[ch], wavenumbers[ch], par.band_factor, time_acc, mes_e1, mes_e2, R_mu,
                                      flux, l0, m0, num_coords, uu_metres, vv_metres, &(visGal[ch_vis]));
  
             for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
