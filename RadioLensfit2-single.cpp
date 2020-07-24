@@ -95,8 +95,7 @@ int main(int argc, char *argv[])
     unsigned int num_stations = 197;      // Number of stations
     unsigned int num_channels = 1;        // Number of frequency channels
     unsigned int num_times = 480; //1920; // Number of time samples
-    double freq_start_hz = 950e+6;        // Start Frequency, in Hz
-    //double freq_inc_hz = 1e+6;          // Frequency increment, in Hz
+    double freq_start_hz = 1280e+6;        // Start Frequency, in Hz
     double full_bandwidth_hz = 240e+6;    // Frequency total bandwidth, in Hz
     double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
     int time_acc = 60; //15;     // accumulation time
