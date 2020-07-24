@@ -290,7 +290,7 @@ void circular_gridding_visibilities(unsigned long int ncoords, double *u, double
     n=0;
     for (p = 0; p < size; p++)
     {
-        if (count[p])
+        if (temp_grid_vis[pc].real)
         {
            new_vis[n].real = temp_grid_vis[p].real/count[n];
            new_vis[n].imag = temp_grid_vis[p].imag/count[n];
