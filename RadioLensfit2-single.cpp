@@ -23,13 +23,11 @@
 //  Simulation of SKA1-MID observation and fitting of single galaxies 
 //  in the field of view
 //
-//  argv[1]  name of the file contaning u coordinates
-//  argv[2]  name of the file contaning v coordinates
+//  argv[1]  Measurement Set filename
+//  argv[2]  Galaxy catalog filename
 //  argv[3]  number of galaxies
 //  argv[4]  applied shear 1st component
 //  argv[5]  applied shear 2nd component
-//  argv[6]  minimum galaxy flux in muJy
-//  argv[7]  maximum galaxy flux in muJy
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -50,8 +48,8 @@
 
 #include "datatype.h"
 #include "generate_random_values.h"
-#include "read_coordinates.h"
 #include "utils.h"
+#include "measurement_set.h"
 #include "galaxy_visibilities.h"
 #include "likelihood.h"
 #include "marginalise_r.h"
@@ -59,6 +57,7 @@
 #include "evaluate_uv_grid.h"
 #include "utils.h"
 #include "default_params.h"
+#include "read_catalog.h"
 
 using namespace std;
 
@@ -83,36 +82,41 @@ int main(int argc, char *argv[])
     if (rank==0) cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif    
 
-    if (argc < 7)
+    if (argc != 6)
     {
-        cout << "ERROR: parameter missing!" << endl;
-        cout << "usage: RadioLensfit.x <filename u-coord> <filename v-coord> <nge> <shear1> <shear2> <min flux> <max flux>" << endl;
-        cout << "corresponding to ng = nge*10 galaxies, g1 = shear1, g2 = shear2 and minimum galaxy flux [muJy]" << endl;
+        cout << "ERROR: bad number of parameters!" << endl;
+        cout << "usage: RadioLensfit.x <MS filename> <source catalog filename> <nge> <shear g1> <shear g2>" << endl;
         exit(EXIT_FAILURE);
     }
 
-    // Initialise input data
-    unsigned int num_stations = 197;      // Number of stations
-    unsigned int num_channels = 1;        // Number of frequency channels
-    unsigned int num_times = 480; //1920; // Number of time samples
-    double freq_start_hz = 1280e+6;        // Start Frequency, in Hz
-    double full_bandwidth_hz = 240e+6;    // Frequency total bandwidth, in Hz
-    double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
-    int time_acc = 60; //15;     // accumulation time
+    // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    RL_MeasurementSet* ms = ms_open(argv[1]);
+
+    //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
+    //double Dec = ms_phase_centre_dec_rad(ms);   
+    const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
+    const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
+    const unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
+    const double freq_start_hz = 1280e+6; //ms_freq_start_hz(ms);          // Start Frequency, in Hz
+    const double channel_bandwidth_hz = 240e+6; //ms_freq_inc_hz(ms);      // Frequency channel bandwidth, in Hz
+    const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
+    const int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
+
+    const double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
+    
     double efficiency = EFFICIENCY;     // system efficiency
     double SEFD = SEFD_SKA;      // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
-    double channel_bandwidth_hz = full_bandwidth_hz/num_channels; // Frequency channel bandwidth, in Hz
     if (rank==0)
     {
         cout << "Number baselines: " << num_baselines << endl;
-        cout << "Number of time snapshots: " << num_times << endl;
         cout << "Number of channels: " << num_channels << endl;
         cout << "Channels bandwidth (Hz): " << channel_bandwidth_hz << endl;
         cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
         cout << "Starting frequency (Hz): " << freq_start_hz << endl;
         cout << "Accumulation time (sec): " << time_acc << endl;
+        cout << "Number of rows: " << num_rows << endl;
     }
     
     double sizeGbytes, totGbytes = 0.;
@@ -120,26 +124,36 @@ int main(int argc, char *argv[])
     printf("field of view: %e [rad] %f [arcsec] \n",fov,fov/(ARCS2RAD));
     
     // Allocate and read uv coordinates ------------------------------------------------------------------------------
-    // coordinates in the file are ordered as nbaselines x ntimes
-    // coordinates in the array will be ordered as ntimes x nbaselines
-    unsigned long int num_coords = num_times * num_baselines;
+    unsigned long int num_coords = ms_num_rows(ms);
     double* uu_metres = new double[num_coords];
     double* vv_metres = new double[num_coords];
-    sizeGbytes = 2*num_coords*sizeof(double)/((double)(1024*1024*1024));
+    double* ww_metres = new double[num_coords];
+    sizeGbytes = 3*num_coords*sizeof(double)/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated original coordinates: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
     
-    double len, threshold = 0.; //only uv-points above this threshold [metres] will be used
-    // read only the baselines above the threshold and update their number
-    double maxB = read_coord_ska(argv[1], argv[2], num_times, &num_baselines, uu_metres, vv_metres, threshold, &len);
-    if (rank==0)
-    {
-        cout << "max baseline: " << maxB << endl;
-        cout << "New number baselines: " << num_baselines << endl;
-        cout << "resolution: " << (1.22*C0/(freq_start_hz*maxB))/(ARCS2RAD) << " arcsec" << endl;
-    }
-    num_coords = num_times * num_baselines;
+    int status = 0;
+    double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
     
+    // Allocate and read Data visibilities
+    unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
+    complexd *visData;
+    try
+    {
+        visData = new complexd[num_vis];
+        sizeGbytes = num_vis*sizeof(complexd)/((double)(1024*1024*1024));
+        cout << "rank " << rank << ": allocated original data visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
+    memset(visData, 0, num_vis*sizeof(complexd));
+
+    ms_close(ms);
+
+
     // Pre-compute wavenumber and spectral factor for each channel ---------------------------------------------------------------------
     // They corresponds to the central frequency of each channel
     
@@ -154,27 +168,6 @@ int main(int argc, char *argv[])
         ch_freq += channel_bandwidth_hz;
     }
  
-    
-    // Allocate Data Visibilities ------------------------------------------------------------------------------------------
-    unsigned long int num_rawvis  = (unsigned long int) num_channels * num_coords;
-    if (rank==0)
-        cout << "Num visibilities: " << num_rawvis << endl;
-    
-    complexd* visData;
-    try
-    {
-        visData = new complexd[num_rawvis];
-        sizeGbytes = num_rawvis*sizeof(complexd)/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated original visibilities: " << num_rawvis << ", size = " << sizeGbytes  << " GB" << endl;
-        totGbytes += sizeGbytes;
-    }
-    catch (bad_alloc& ba)
-    {
-        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
-    }
-    
-    memset(visData, 0, num_rawvis*sizeof(complexd));
-    
     // define steps in galaxy scalelength (Ro in ARCSEC) ------------------------------
     double Rmin = RMIN;
     double Rmax = RMAX;
@@ -199,15 +192,32 @@ int main(int argc, char *argv[])
     if (Ro[nRo-1]>Rmax) Rmax=Ro[nRo-1];
     if (rank==0) cout << numR-1 << " samples in galaxy scale-length, " << Rmin << " < r0 < " << Rmax << " arcsec" << endl;
 
-    
-    // Faceting uv coordinates ----------------------------------------------------------------------------------------
-    double Fmin = atof(argv[6]);
-    double Fmax = atof(argv[7]);
 
+    // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
+    unsigned long int my_gal = atof(argv[3]);
+
+    double *gflux = new double[my_gal];
+    double *l = new double[my_gal];
+    double *m = new double[my_gal];
+    double *ge1 = new double[my_gal];
+    double *ge2 = new double[my_gal];
+    double *gscale = new double[my_gal];
+    double *SNR_vis = new double[my_gal];
+
+    read_catalog(my_gal, argv[2],gflux,gscale,ge1,ge2,l,m,SNR_vis);
+
+    //setup random number generator
+    const gsl_rng_type * G;
+    gsl_rng * gen;
+    G = gsl_rng_mt19937;  // Mersenne Twister
+    gen = gsl_rng_alloc(G);
+    
+    unsigned long int seed = random_seed();
+    gsl_rng_set(gen,seed);
+
+    // Faceting uv coordinates ----------------------------------------------------------------------------------------
 #ifdef FACET
-    double Rmu_max = scale_mean(Fmax);
-    Rmu_max = exp(Rmu_max); 
-    int facet = facet_size(Rmu_max,len);
+    int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     
@@ -263,75 +273,10 @@ int main(int argc, char *argv[])
     if (rank==0) cout << "Total Visibilities GBytes: " << totGbytes << endl;    
 
 
-    // Generate fake galaxies ---------------------------------------------------------------------------------------------------
     // shear to be applied
     double g1 = atof(argv[4]);
     double g2 = atof(argv[5]);
     double* sigmab = new double[num_baselines];
-    
-    int NP = 1;    // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
-    int nge = atoi(argv[3]);
-    
-    //setup random number generator
-    const gsl_rng_type * G;
-    gsl_rng * gen;
-    G = gsl_rng_mt19937;  // Mersenne Twister
-    gen = gsl_rng_alloc(G);
-    
-    unsigned long int seed = 4151155891; //random_seed();
-    gsl_rng_set(gen,seed);
-
-#ifdef USE_MPI
-    int my_gal = nge/nprocs;
-    int rem = nge%nprocs;
-    if (rem)
-        if (rank < rem) my_gal++;
-#else
-    int my_gal = nge;
-#endif
-    int mygalaxies = my_gal*2*NP;
-
-    // generate flux values
-    double *gflux = new double[my_gal];
-    double *gflux2 = new double[my_gal];
-    generate_random_data(gen,my_gal,gflux2,Fmin,Fmax,flux_CDF,M_EXP);
-    
-    // sort flux values, so that to generate a population ordered by flux and therefore fitting sources by decreasing flux order
-    gsl_sort(gflux2,1,my_gal); // sorting ascending order
-    for (unsigned long int i=0; i<my_gal; i++)
-        gflux[i] = gflux2[my_gal-i-1];
-    
-    delete[] gflux2;
-    
-    // generate scalelength
-    double *gscale = new double[my_gal];
-    for (unsigned long int g=0; g<my_gal; g++)
-    {
-        double mu = scale_mean(gflux[g]); //power law relation between flux and scalelength
-        generate_random_data(gen,1,&(gscale[g]),Rmin,Rmax,r_CDF,mu);
-    }
-    
-    // generate ellipticities
-    double *ge1 = new double[mygalaxies];
-    double *ge2 = new double[mygalaxies];
-    generate_ellipticity(gen,my_gal,NP,ge1,ge2);
-   
-    // uniformly random positions in RAD in a disk area
-    //  http://mathworld.wolfram.com/DiskPointPicking.html
-    double *l = new double[mygalaxies];
-    double *m = new double[mygalaxies];
-    //double radius,orient;
-
-    for (unsigned long int gal=0; gal<mygalaxies; gal++)
-    {
-       //  radius = sqrt(gsl_rng_uniform(gen))*0.5*fov;
-       //  orient = gsl_rng_uniform(gen)*2*PI;
-
-       l[gal] = gsl_rng_uniform(gen)*fov - fov/2.; //radius*cos(orient);
-       m[gal] = gsl_rng_uniform(gen)*fov - fov/2.; //radius*sin(orient);
-    }
-  
-    double *SNR_vis = new double[mygalaxies];
     
     // Set function to be minimized
     likelihood_params par;
@@ -348,6 +293,7 @@ int main(int argc, char *argv[])
     par.ncoords = num_coords;
     par.uu = uu_metres;
     par.vv = vv_metres;
+    par.ww = ww_metres;
     par.data = visData;
     par.count = 0;
 #endif
@@ -362,8 +308,7 @@ int main(int argc, char *argv[])
 
     if (rank==0) cout << "sigma_vis  = " << sqrt(par.sigma) << " muJy" << endl;
     for (unsigned int b=0; b<num_baselines; b++) sigmab[b] = sqrt(par.sigma);
-    
-    
+        
     FILE *pFile;
     char filename[100];
     sprintf(filename,"ellipticities%d.txt",rank);
@@ -371,8 +316,7 @@ int main(int argc, char *argv[])
     fprintf(pFile, "flux | e1 | m_e1 | err1 | e2 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
 
     int bad = 0;
-    unsigned long int gal = 0;
-    int np_max = 30;  // min number of sampling points with likelihood above 5%ML
+    int np_max = NP_MAX;  // min number of sampling points with likelihood above 5%ML
     
     gsl_multimin_function minex_func;
     minex_func.n = 2;
@@ -409,13 +353,11 @@ int main(int argc, char *argv[])
               rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
           double R_mu = exp(mu);
  
-      for (int ang=0; ang<2*NP; ang++)
-      {
-        l0 = l[gal];
-        m0 = m[gal];
+        l0 = l[g];
+        m0 = m[g];
           
-        ee1 = ge1[gal];
-        ee2 = ge2[gal];
+        ee1 = ge1[g];
+        ee2 = ge2[g];
 
         // apply shear g
         z1.real = ee1+g1;            z1.imag = ee2+g2;         // z1 = e+g
@@ -424,10 +366,10 @@ int main(int argc, char *argv[])
         ee1 = (z1.real*z2.real + z1.imag*z2.imag)/den;
         ee2 = (z1.imag*z2.real - z1.real*z2.imag)/den;        // e = z1/z2
         
-        ge1[gal] = ee1;
-        ge2[gal] = ee2;
+        ge1[g] = ee1;
+        ge2[g] = ee2;
         
-        SNR_vis[gal] = 0.;
+        SNR_vis[g] = 0.;
     
 #ifdef USE_MPI
         start_data = MPI_Wtime();
@@ -448,8 +390,8 @@ int main(int argc, char *argv[])
         {
            // generate galaxy visibilities
            unsigned long int ch_vis = ch*num_coords;
-           data_galaxy_visibilities2D(spec[ch], wavenumbers[ch], par.band_factor, time_acc, ee1, ee2, gscale[g],
-                                      gflux[g], l[gal], m[gal], num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
+           data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, ee1, ee2, gscale[g],
+                                      gflux[g], l[g], m[g], num_coords, uu_metres, vv_metres, ww_metres, &(visData[ch_vis]));
  
            // compute signal-to-noise
            double SNR_ch = 0.;
@@ -460,13 +402,13 @@ int main(int argc, char *argv[])
 #pragma omp critical
 #endif
           {
-             SNR_vis[gal] += SNR_ch;
+             SNR_vis[g] += SNR_ch;
              add_system_noise(gen, num_coords, &(visData[ch_vis]), sigmab);
           }
             
 #ifdef FACET
             // Phase shift data visibilities (to be done after gridding because real data will be gridded)
-            data_visibilities_phase_shift2D(wavenumbers[ch], l0, m0, num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
+            data_visibilities_phase_shift(wavenumbers[ch], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visData[ch_vis]));
 
             // gridding visibilities
             unsigned int ch_visfacet = ch*par.ncoords;
@@ -477,7 +419,7 @@ int main(int argc, char *argv[])
             par.m0 = m0;
 #endif
         }
-        cout << "SNR: " << sqrt(SNR_vis[gal]) << endl;
+        cout << "SNR: " << sqrt(SNR_vis[g]) << endl;
           
 #ifdef USE_MPI
         end_data = MPI_Wtime();
@@ -522,12 +464,11 @@ int main(int argc, char *argv[])
         mes_e1 = gsl_vector_get(s->x, 0);
         mes_e2 = gsl_vector_get(s->x, 1);
         maxL= -s->fval;
-        cout << "rank:" << rank << " n. " << gal << " flux = " << gflux[g] << " scalelength = " << gscale[g] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): Maximum log likelihood = " << maxL << " n.iter = " << iter << " for e = " << mes_e1 << "," << mes_e2 <<  "  original e = " << ge1[gal] << "," << ge2[gal] << endl;
+        cout << "rank:" << rank << " n. " << g << " flux = " << gflux[g] << " scalelength = " << gscale[g] << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): Maximum log likelihood = " << maxL << " n.iter = " << iter << " for e = " << mes_e1 << "," << mes_e2 <<  "  original e = " << ge1[g] << "," << ge2[g] << endl;
             
         // Likelihood sampling to compute mean and variance
-        double var_e1, var_e2, cov_e;
-        int error = likelihood_sampling(rank,&mes_e1, &mes_e2, maxL, &par, np_max, &var_e1, &var_e2, &cov_e);
-        double oneDimvar = sqrt(var_e1*var_e2-cov_e*cov_e);
+        double var_e1, var_e2, oneDimvar;
+        likelihood_sampling(rank,&mes_e1, &mes_e2, maxL, &par, np_max, &var_e1, &var_e2, &oneDimvar);
 
 #ifdef USE_MPI
         end_fitting = MPI_Wtime();
@@ -537,14 +478,12 @@ int main(int argc, char *argv[])
         fitting_time += (double)(end_fitting - start_fitting)/1000.;
 #endif
 
-        fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],ge1[gal],mes_e1,sqrt(var_e1), ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,sqrt(SNR_vis[gal]),l0/(ARCS2RAD),m0/(ARCS2RAD));
-        if (error)
+        fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],ge1[g],mes_e1,sqrt(var_e1), ge2[g],mes_e2,sqrt(var_e2),oneDimvar,sqrt(SNR_vis[g]),l0/(ARCS2RAD),m0/(ARCS2RAD));
+        if (var_e1 < 1e-4 || var_e2 < 1e-4 || oneDimvar < 1e-4)
         {
               cout << "ERROR likelihood sampling!" << endl;
               bad++;
         }
-        gal++;
-      }
     }
     
     gsl_vector_free(x);
