@@ -85,9 +85,9 @@ int main(int argc, char *argv[])
     if (rank==0) cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif
     
-    if (argc < 3)
+    if (argc != 4)
     {
-        cout << "ERROR: parameter missing!" << endl;
+        cout << "ERROR: bad number of parameters!" << endl;
         cout << "usage: RadioLensfit2-MS <MS filename> <source catalog filename> <num_sources> " << endl;
         exit(EXIT_FAILURE);
     }
@@ -185,8 +185,6 @@ int main(int argc, char *argv[])
     unsigned long int mygalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,SNR_vis);
     cout << "rank " << rank << ": " << mygalaxies << " galaxies" << endl;
    
-    delete[] gscale;   
- 
 #ifdef USE_MPI
     end_data = MPI_Wtime();
     data_time = end_data - start_data;
@@ -238,7 +236,7 @@ int main(int argc, char *argv[])
     }
 
     sky_model(rank, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
-               mygalaxies, gflux, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
+               mygalaxies, gflux, gscale, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
     
 #ifdef USE_MPI
     double model_time = MPI_Wtime() - start_data;
@@ -286,10 +284,7 @@ int main(int argc, char *argv[])
        
 #ifdef FACET
     // Faceting uv coordinates ----------------------------------------------------------------------------------------
-    double Rmu_max = scale_mean(gflux[0]);
-    Rmu_max = exp(Rmu_max); 
-    int facet = facet_size(Rmu_max,len); 
-
+    int facet = facet_size(RMAX,len);  
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     //unsigned long int facet_ncoords = evaluate_max_uv_circular_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
@@ -393,6 +388,7 @@ int main(int argc, char *argv[])
       {
         double mu = scale_mean(gflux[g]);
         double R_mu = exp(mu);
+        //double R_mu = gscale[g];
 
         // set log(prior) for scalelength
         for (int nRo=1; nRo<numR; nRo++)
@@ -479,6 +475,7 @@ int main(int argc, char *argv[])
         double flux = gflux[gal];
         double mu = scale_mean(flux);
         double R_mu = exp(mu);
+        //double R_mu = gscale[gal];
 
         // set log(prior) for scalelength
         for (int nRo=1; nRo<numR; nRo++)
@@ -564,6 +561,7 @@ int main(int argc, char *argv[])
     delete[] Ro;
     delete[] rprior;
     delete[] gflux;
+    delete[] gscale;
     delete[] ge1;
     delete[] ge2;
     delete[] l;
