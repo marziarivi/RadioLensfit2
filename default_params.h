@@ -36,7 +36,7 @@
 #define BEAM_const 65e-9   
 
 // Parameters for facet size computation
-#define PSF_NAT 37  // PSF factor for natural weighting
+#define PSF_NAT 38  // PSF factor for natural weighting
 
 // Parameter for catalog simulation
 #define FMAX 200     // flux range maximum [micro-Jy]
