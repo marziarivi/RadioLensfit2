@@ -144,10 +144,13 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
     *oneDimvar = 0.;
     if (*maxL > -1e+10)
     {
-        double cov_e;
-        error = likelihood_sampling(rank,mes_e1, mes_e2, *maxL, par, np_max, var_e1, var_e2, &cov_e);
-        *oneDimvar = sqrt((*var_e1)*(*var_e2)-cov_e*cov_e);
-        if (error) printf("ERROR likelihood sampling!\n");
+        likelihood_sampling(rank,mes_e1, mes_e2, *maxL, par, np_max, var_e1, var_e2, oneDimvar);
+        //    if (var1 < 1e-4 || var2 <1e-4) 
+        if (*var_e1 < 1e-4 || *var_e2 < 1e-4 || *oneDimvar < 1e-4)
+        {
+           printf("ERROR likelihood sampling!\n");
+           error = 1;
+        }
     }
     else error = 1;
     
