@@ -31,7 +31,7 @@ void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth
 
 void sky_model(int rank, double *wavenumbers, double *spec,
                      double channel_bandwidth_hz, int time_acc, unsigned int num_channels, unsigned int num_baselines,
-                     unsigned long int n_gal, double *gflux,  double *l, double *m, unsigned long int num_coords,
+                     unsigned long int n_gal, double *gflux, double *gscale, double *l, double *m, unsigned long int num_coords,
                      double *uu_metres, double *vv_metres, double *ww_metres, complexd *visGal, complexd* visMod);
 
 

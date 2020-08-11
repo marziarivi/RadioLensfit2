@@ -73,9 +73,9 @@ int main(int argc, char *argv[])
     cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif
     
-    if (argc < 5)
+    if (argc != 6)
     {
-        cout << "ERROR: parameter missing!" << endl;
+        cout << "ERROR: bad number of parameters!" << endl;
         cout << "usage: Simulate <filename MS> <effective field of view [arcmin]> <min flux [muJy]> <shear1> <shear2> " << endl;
         exit(EXIT_FAILURE);
     }

@@ -127,7 +127,7 @@ void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth
 // Simulate sky model visibilities
 void sky_model(int rank, double *wavenumbers, double *spec,
                      double channel_bandwidth_hz, int time_acc, unsigned int num_channels, unsigned int num_baselines,
-                     unsigned long int n_gal, double *gflux,  double *l, double *m, unsigned long int num_coords, 
+                     unsigned long int n_gal, double *gflux, double *gscale, double *l, double *m, unsigned long int num_coords, 
                      double *uu_metres, double *vv_metres, double *ww_metres, complexd *visGal, complexd* visMod)
 {
     double R_mu, l0, m0;
@@ -137,6 +137,7 @@ void sky_model(int rank, double *wavenumbers, double *spec,
     {
 
         R_mu = exp(scale_mean(gflux[g]));
+        //R_mu = gscale[g]; 
         l0 = l[g];
         m0 = m[g];
 

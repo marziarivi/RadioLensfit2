@@ -41,7 +41,7 @@ int read_catalog(unsigned long int nge, char *filename, double *gflux, double *g
         exit(EXIT_FAILURE);
         return 1;
     }
-    // SNR | l | m | flux | scale | e1 | e2 (last 3 param are provided for simulatations)
+    // SNR | l | m | flux | scale | e1 | e2 (last 3 params are provided for simulations)
     double SNR,ll,mm,flux;
     double scale,e1,e2;
     
