@@ -28,7 +28,6 @@
 #include <math.h>
 #include <gsl/gsl_rng.h>
  
-#include "generate_random_values.h"
 #include "utils.h"
 #include "galaxy_visibilities.h"
 #include "distributions.h"
