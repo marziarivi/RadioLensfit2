@@ -58,7 +58,7 @@ typedef struct{
     double* spec;
     double* wavenumbers;
     unsigned long int* count;
-    double sigma;
+    double* sigma2;
     double* uu;
     double* vv;
     double l0;

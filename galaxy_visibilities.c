@@ -39,7 +39,7 @@ extern "C" {
 // model a galaxy at the phase centre: visibilities are real numbers (smearing? as data vis are shifted at zero...)
 void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, double* wavenumbers,
                         double e1, double e2, double scalelength, double radius, unsigned long int num_coords, double* uu_metres, 
-                        double* vv_metres, unsigned long int* count, double* Modvis)
+                        double* vv_metres, const double *sigma2, double* Modvis)
 {
     double wavenumber,wavenumber2,den,uu,vv,k1,k2,spectra,shape,phase,ch_freq,beam_pattern;
     double detA = 1.-e1*e1-e2*e2;
@@ -73,9 +73,9 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
             
 #ifdef FACET
           //  sum += Modvis[nv]*Modvis[nv]/count[i];
-            sum += Modvis[nv]*Modvis[nv]*count[i];
+            sum += Modvis[nv]*Modvis[nv]/sigma2[nv];
 #else
-            sum += Modvis[nv]*Modvis[nv];
+            sum += Modvis[nv]*Modvis[nv]/sigma2[nv];
 #endif
             nv++;
         }
@@ -93,7 +93,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
                                double acc_time, double e1, double e2, double scalelength, double l,
                                double m, double radius, unsigned long int num_coords, double* uu_metres,
                                double* vv_metres, double* ww_metres,
-                               unsigned long int* count, complexd* Modvis)
+                               const double* sigma2, complexd* Modvis)
 {
     double wavenumber,wavenumber2,den,uu,vv,ww,k1,k2,spectra,shape,phase,smear,ch_freq,beam_pattern;
     double detA = 1.-e1*e1-e2*e2;
@@ -138,7 +138,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
           Modvis[nv].real = shape*cos(phase); //*smear;
           Modvis[nv].imag = shape*sin(phase); //*smear;
  
-          sum += (Modvis[nv].real*Modvis[nv].real + Modvis[nv].imag*Modvis[nv].imag);
+          sum += (Modvis[nv].real*Modvis[nv].real + Modvis[nv].imag*Modvis[nv].imag)/sigma2[nv];
           nv++;
         }
     }

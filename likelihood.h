@@ -36,20 +36,20 @@ double loglikelihood(void *params, double ee1, double ee2, int *error);
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                            double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
                            double scale,
-                           unsigned long int n_uv_coords, unsigned long int* count, const double variance,
+                           unsigned long int n_uv_coords, unsigned long int* count, const double *variance,
                            double* uu_metres, double* vv_metres, double* weights, complexd* visData, double* visM);
     
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
-                           unsigned long int* count, double* uu_metres, double* vv_metres, double* weights, complexd* visData,
+                           const double* variance, double* uu_metres, double* vv_metres, double* weights, complexd* visData,
                            double* visMod, double* ho, double* det_sigma);
 #else
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                        double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
                        double scale, unsigned long int n_uv_coords, unsigned long int* count,
-                       const double variance, double* uu_metres, double* vv_metres, double* ww_metres, complexd* visData, complexd* visM);
+                       const double *variance, double* uu_metres, double* vv_metres, double* ww_metres, complexd* visData, complexd* visM);
     
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
-                       unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,
+                       const double* variance, double* uu_metres, double* vv_metres, complexd* visData,
                        complexd* visMod, double* ho, double* det_sigma);
 #endif
 

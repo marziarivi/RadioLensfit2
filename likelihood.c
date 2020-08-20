@@ -58,7 +58,7 @@ double f_posterior (const gsl_vector *v, void *params)
     
         if(e_mod <= 0.8 && e_mod > 0.)
         {
-            double L_r = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius, scale, par->ncoords, par->count,par->sigma,par->uu,par->vv,par->data,par->mod);
+            double L_r = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius, scale, par->ncoords, par->count, par->sigma2, par->uu, par->vv, par->data, par->mod);
             log_post = L_r+log(e_pdf(e_mod));
         }
         else log_post = -1.e10;
@@ -123,9 +123,9 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
        unsigned long int index = (nRo-1)*(par->ncoords)*(par->nchannels);
 
 #ifdef FACET
-       L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->weights, par->data, &((par->mod)[index]));
+       L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma2, par->uu, par->vv, par->weights, par->data, &((par->mod)[index]));
 #else
-       L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->ww, par->data, &((par->mod)[index]));
+       L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, par->radius,(par->ro)[nRo], par->ncoords, par->count, par->sigma2, par->uu, par->vv, par->ww, par->data, &((par->mod)[index]));
 #endif
     }
     
@@ -155,30 +155,29 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                        double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
                        double scale,
-                       unsigned long int n_uv_coords, unsigned long int* count, const double variance,
+                       unsigned long int n_uv_coords, unsigned long int* count, const double *variance,
                        double* uu_metres, double* vv_metres, double* weights, complexd* visData, double* visM)
 #else
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                 double* wavenumbers, double ee1, double ee2, double l, double m, double radius,
                 double scale, unsigned long int n_uv_coords, unsigned long int* count,
-                const double variance, double* uu_metres, double* vv_metres, double* ww_metres, complexd* visData, complexd* visM)
+                const double *variance, double* uu_metres, double* vv_metres, double* ww_metres, complexd* visData, complexd* visM)
 #endif
 {
     // generate model
 #ifdef FACET
-    model_galaxy_visibilities_at_zero(nchannels, spec, wavenumbers, ee1, ee2, scale, radius, n_uv_coords, uu_metres, vv_metres, count, visM);
+    model_galaxy_visibilities_at_zero(nchannels, spec, wavenumbers, ee1, ee2, scale, radius, n_uv_coords, uu_metres, vv_metres, variance, visM);
 #else
-    model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, radius, n_uv_coords, uu_metres, vv_metres, ww_metres, count, visM);
+    model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, radius, n_uv_coords, uu_metres, vv_metres, ww_metres, variance, visM);
 #endif
         
     // Compute log(likelihood) dependend only on ellipticity and scale-length
     double L_er,ho, det_sigma;
-    int error = cross_correlation(nchannels, wavenumbers, n_uv_coords, count, uu_metres, vv_metres, weights, visData, visM, &ho, &det_sigma);
- //   if (det_sigma <= 0) L_er = -1.e10; //printf("det_sigma = %e\n",det_sigma);fflush(stdout);}
+    int error = cross_correlation(nchannels, wavenumbers, n_uv_coords, variance, uu_metres, vv_metres, weights, visData, visM, &ho, &det_sigma);
     if (error) L_er = -1.e10;
     else
     {
-        double B = (ho*ho)/(2.*variance);
+        double B = (ho*ho)*0.5;
         L_er = marginalise_over_position_shift(B);
         if (isnan(L_er)) L_er = -1.e10;
         else L_er -= 0.5*log(det_sigma); // = log(sqrt(1/det_sigma))
@@ -194,11 +193,11 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
  */
 #ifdef FACET
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
-                           unsigned long int* count, double* uu_metres, double* vv_metres, double* weights, complexd* visData,
+                           const double* variance, double* uu_metres, double* vv_metres, double* weights, complexd* visData,
                            double* visMod, double* ho, double* det_sigma)
 #else
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
-                       unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,
+                       const double* variance, double* uu_metres, double* vv_metres, complexd* visData,
                        complexd* visMod, double* ho, double* det_sigma)
 #endif
 {
@@ -227,13 +226,14 @@ int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long
 #ifdef FACET
             h_F[k].real = visData[k].real*visMod[k];
             h_F[k].imag = - visData[k].imag*visMod[k];
-            
-            h_F[k].real *= count[i];
-            h_F[k].imag *= count[i];
 #else
             h_F[k].real = (visData[k].real*visMod[k].real + visData[k].imag*visMod[k].imag);
             h_F[k].imag = (visData[k].real*visMod[k].imag - visData[k].imag*visMod[k].real);
 #endif
+            
+            h_F[k].real /= variance[k];
+            h_F[k].imag /= variance[k];
+
             value += h_F[k].real;
             
             u = uu_metres[i];

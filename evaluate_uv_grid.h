@@ -33,7 +33,7 @@ int facet_size(double theta_med, double len);
 
 unsigned long int evaluate_max_uv_grid_size(double len, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count);
 unsigned long int evaluate_uv_grid(unsigned long int ncoords, double* grid_u, double* grid_v, double *u, double *v, double len, int sizeg, unsigned long int *count);
-void gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, unsigned long int* count);
+void gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, int sizeg, complexd *new_vis, double *new_sigma2, unsigned long int* count);
     
 unsigned long int evaluate_max_uv_circular_grid_size(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count);
 unsigned long int evaluate_uv_circular_grid(unsigned long int ncoords, double* grid_u, double* grid_v, double *u, double *v, double ray, int sizeg, unsigned long int *count);

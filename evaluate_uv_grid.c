@@ -138,7 +138,7 @@ unsigned long int evaluate_uv_grid(unsigned long int ncoords, double* grid_u, do
  This is a gridding by convolution with the pillbox function
  (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
  */
-void gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, unsigned long int *count)
+void gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, int sizeg, complexd *new_vis, double *new_sigma2, unsigned long int *count)
 {
     unsigned int i,j;
     unsigned long int p,n;
@@ -146,6 +146,7 @@ void gridding_visibilities(unsigned long int ncoords, double *u, double *v, comp
     unsigned long int size = sizeg*sizeg;
 
     complexd* temp_grid_vis = (complexd *) calloc(size,sizeof(complexd));
+    double* temp_sigma2 = (double *) calloc(size,sizeof(double));
 
     for (unsigned long int k = 0; k < ncoords; k++)
     {
@@ -155,6 +156,7 @@ void gridding_visibilities(unsigned long int ncoords, double *u, double *v, comp
 
         temp_grid_vis[pc].real += vis[k].real;
         temp_grid_vis[pc].imag += vis[k].imag;
+        temp_sigma2[pc] += sigma2[k];
     }
 
     n=0;
@@ -164,10 +166,12 @@ void gridding_visibilities(unsigned long int ncoords, double *u, double *v, comp
         {
             new_vis[n].real = temp_grid_vis[p].real/count[n];
             new_vis[n].imag = temp_grid_vis[p].imag/count[n];
+            new_sigma2[n] = temp_sigma2[p]/(count[n]*count[n]);
             n++;
         }
     }
     free(temp_grid_vis);
+    free(temp_sigma2);
 }
 
 
