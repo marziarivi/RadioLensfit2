@@ -85,11 +85,15 @@ int main(int argc, char *argv[])
     if (rank==0) cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif
     
-    if (argc != 4)
+    if (argc != nprocs+2)
     {
+      if (rank == 0)
+      {
         cout << "ERROR: bad number of parameters!" << endl;
-        cout << "usage: RadioLensfit2-MS <MS filename> <source catalog filename> <num_sources> " << endl;
-        exit(EXIT_FAILURE);
+        cout << "usage: RadioLensfit2-MS <source catalog filename> <num_sources> <filename MS1> <filename MS2> .... " << endl;
+        cout << "number of MS must be equal to the number of MPI tasks" << endl;
+      }  
+      exit(EXIT_FAILURE);
     }
 
     double data_time = 0.;
@@ -104,7 +108,7 @@ int main(int argc, char *argv[])
 #endif
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    RL_MeasurementSet* ms = ms_open(argv[1]);
+    RL_MeasurementSet* ms = ms_open(argv[rank+2]);
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
@@ -119,19 +123,17 @@ int main(int argc, char *argv[])
     const double efficiency = EFFICIENCY;     // system efficiency
     const double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
 
-    const double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
-    
+    const double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured    
+
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
-    if (rank==0)
-    {
-        cout << "Number baselines: " << num_baselines << endl;
-        cout << "Number of channels: " << num_channels << endl;
-        cout << "Channels bandwidth (Hz): " << channel_bandwidth_hz << endl;
-        cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
-        cout << "Starting frequency (Hz): " << freq_start_hz << endl;
-        cout << "Accumulation time (sec): " << time_acc << endl;
-        cout << "Number of rows: " << num_rows << endl;
-    }
+
+    if (rank == 0 ) cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
+    cout << "rank " << rank << ": Number baselines: " << num_baselines << endl;
+    cout << "rank " << rank << ": Number of channels: " << num_channels << endl;
+    cout << "rank " << rank << ": Channels bandwidth (Hz): " << channel_bandwidth_hz << endl;
+    cout << "rank " << rank << ": Starting frequency (Hz): " << freq_start_hz << endl;
+    cout << "rank " << rank << ": Accumulation time (sec): " << time_acc << endl;
+    cout << "rank " << rank << ": Number of rows: " << num_rows << endl;
     
     double sizeGbytes, totGbytes = 0.;
     
@@ -148,7 +150,7 @@ int main(int argc, char *argv[])
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
     if (status) 
     {
-        cout << "ERROR reading MS - uvw points: " << status << endl;
+        cout << "rank " << rank << ": ERROR reading MS - uvw points: " << status << endl;
         exit(EXIT_FAILURE);
     }
     
@@ -170,7 +172,7 @@ int main(int argc, char *argv[])
     ms_read_vis(ms, 0, 0, num_channels, num_rows, "DATA", visData, &status);
     if (status) 
     {
-        cout << "ERROR reading MS - DATA column: " << status << endl;
+        cout << "rank " << rank << ": ERROR reading MS - DATA column: " << status << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -190,7 +192,7 @@ int main(int argc, char *argv[])
     //ms_read_sigma(ms, 0, num_coords, sigma2_vis, &status);
     if (status)
     {
-        cout << "ERROR reading MS - sigma: " << status << endl;
+        cout << "rank " << rank << ": ERROR reading MS - sigma: " << status << endl;
         exit(EXIT_FAILURE);
     }
     for (unsigned long int i = 0; i<num_vis; i++)
@@ -199,7 +201,7 @@ int main(int argc, char *argv[])
     ms_close(ms); 
 
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
-    unsigned long int nge = atof(argv[3]);
+    unsigned long int nge = atof(argv[2]);
     
     double *gflux = new double[nge];
     double *l = new double[nge];
@@ -209,8 +211,8 @@ int main(int argc, char *argv[])
     double *gscale = new double[nge];
     double *SNR_vis = new double[nge];
  
-    unsigned long int mygalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,SNR_vis);
-    cout << "rank " << rank << ": " << mygalaxies << " galaxies" << endl;
+    unsigned long int mygalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis);
+    if (rank == 0) cout << "Number of sources: " << mygalaxies << endl;
    
 #ifdef USE_MPI
     end_data = MPI_Wtime();
@@ -302,7 +304,6 @@ int main(int argc, char *argv[])
     par.ro = Ro;
     par.rprior = rprior;
     par.nchannels = num_channels;
-    par.nbaselines = num_baselines;
     par.band_factor = channel_bandwidth_hz*PI/C0;
     par.acc_time = time_acc;
     par.spec = spec;

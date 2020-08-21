@@ -52,7 +52,6 @@ typedef struct{
     double *rprior;
     unsigned int ncoords;
     unsigned int nchannels;
-    unsigned int nbaselines;
     double band_factor;
     double acc_time;
     double* spec;

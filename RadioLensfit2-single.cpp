@@ -298,7 +298,6 @@ int main(int argc, char *argv[])
     par.count = 0;
 #endif
     par.nchannels = num_channels;
-    par.nbaselines = num_baselines;
     par.band_factor = channel_bandwidth_hz*PI/C0;
     par.acc_time = time_acc;
     par.spec = spec;
