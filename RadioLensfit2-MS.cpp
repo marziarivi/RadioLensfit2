@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     if (rank==0) cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif
     
-    if (argc != nprocs+2)
+    if (argc != nprocs+3)
     {
       if (rank == 0)
       {
