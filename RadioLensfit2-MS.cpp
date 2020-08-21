@@ -31,9 +31,10 @@
     A text file containing the list of the galaxies with the measured ellipticities will be generated.
  
     Command line input parameters:
-    argv[1]  Measurement Set filename
-    argv[2]  source catalog filename 
-    argv[3]  number of sources
+    argv[1]  source catalog filename 
+    argv[2]  number of sources
+    argv[3]  MS1 filename
+    ....   
 */
 
 #ifdef USE_MPI
