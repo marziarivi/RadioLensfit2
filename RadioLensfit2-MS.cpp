@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 #endif
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    RL_MeasurementSet* ms = ms_open(argv[rank+2]);
+    RL_MeasurementSet* ms = ms_open(argv[rank+3]);
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
