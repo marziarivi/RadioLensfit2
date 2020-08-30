@@ -33,8 +33,7 @@
     Command line input parameters:
     argv[1]  source catalog filename 
     argv[2]  number of sources
-    argv[3]  MS1 filename
-    ....   
+    argv[3]  MS filename
 */
 
 #ifdef USE_MPI
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
     if (rank==0) cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif
     
-    if (argc != nprocs+3)
+    if (argc != 4)
     {
       if (rank == 0)
       {
