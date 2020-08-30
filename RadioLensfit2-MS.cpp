@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
         ch_freq += channel_bandwidth_hz;
     }
 
-    sky_model(rank, wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, num_baselines,
+    sky_model(wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels,
                mygalaxies, gflux, gscale, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
     
 #ifdef USE_MPI
