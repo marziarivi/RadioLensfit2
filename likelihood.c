@@ -385,7 +385,7 @@ double marginalise_over_position_shift(double x)
  * Evaluation of the likelihood in a neighborhood of its maximum
  * Take the mean and variance of the values, for which L[e] >= 0.05 maxL, as measure and uncertainty of the ellipticity
  */
-void likelihood_sampling(int rank, double *mes_e1, double *mes_e2, double maxL, void *params, int np_max, double *var_e1, double *var_e2, double *oneDimvar)
+void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *params, int np_max, double *var_e1, double *var_e2, double *oneDimvar)
 {
     int error = 0;
     int ie1,ie2,np;
@@ -517,7 +517,7 @@ void likelihood_sampling(int rank, double *mes_e1, double *mes_e2, double maxL, 
     *var_e2 = var2;
     *oneDimvar = sqrt((var1)*(var2)-cov*cov);  // Jacobian determinat as 1D variance  
 
-    printf("rank %d: n. points: %d, %d average: %f,%f variance: %e,%e cov: %e\n",rank,np,k,average_1,average_2,var1,var2,cov);
+    //printf("rank %d: n. points: %d, %d average: %f,%f variance: %e,%e cov: %e\n",rank,np,k,average_1,average_2,var1,var2,cov);
 }
 
 
