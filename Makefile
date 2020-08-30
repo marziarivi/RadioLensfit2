@@ -6,7 +6,7 @@
 # OpenMP compiler switch
 OMP = -fopenmp
 
-OPT += -DUSE_MPI
+#OPT += -DUSE_MPI
 OPT += -DFACET
 
 #------------------------------------------------------------------------- 
@@ -59,13 +59,13 @@ EXEC1 = RadioLensfit2-mpi
 OBJS1  = RadioLensfit2-mpi.o galaxy_fitting-mpi.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o 
 else
 EXEC1 = RadioLensfit2
-OBJS1  = RadioLensfit2-ser.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o
+OBJS1  = RadioLensfit2-MS.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o
 endif 
 
 EXEC2 = Simulate
 OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_values.o galaxy_visibilities.o measurement_set.o data_simulation.o
  
-OBJS = RadioLensfit2-ser.o RadioLensfit-mpi.o galaxy_fitting-mpi.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
+OBJS = RadioLensfit2-MS.o RadioLensfit-mpi.o galaxy_fitting-mpi.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
 
 
 EXEC3 = RadioLensfit2-single   
