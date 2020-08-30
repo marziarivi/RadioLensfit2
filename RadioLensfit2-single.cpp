@@ -467,7 +467,7 @@ int main(int argc, char *argv[])
             
         // Likelihood sampling to compute mean and variance
         double var_e1, var_e2, oneDimvar;
-        likelihood_sampling(rank,&mes_e1, &mes_e2, maxL, &par, np_max, &var_e1, &var_e2, &oneDimvar);
+        likelihood_sampling(rank, &mes_e1, &mes_e2, maxL, &par, np_max, &var_e1, &var_e2, &oneDimvar);
 
 #ifdef USE_MPI
         end_fitting = MPI_Wtime();
