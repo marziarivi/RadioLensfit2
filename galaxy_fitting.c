@@ -144,7 +144,7 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
     *oneDimvar = 0.;
     if (*maxL > -1e+10)
     {
-        likelihood_sampling(rank,mes_e1, mes_e2, *maxL, par, np_max, var_e1, var_e2, oneDimvar);
+        likelihood_sampling(mes_e1, mes_e2, *maxL, par, np_max, var_e1, var_e2, oneDimvar);
         //    if (var1 < 1e-4 || var2 <1e-4) 
         if (*var_e1 < 1e-4 || *var_e2 < 1e-4 || *oneDimvar < 1e-4)
         {
