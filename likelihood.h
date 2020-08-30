@@ -55,7 +55,7 @@ int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long
 
 double marginalise_over_position_shift(double x);
     
-void likelihood_sampling(int rank, double *mes_e1, double *mes_e2, double maxL, void *params, int np_max,
+void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *params, int np_max,
                          double *var_e1, double *var_e2, double *oneDimvar);
     
 #ifdef __cplusplus
