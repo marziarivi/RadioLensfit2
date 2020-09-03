@@ -133,7 +133,6 @@ int main(int argc, char *argv[])
     double com_time = MPI_Wtime(); 
     // Bcast from 0 to other procs the starting frequency of the all dataset
     MPI_Bcast(&freq0,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-    cout << rank << ": " << freq0 << endl;
     com_time -= MPI_Wtime();
 #endif
 
@@ -283,7 +282,7 @@ int main(int argc, char *argv[])
                ngalaxies, gflux, gscale, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
     
 #ifdef USE_MPI
-    double model_time = MPI_Wtime() - start_data;
+    double model_time = MPI_Wtime() - start_model;
 #else
     long long end_model = current_timestamp();
     double model_time = (double)(end_model - start_model)/1000.;
@@ -346,7 +345,7 @@ int main(int argc, char *argv[])
     {
         temp_facet_visData = new complexd[temp_facet_nvis];
         temp_facet_sigma2 = new double[temp_facet_nvis];
-        sizeGbytes = (temp_facet_nvis*sizeof(complexd)+facet_ncoords*sizeof(double))/((double)(1024*1024*1024));
+        sizeGbytes = (temp_facet_nvis*(sizeof(complexd)+sizeof(double)))/((double)(1024*1024*1024));
         cout << "rank " << rank << ": allocated temporary gridded visibilities and variances: " << temp_facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
@@ -696,7 +695,15 @@ int main(int argc, char *argv[])
            var_e1 = res[2]; var_e2 = res[3];
            oneDimvar = res[4]; maxL = res[5];
           }
-#endif          
+#endif    
+          if (rank == 0)   // write shape measurement (always!)
+             fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f  \n",gflux[gal],ge1[gal],mes_e1,sqrt(var_e1),ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
+          
+          if (maxL <= -1e+10 || var_e1 < 1e-4 || var_e2 < 1e-4 || oneDimvar < 1e-4) // bad measurement
+          {
+             bad++; 
+             mes_e1 = 0.; mes_e2 = 0.; // remove round source model from original data
+          }
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -715,7 +722,7 @@ int main(int argc, char *argv[])
                visSkyMod[i].imag -= visGal[i].imag;
             }
  
-            // get current source model fit from original data
+            // remove current source model from original data
             data_galaxy_visibilities(spec[ch_ind], wavenumbers[ch_ind], par.band_factor, time_acc, mes_e1, mes_e2, R_mu[k],
                                      gflux[gal], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
  
@@ -724,11 +731,6 @@ int main(int argc, char *argv[])
               visData[i].real -= visGal[i].real;
               visData[i].imag -= visGal[i].imag;
             }
-          }
-          if (rank == 0)
-          {
-             fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f  \n",gflux[gal],ge1[gal],mes_e1,sqrt(var_e1),ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
-             if (maxL <= -1e+10 || var_e1 < 1e-4 || var_e2 < 1e-4 || oneDimvar < 1e-4) bad++;    // Only rank 0 compute the final number of bad sources
           }
           k++;
           ind++;
