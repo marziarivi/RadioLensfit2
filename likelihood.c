@@ -33,6 +33,7 @@
 #include <gsl/gsl_sf_expint.h>
 #include <gsl/gsl_vector.h>
 
+#include "default_params.h"
 #include "datatype.h"
 #include "galaxy_visibilities.h"
 #include "likelihood.h"
@@ -457,7 +458,7 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
     float start2 = edim2;
     
     int k=0;
-    while (oldsampling > sampling && sampling > 0.003)
+    while (oldsampling > sampling && sampling > E_RES)
     {
         for(ie1 = -start1/sampling; ie1 <= start1/sampling; ie1 +=2)
         {

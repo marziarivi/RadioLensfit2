@@ -73,7 +73,11 @@
 #define JMAX 30
 #define EPS 1.0e-5
 
+// Simplex method
+#define TOL 1.0e-3
+
 // Parameter for likelihood sampling
 #define NP_MAX 30  // min number of sampling points with likelihood above 5%ML
+#define E_RES 3.0e-3  // sampling resolution
 
 #endif
