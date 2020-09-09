@@ -37,8 +37,9 @@
 // Notice: instructions execution order is important as arrays are reused!!!!
 
 #ifdef FACET
-void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
-                       double *sigma2_vis, unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
+void source_extraction(int rank, unsigned int my_start_index, complexd *facet_vis, double *facet_sigma2, double l0, double m0, double flux, double mu, double e1, double e2, 
+                       likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, unsigned int nchannels, 
+                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
 #else
 void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
                        unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres)
@@ -46,37 +47,48 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
 {
    int facet = facet_size(mu,len);
    par->ncoords = evaluate_uv_grid(num_coords, par->uu, par->vv, uu_metres, vv_metres, len, facet, par->count);
-   //par->ncoords = evaluate_uv_circular_grid(num_coords, par->uu, par->vv, uu_metres, vv_metres, len, facet, par->count); 
- 
+
+#ifdef USE_MPI
+   unsigned int my_freq_index = rank*nchannels; 
+#else
+   unsigned int my_freq_index = 0;
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-   for (unsigned int ch = 0; ch < par->nchannels; ch++)
+   for (unsigned int ch = 0; ch < nchannels; ch++)
    {
      unsigned long int ch_vis = ch*num_coords;
+     unsigned int ch_ind = my_freq_index + ch;
      // get small round source at the current position and flux
-     data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, e1, e2, mu,
+     data_galaxy_visibilities((par->spec)[ch_ind], (par->wavenumbers)[ch_ind], par->band_factor, par->acc_time, e1, e2, mu,
                               flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
     
      for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
      {
-        // remove it from the sky model
+#ifdef USE_MPI
+        // extract source data visibilities without modifying the sky model
+        visGal[i].real = visData[i].real - visSkyMod[i].real + visGal[i].real;
+        visGal[i].imag = visData[i].imag - visSkyMod[i].imag + visGal[i].imag;
+#else
+        // remove source model from the sky model
         visSkyMod[i].real -= visGal[i].real;
         visSkyMod[i].imag -= visGal[i].imag;
         
         // remove sky model from the original data (i.e. all other sources approximation) in order to have only the current galaxy data
         visGal[i].real = visData[i].real - visSkyMod[i].real;
         visGal[i].imag = visData[i].imag - visSkyMod[i].imag;
+#endif 
      }
     
 #ifdef FACET
      // Phase shift data visibilities (to be done after gridding because real data will be gridded)
-     data_visibilities_phase_shift((par->wavenumbers)[ch], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
+     data_visibilities_phase_shift((par->wavenumbers)[ch_ind], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
        
      // gridding visibilities
-     unsigned int ch_visfacet = ch*par->ncoords;
-     //circular_gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),len,facet,&((par->data)[ch_visfacet]),par->count);
-     gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),&(sigma2_vis[ch_vis]),len,facet,&((par->data)[ch_visfacet]),&((par->sigma2)[ch_visfacet]),par->count);
+     unsigned int ch_visfacet = (my_start_index + ch)*par->ncoords;
+     gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),&(sigma2_vis[ch_vis]),len,facet,&(facet_vis[ch_visfacet]),&(facet_sigma2[ch_visfacet]),par->count);
 #else
      par->l0 = l0;
      par->m0 = m0;
@@ -127,7 +139,7 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
         if (status) break;
         
         size = gsl_multimin_fminimizer_size(s);
-        status = gsl_multimin_test_size (size, 1e-3);
+        status = gsl_multimin_test_size (size, TOL);
     }
     while (status == GSL_CONTINUE && iter < 50 && s->fval < 0.);
     
@@ -145,10 +157,10 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
     if (*maxL > -1e+10)
     {
         likelihood_sampling(mes_e1, mes_e2, *maxL, par, np_max, var_e1, var_e2, oneDimvar);
-        //    if (var1 < 1e-4 || var2 <1e-4) 
+        printf("rank %d: average: %f,%f variance: %e,%e 1Dvar: %e\n",rank,*mes_e1,*mes_e2,*var_e1,*var_e2,*oneDimvar);
         if (*var_e1 < 1e-4 || *var_e2 < 1e-4 || *oneDimvar < 1e-4)
         {
-           printf("ERROR likelihood sampling!\n");
+           printf("rank %d: ERROR likelihood sampling!\n",rank);
            error = 1;
         }
     }
