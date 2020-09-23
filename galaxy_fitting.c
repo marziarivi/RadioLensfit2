@@ -146,15 +146,15 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
     *mes_e1 = gsl_vector_get(s->x, 0);
     *mes_e2 = gsl_vector_get(s->x, 1);
     *maxL= -s->fval;
-    
-    printf("rank %d:  Maximum log likelihood = %f for e = %f,%f\n",rank,*maxL,*mes_e1,*mes_e2);
-    
+   
+    printf("rank %d:  Maximum log likelihood = %f for e = %f,%f \n",rank,*maxL,*mes_e1,*mes_e2);
+    if ((*mes_e1)*(*mes_e1)+(*mes_e2)*(*mes_e2) > 0.65) *maxL = -1e+10;
     // Likelihood sampling to compute mean and variance
     int error = 0;
     *var_e1 = 0.;
     *var_e2 = 0.;
     *oneDimvar = 0.;
-    if (*maxL > -1e+10)
+    if (*maxL > -1.e+10)
     {
         likelihood_sampling(mes_e1, mes_e2, *maxL, par, np_max, var_e1, var_e2, oneDimvar);
         printf("rank %d: average: %f,%f variance: %e,%e 1Dvar: %e\n",rank,*mes_e1,*mes_e2,*var_e1,*var_e2,*oneDimvar);
@@ -164,7 +164,11 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
            error = 1;
         }
     }
-    else error = 1;
+    else 
+    {
+       printf("rank %d: BAD - NO likelihood sampling!\n",rank);
+       error = 1;
+    }
     
     gsl_vector_free(x);
     gsl_vector_free(sx);

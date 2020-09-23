@@ -83,8 +83,7 @@ double f_posterior (const gsl_vector *v, void *params)
  *
  *   Then marginalise over the scalelenght.
  */
-   
-    
+
 double f_likelihood (const gsl_vector *v, void *params)
 {
     double L_e,ee1, ee2;
@@ -92,10 +91,9 @@ double f_likelihood (const gsl_vector *v, void *params)
     ee1 = gsl_vector_get(v, 0);
     ee2 = gsl_vector_get(v, 1);
     
-    if(ee1*ee1+ee2*ee2 <= 0.64)
-        L_e = loglikelihood(params, ee1, ee2, &error);
-    
-    else L_e = -1.e10;
+    if(ee1*ee1+ee2*ee2 < 0.65)
+        L_e = loglikelihood(params, ee1, ee2, &error);   
+    else L_e = -1.e+10;
     
     return -L_e;
 }
@@ -136,10 +134,11 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
     else
     {
         printf("likelihood error for e1 = %f, e2 = %f: too few points (n=%d) for marginalisation over the scalelength\n",ee1,ee2,numvals);
-        *error = 1; L_e = -1.e10;
+        *error = 1; 
+        L_e = -1.e+10;
     }
-    if (L_e == -1.e10) *error = 1;
-    
+    if (L_e == -1.e+10) *error = 1;
+ 
     free(L_r);
     free(xmarvals);
     free(ymarvals);
@@ -180,7 +179,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
     {
         double B = (ho*ho)*0.5;
         L_er = marginalise_over_position_shift(B);
-        if (isnan(L_er)) L_er = -1.e10;
+        if (isnan(L_er)) L_er = -1.e+10;
         else L_er -= 0.5*log(det_sigma); // = log(sqrt(1/det_sigma))
     }
         
@@ -352,7 +351,7 @@ double marginalise_over_position_shift(double x)
     
     if (x <= Delta)
     {
-        y = -1.e10;
+        y = -1.e+10;
         return y;
     }
     
@@ -375,7 +374,7 @@ double marginalise_over_position_shift(double x)
     else
     {
         // error from gsl_sf: don't halt, just return "bad" value
-        y =  -1.e10;
+        y =  -1.e+10;
     }
     return y;
     
@@ -393,7 +392,7 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
     double totL, L_e, average_1,average_2, cov, var1, var2,x_e1,x_e2;
     double xL1, xL2, mod2 = 0;
     likelihood_params *par = (likelihood_params *)params;
-    
+ 
     double L = 1.;
     double threshold = 0.05;
     double max_e1 = *mes_e1;
@@ -405,19 +404,18 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
     cov = max_e1*max_e2;
     totL = 1.; //L=exp(maxL-maxL)
     np = 1;
-    
+  
     //search for the range where sampling the likelihood
-    float oldsampling = 1.;     //dummy value to make sure loop is entered
     float sampling = 0.05;
-    
+    if (max_e1 < 0) sampling = -0.05;
       //search threshold along the first component
       int k1=0;
       x_e1 = max_e1;
-      while (L>threshold && mod2<=1. && !error)
+      while (L>threshold && mod2 < 1. && !error)
       {
         x_e1 += sampling;
         mod2 = x_e1*x_e1+max_e2*max_e2;
-        if(mod2 <= 1.)
+        if(mod2 < 1.)
         {
             L_e = loglikelihood(par, x_e1, max_e2, &error);
             if (!error)
@@ -429,17 +427,19 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
             }
         }
       }
- 
+      if (L<threshold && k1 > 1) k1--;
+
       //search threshold along the second component
       L = 1.;
       int k2=0;
-      mod2=0.;
+      sampling = 0.05;
+      if (max_e2 < 0) sampling = -0.05;
       x_e2 = max_e2;
-      while (L>threshold && mod2<=1. && !error)
+      while (L>threshold && mod2 < 1. && !error)
       {
         x_e2 += sampling;
         mod2 = x_e2*x_e2+max_e1*max_e1;
-        if(mod2 <= 1.)
+        if(mod2 < 1.)
         {
             L_e = loglikelihood(par, max_e1, x_e2, &error);
             if (!error)
@@ -451,14 +451,16 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
             }
         }
       }
-   
+      if (L<threshold && k2 > 1) k2--;
+
+    sampling = 0.05;
     float edim1 = k1*sampling;
     float edim2 = k2*sampling;
     float start1 = edim1;
     float start2 = edim2;
-    
+ 
     int k=0;
-    while (oldsampling > sampling && sampling > E_RES)
+    while (np < np_max && sampling > E_RES)
     {
         for(ie1 = -start1/sampling; ie1 <= start1/sampling; ie1 +=2)
         {
@@ -469,7 +471,7 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
                  x_e1 = max_e1+ie1 * sampling;
                  x_e2 = max_e2+ie2 * sampling;
                  mod2 = x_e1*x_e1+x_e2*x_e2;
-                 if(mod2 <= 1.)
+                 if(mod2 < 1.)
                  {
                     L_e = loglikelihood(par, x_e1, x_e2, &error);
                     if (!error)
@@ -479,7 +481,6 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
                         if (L >= threshold)
                         {
                             np++;
-                            
                             xL1 = x_e1*L;
                             xL2 = x_e2*L;
                             average_1 += xL1;
@@ -488,21 +489,16 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
                             var2 += x_e2*xL2;
                             cov += x_e1*xL2;
                             totL += L;
-                        }
-                        k++;
+                       }
+                       k++;
                     }
                  }
-                
                }
             }
         }
-        oldsampling = sampling;
-        if (np < np_max)
-        {
-            sampling /= 2;
-            start1 = edim1 - sampling;
-            start2 = edim2 - sampling;
-        }
+        sampling *= 0.5;
+        start1 = edim1 - sampling;
+        start2 = edim2 - sampling;
     }
     
     average_1 /= totL;
@@ -518,7 +514,7 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
     *var_e2 = var2;
     *oneDimvar = sqrt((var1)*(var2)-cov*cov);  // Jacobian determinat as 1D variance  
 
-    //printf("rank %d: n. points: %d, %d average: %f,%f variance: %e,%e cov: %e\n",rank,np,k,average_1,average_2,var1,var2,cov);
+    printf("n. points: %d, %d average: %f,%f variance: %e,%e cov: %e\n",np,k,average_1,average_2,var1,var2,cov);
 }
 
 
