@@ -86,15 +86,15 @@ int main(int argc, char *argv[])
     start_data = current_timestamp();
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    RL_MeasurementSet* ms = ms_open(argv[rank+3]);
+    RL_MeasurementSet* ms = ms_open(argv[3]);
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
     const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
     const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
     const unsigned long int num_rows = ms_num_rows(ms);                // Number of rows 
-    const double freq_start_hz = ms_freq_start_hz(ms); //1280+e6;          // Start Frequency, in Hz
-    const double channel_bandwidth_hz = ms_freq_inc_hz(ms); //240+e6      // Frequency channel bandwidth, in Hz
+    const double freq_start_hz = ms_freq_start_hz(ms); //1280e+6;          // Start Frequency, in Hz
+    const double channel_bandwidth_hz = ms_freq_inc_hz(ms); //240e+6      // Frequency channel bandwidth, in Hz
     const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
     const int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
 
@@ -102,7 +102,6 @@ int main(int argc, char *argv[])
     const double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
 
     const double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured    
-
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
 
     cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
@@ -173,8 +172,9 @@ int main(int argc, char *argv[])
         cout << "ERROR reading MS - sigma: " << status << endl;
         exit(EXIT_FAILURE);
     }
+    double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
     for (unsigned long int i = 0; i<num_vis; i++)
-        sigma2_vis[i] = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
+        sigma2_vis[i] = sigma2; // visibility noise variance
  
     ms_close(ms); 
 
