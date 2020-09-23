@@ -6,7 +6,7 @@
 # OpenMP compiler switch
 OMP = -fopenmp
 
-#OPT += -DUSE_MPI
+OPT += -DUSE_MPI
 OPT += -DFACET
 
 #------------------------------------------------------------------------- 
@@ -28,7 +28,7 @@ CASACORE_INC =  -I/share/splinter/cosmos/modules/sep_2019/install_dir/casacore-5
 CASACORE_LIB =  -L/share/splinter/cosmos/modules/sep_2019/install_dir/casacore-5.4.0/lib -lcasa_casa -lcasa_measures -lcasa_tables -lcasa_ms -std=c++11
 
 GSL_INC = -I/share/splinter/cosmos/modules/sep_2019/install_dir/gsl-2.6/include
-GSL_INC = -L/share/splinter/cosmos/modules/sep_2019/install_dir/gsl-2.6/lib
+GSL_LIB = -L/share/splinter/cosmos/modules/sep_2019/install_dir/gsl-2.6/lib
 
 SUP_INCL = -I. $(CASACORE_INC) $(GSL_INC)  
 
@@ -56,16 +56,19 @@ OPTIONS = $(OPTIMIZE) $(OPT)
 
 ifeq (MPI,$(findstring MPI,$(OPT)))
 EXEC1 = RadioLensfit2-mpi
-OBJS1  = RadioLensfit2-mpi.o galaxy_fitting-mpi.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o 
+OBJS1  = RadioLensfit2-mpi.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o 
 else
 EXEC1 = RadioLensfit2
 OBJS1  = RadioLensfit2-MS.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o
 endif 
 
-EXEC2 = Simulate
-OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_values.o galaxy_visibilities.o measurement_set.o data_simulation.o
+#EXEC2 = Simulate
+#OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_values.o galaxy_visibilities.o measurement_set.o data_simulation.o
  
-OBJS = RadioLensfit2-MS.o RadioLensfit-mpi.o galaxy_fitting-mpi.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
+EXEC2 = Simulate
+OBJS2 = Simulate-from-catalog.o read_catalog.o distributions.o utils.o galaxy_visibilities.o measurement_set.o data_simulation.o
+
+OBJS = RadioLensfit2-MS.o RadioLensfit-mpi.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
 
 
 EXEC3 = RadioLensfit2-single   
