@@ -33,8 +33,7 @@
     Command line input parameters:
     argv[1]  source catalog filename 
     argv[2]  number of sources
-    argv[3]  MS1 filename
-    ....   
+    argv[3]  MS filename prefix
 */
 
 // MPI version enabled only for the FACET case!
@@ -59,7 +58,7 @@
 #include "measurement_set.h"
 #include "data_simulation.h"
 #include "read_catalog.h"
-#include "galaxy_fitting-mpi.h"
+#include "galaxy_fitting.h"
 #include "galaxy_visibilities.h"
 #include "distributions.h"
 #include "evaluate_uv_grid.h"
@@ -87,13 +86,14 @@ int main(int argc, char *argv[])
     if (rank==0) cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif
     
-    if (argc != nprocs+3)
+    if (argc != 4)
     {
       if (rank == 0)
       {
         cout << "ERROR: bad number of parameters!" << endl;
-        cout << "usage: RadioLensfit2-MS <source catalog filename> <num_sources> <filename MS1> <filename MS2> .... " << endl;
+        cout << "usage: RadioLensfit2-MS <source catalog filename> <num_sources> <MS filename prefix>" << endl;
         cout << "number of MS must be equal to the number of MPI tasks" << endl;
+        cout << "filename of input MS should be <prefix><IF number>.MS" << endl;
       }  
       exit(EXIT_FAILURE);
     }
@@ -110,7 +110,9 @@ int main(int argc, char *argv[])
 #endif
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    RL_MeasurementSet* ms = ms_open(argv[3+rank]);
+    char filename[100];
+    sprintf(filename,"%s%d.MS",argv[3],rank);
+    RL_MeasurementSet* ms = ms_open(filename);
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
@@ -207,8 +209,9 @@ int main(int argc, char *argv[])
         cout << "rank " << rank << ": ERROR reading MS - sigma: " << status << endl;
         exit(EXIT_FAILURE);
     }
+    double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
     for (unsigned long int i = 0; i<num_vis; i++)
-        sigma2_vis[i] = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
+        sigma2_vis[i] = sigma2; // visibility noise variance
  
     ms_close(ms); 
 
