@@ -32,7 +32,7 @@ void set_posterior_values(int numR, double* L_r, double* rprior, double* Ro, dou
 
   // find first valid measurement
   int nRo = 1;
-  while (nRo < numR && ( L_r[nRo] <= -1.e10 ) ) nRo++;
+  while (nRo < numR && ( L_r[nRo] <= -1.e+10 ) ) nRo++;
     
   /*
    * if found OK, make linearly interpolated array at intervals R/5 from  R/10 to
@@ -52,7 +52,7 @@ void set_posterior_values(int numR, double* L_r, double* rprior, double* Ro, dou
     {
       likelval = L_r[nRo];
       // if likelihood previously measured successfully...
-      if (likelval > -1.e10)
+      if (likelval > -1.e+10)
       {
           xmarvals[num_marvals] = Ro[nRo];
           ymarvals[num_marvals] = likelval + rprior[nRo];

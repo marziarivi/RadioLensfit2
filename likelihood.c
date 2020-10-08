@@ -514,7 +514,7 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
     *var_e2 = var2;
     *oneDimvar = sqrt((var1)*(var2)-cov*cov);  // Jacobian determinat as 1D variance  
 
-    printf("n. points: %d, %d average: %f,%f variance: %e,%e cov: %e\n",np,k,average_1,average_2,var1,var2,cov);
+    // printf("n. points: %d, %d average: %f,%f variance: %e,%e cov: %e\n",np,k,average_1,average_2,var1,var2,cov);
 }
 
 

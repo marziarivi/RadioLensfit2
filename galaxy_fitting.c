@@ -149,6 +149,7 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
    
     printf("rank %d:  Maximum log likelihood = %f for e = %f,%f \n",rank,*maxL,*mes_e1,*mes_e2);
     if ((*mes_e1)*(*mes_e1)+(*mes_e2)*(*mes_e2) > 0.65) *maxL = -1e+10;
+
     // Likelihood sampling to compute mean and variance
     int error = 0;
     *var_e1 = 0.;
@@ -175,5 +176,4 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
     gsl_multimin_fminimizer_free(s);
     
     return error;
-
 }
