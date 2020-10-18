@@ -17,10 +17,6 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,20 +61,12 @@ unsigned long int evaluate_max_uv_grid_size(double len, unsigned long int ncoord
     
     double inc = 2*len/sizeg;
 
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
     for (unsigned long int k = 0; k < ncoords; k++)
     {
         unsigned int pu = (unsigned int) ((u[k] + len) / inc);
         unsigned int pv = (unsigned int) ((v[k] + len) / inc);
         unsigned long int pc = (unsigned long int) pv * sizeg + pu;
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-      {
         count[pc]++;
-      }
     }
  
     n = 0;
@@ -99,17 +87,11 @@ unsigned long int evaluate_uv_grid(unsigned long int ncoords, double* grid_u, do
 
     memset(count, 0, size*sizeof(unsigned long int));
 
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
     for (unsigned long int k = 0; k < ncoords; k++)
     {
         unsigned int pu = (unsigned int) ((u[k] + len) / inc);
         unsigned int pv = (unsigned int) ((v[k] + len) / inc);
         unsigned long int pc = (unsigned long int) pv * sizeg + pu;
-#ifdef _OPENMP
-#pragma omp critical
-#endif
         count[pc]++;
     }
 
