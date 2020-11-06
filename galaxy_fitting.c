@@ -37,7 +37,7 @@
 // Notice: instructions execution order is important as arrays are reused!!!!
 
 #ifdef FACET
-void source_extraction(int rank, unsigned int my_start_index, complexd *facet_vis, double *facet_sigma2, double l0, double m0, double flux, double mu, double e1, double e2, 
+unsigned long int source_extraction(int rank, unsigned int my_start_index, double *facet_u, double *facet_v, complexd *facet_vis, double *facet_sigma2, double l0, double m0, double flux, double mu, double e1, double e2, 
                        likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, unsigned int nchannels, 
                        unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
 #else
@@ -46,7 +46,7 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
 #endif
 {
    int facet = facet_size(mu,len);
-   par->ncoords = evaluate_uv_grid(num_coords, par->uu, par->vv, uu_metres, vv_metres, len, facet, par->count);
+   unsigned long int facet_ncoords = evaluate_uv_grid(num_coords, facet_u, facet_v, uu_metres, vv_metres, len, facet, par->count);
 
 #ifdef USE_MPI
    unsigned int my_freq_index = rank*nchannels; 
@@ -69,8 +69,8 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
      {
 #ifdef USE_MPI
         // extract source data visibilities without modifying the sky model
-        visGal[i].real = visData[i].real - visSkyMod[i].real + visGal[i].real;
-        visGal[i].imag = visData[i].imag - visSkyMod[i].imag + visGal[i].imag;
+        visGal[i].real += visData[i].real - visSkyMod[i].real;
+        visGal[i].imag += visData[i].imag - visSkyMod[i].imag;
 #else
         // remove source model from the sky model
         visSkyMod[i].real -= visGal[i].real;
@@ -87,13 +87,16 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
      data_visibilities_phase_shift((par->wavenumbers)[ch_ind], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
        
      // gridding visibilities
-     unsigned int ch_visfacet = (my_start_index + ch)*par->ncoords;
+     unsigned int ch_visfacet = (my_start_index + ch)*facet_ncoords;
      gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),&(sigma2_vis[ch_vis]),len,facet,&(facet_vis[ch_visfacet]),&(facet_sigma2[ch_visfacet]),par->count);
 #else
      par->l0 = l0;
      par->m0 = m0;
 #endif
-   }
+  }
+#ifdef FACET
+  return facet_ncoords;
+#endif
 }
 
 
