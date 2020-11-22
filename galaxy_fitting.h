@@ -24,7 +24,7 @@
 #include "datatype.h"
 
 #ifdef FACET
-unsigned long int source_extraction(int rank, unsigned int my_start_index, double *facet_u, double *facet_v, complexd *facet_vis, double *facet_sigma2, double l0, double m0, double flux, double mu, double e1, double e2, 
+unsigned long int source_extraction(int rank, int nIF, unsigned int my_start_index, double *facet_u, double *facet_v, complexd *facet_vis, double *facet_sigma2, double l0, double m0, double flux, double mu, double e1, double e2, 
                        likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, unsigned int nchannels, 
                        unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len);
 #else

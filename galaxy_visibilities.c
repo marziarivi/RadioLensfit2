@@ -83,8 +83,7 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
     
     // normalise
     sum = sqrt(sum);
-    unsigned long int nvis = num_coords*nchannels;
-    for (unsigned long int k=0; k<nvis; k++) Modvis[k] /= sum;
+    for (unsigned long int k=0; k<nv; k++) Modvis[k] /= sum;
 }
     
     
@@ -145,8 +144,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
     
     // normalise
     sum = sqrt(sum);
-    unsigned long int nvis = num_coords*nchannels;
-    for (unsigned long int k=0; k<nvis; k++) { Modvis[k].real /= sum; Modvis[k].imag /= sum; }
+    for (unsigned long int k=0; k<nv; k++) { Modvis[k].real /= sum; Modvis[k].imag /= sum; }
 }
     
     

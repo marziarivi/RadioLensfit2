@@ -103,6 +103,7 @@ void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth
         }
         SNR_vis[g] /= sigma;
         SNR_vis[g] = sqrt(SNR_vis[g]);
+        printf("n. %d flux = %f SNR = %f\n",g,gflux[g],SNR_vis[g]);
     }
     
     // Add a random Gaussian noise component to the visibilities.
