@@ -40,16 +40,15 @@ double weight_func(double u, double v)
 */
 // Compute facet size dependent on source flux
 // use scalelength-flux relation: mu=log(theta_med[arcsec]) = ADD + ESP*log(flux[uJy]) to estimate galaxy scalelength
-// multiply by a PSF factor to estimate facet FoV for that flux range
+// multiply by a PSF factor to estimate facet FoV for that flux range and reference frequency
 // compute facet cell size by the relation: Du[wavelength units]=1/FoV[rad] (Briggs 1999)
-/*int facet_size(double theta_med, double len)
+int facet_size(double theta_med, double len)
 {
-    double facet_du = 1./(PSF_NAT*theta_med*ARCS2RAD);
-    facet_du = facet_du*C0/REF_FREQ;  // facet cell size in metres (as uv points)
-    int facet_size = 2*ceil(len/facet_du);
+    double facet_du = C0/(REF_FREQ*PSF_NAT*theta_med*ARCS2RAD); // facet cell size in metres (as uv points)
+    int facet_size = ceil(2*len/facet_du);
     return facet_size;
 }
-*/
+
 
 // Compute max number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered) 
 // to allocate all the grid arrays once

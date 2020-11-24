@@ -278,8 +278,7 @@ int main(int argc, char *argv[])
        
 #ifdef FACET
     // Faceting uv coordinates ----------------------------------------------------------------------------------------
-    double facet_du = 1./(PSF_NAT*RMAX*ARCS2RAD);
-    int facet = ceil(len*wavenumbers[num_channels-1]/(PI*facet_du));
+    int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     unsigned long int facet_ncoords = evaluate_max_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
@@ -393,9 +392,9 @@ int main(int argc, char *argv[])
         
         l0 = l[g];  m0 = m[g];
 #ifdef FACET
-        par.ncoords = source_extraction(0,1,0,par.uu,par.vv,par.data,par.sigma2,l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+        par.ncoords = source_extraction(0,0,par.uu,par.vv,par.data,par.sigma2,l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
 #else
-        source_extraction(0,1,0,par.data,par.sigma2,l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
+        source_extraction(l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
 
         start_fitting = current_timestamp();
@@ -469,9 +468,9 @@ int main(int argc, char *argv[])
         
         l0 = l[gal];  m0 = m[gal];
 #ifdef FACET
-        par.ncoords = source_extraction(0,1,0,par.uu,par.vv,par.data,par.sigma2,l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+        par.ncoords = source_extraction(0,0,par.uu,par.vv,par.data,par.sigma2,l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
 #else
-        source_extraction(0,1,0,par.data,par.sigma2,l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
+        source_extraction(l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
         start_fitting = current_timestamp();
         double mes_e1, mes_e2, maxL;

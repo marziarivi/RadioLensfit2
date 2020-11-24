@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     const double ref_frequency_hz = REF_FREQ;  // Reference frequency in Hz at which fluxes are measured    
     double freq0 = freq_start_hz;        // Initial frequency for all dataset
 #ifdef USE_MPI
-    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     double com_time = -MPI_Wtime(); 
     // Bcast from 0 to other procs the starting frequency of the all dataset
     MPI_Bcast(&freq0,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -328,8 +328,7 @@ int main(int argc, char *argv[])
        
 #ifdef FACET
     // Faceting uv coordinates ----------------------------------------------------------------------------------------
-    double facet_du = 1./(PSF_NAT*RMAX*ARCS2RAD);
-    int facet = ceil(len*wavenumbers[tot_nchannels-1]/(PI*facet_du));
+    int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     unsigned long int facet_ncoords = evaluate_max_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
@@ -488,7 +487,7 @@ int main(int argc, char *argv[])
             rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);  // set log(prior) for scalelength of source g
 #ifdef FACET
            // extract my averaged visibilities and sigma2 contribution (my MS) for source g and store them in the corresponding section of my source facet array 
-           facet_ncoords = source_extraction(rank,nprocs, my_freq_index, par.uu, par.vv, facet_visData, facet_sigma2,l0, m0, gflux[g], R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           facet_ncoords = source_extraction(rank,my_freq_index, par.uu, par.vv, facet_visData, facet_sigma2,l0, m0, gflux[g], R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
            par.ncoords = facet_ncoords;
 #ifdef USE_MPI
            // Buffer facet vis and sigma2 for collection of source g from the other procs (for their MS contribution) 
@@ -500,7 +499,7 @@ int main(int argc, char *argv[])
         else 
         {
            // extract my averaged visibilities and sigma2 contribution (my MS) for source g and store them in the temporary IF facet array
-           facet_ncoords = source_extraction(rank,nprocs,0, temp_facet_u,temp_facet_v,temp_facet_visData, temp_facet_sigma2,l0, m0, gflux[g], R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           facet_ncoords = source_extraction(rank,0, temp_facet_u,temp_facet_v,temp_facet_visData, temp_facet_sigma2,l0, m0, gflux[g], R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
            // Buffer temp facet vis and sigma2 (my MS) of source g to send to proc = k 
            recv_facet_buffer = 0;
            send_facet_buffer = (double *) temp_facet_visData;
@@ -508,11 +507,11 @@ int main(int argc, char *argv[])
            send_sigma2_buffer = temp_facet_sigma2;
 #endif
 #else
-           source_extraction(rank,1,my_freq_index, l0, m0, gflux[g], R_mu[k], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
+           source_extraction(l0, m0, gflux[g], R_mu[k], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
         }
 #ifdef USE_MPI
-        //MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
         // Proc k collects facet vis and sigma2 of the current source from the other procs (for their MS contribution)
         unsigned long int nvis = num_channels*facet_ncoords;
         com_time -= MPI_Wtime();
@@ -559,7 +558,7 @@ int main(int argc, char *argv[])
             res[4] = oneDimvar; res[5] = maxL;
          }
 #ifdef USE_MPI 
-         //MPI_Barrier(MPI_COMM_WORLD);
+         MPI_Barrier(MPI_COMM_WORLD);
          // Bcast shape results from proc k to the others
          com_time -= MPI_Wtime();
          double time_Bcast = MPI_Wtime();
@@ -634,7 +633,7 @@ int main(int argc, char *argv[])
           for (int nRo=1; nRo<numR; nRo++)
                 rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
 #ifdef FACET
-          facet_ncoords = source_extraction(rank,nprocs,my_freq_index, par.uu, par.vv, facet_visData, facet_sigma2,l0, m0, flux, R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+          facet_ncoords = source_extraction(rank,my_freq_index, par.uu, par.vv, facet_visData, facet_sigma2,l0, m0, flux, R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
           par.ncoords = facet_ncoords;
 #ifdef USE_MPI
           // Buffer facet vis and sigma2 of source g for collection from the other procs of their MS contribution
@@ -645,7 +644,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-          facet_ncoords = source_extraction(rank,nprocs,0., temp_facet_u,temp_facet_v,temp_facet_visData, temp_facet_sigma2,l0, m0, flux, R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+          facet_ncoords = source_extraction(rank,0., temp_facet_u,temp_facet_v,temp_facet_visData, temp_facet_sigma2,l0, m0, flux, R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
           // Buffer temp facet vis and sigma2 (my MS section) of source g to send to proc = k
           recv_facet_buffer = 0;
           send_facet_buffer = (double *) temp_facet_visData;
@@ -653,11 +652,11 @@ int main(int argc, char *argv[])
           send_sigma2_buffer = temp_facet_sigma2;
 #endif
 #else
-          source_extraction(rank,1,my_freq_index, l0, m0, flux, R_mu[k], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
+          source_extraction(l0, m0, flux, R_mu[k], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
         }
 #ifdef USE_MPI
-        //MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
         // Proc k collects facet vis and sigma2 of the current source from the other procs (for their MS contribution)
         unsigned long int nvis = num_channels*facet_ncoords;
         com_time -= MPI_Wtime();
@@ -704,7 +703,7 @@ int main(int argc, char *argv[])
             res[4] = oneDimvar; res[5] = maxL;
           }
 #ifdef USE_MPI  // Bcast shape results from proc k to the other
-          //MPI_Barrier(MPI_COMM_WORLD);
+          MPI_Barrier(MPI_COMM_WORLD);
           com_time -= MPI_Wtime();
           double time_Bcast = MPI_Wtime();
           MPI_Bcast(res,6,MPI_DOUBLE,k,MPI_COMM_WORLD);

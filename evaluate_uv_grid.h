@@ -27,7 +27,7 @@ extern "C" {
 #include "datatype.h"
     
 //double weight_func(double u, double v);
-//int facet_size(double theta_med, double len);
+int facet_size(double theta_med, double len);
 
 unsigned long int evaluate_max_uv_grid_size(double len, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count);
 unsigned long int evaluate_uv_grid(unsigned long int ncoords, double* grid_u, double* grid_v, double *u, double *v, double len, int sizeg, unsigned long int *count);
