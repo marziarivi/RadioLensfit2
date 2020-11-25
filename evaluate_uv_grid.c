@@ -45,7 +45,7 @@ double weight_func(double u, double v)
 int facet_size(double theta_med, double len)
 {
     double facet_du = C0/(REF_FREQ*PSF_NAT*theta_med*ARCS2RAD); // facet cell size in metres (as uv points)
-    int facet_size = ceil(2*len/facet_du);
+    int facet_size = 2*ceil(len/facet_du);
     return facet_size;
 }
 
