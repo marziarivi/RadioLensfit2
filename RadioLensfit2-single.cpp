@@ -134,6 +134,7 @@ int main(int argc, char *argv[])
     
     int status = 0;
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
+    ms_close(ms);
     
     // Allocate and read Data visibilities
     unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
@@ -151,8 +152,23 @@ int main(int argc, char *argv[])
     }
     memset(visData, 0, num_vis*sizeof(complexd));
 
-    ms_close(ms);
+    double *sigma2_vis;
+    try
+    {
+        sigma2_vis = new double[num_vis];
+        sizeGbytes = num_vis*sizeof(double)/((double)(1024*1024*1024));
+        cout << "allocated sigma2 visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << " bad_alloc caught: " << ba.what() << '\n';
+    }
+    double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
+    for (unsigned long int i = 0; i<num_vis; i++)
+        sigma2_vis[i] = sigma2; // visibility noise variance
 
+    if (rank==0) cout << "sigma_vis  = " << sqrt(sigma2) << " muJy" << endl;
 
     // Pre-compute wavenumber and spectral factor for each channel ---------------------------------------------------------------------
     // They corresponds to the central frequency of each channel
@@ -231,11 +247,13 @@ int main(int argc, char *argv[])
    
     unsigned long int facet_nvis = num_channels*facet_ncoords;
     complexd* facet_visData;
+    double* facet_sigma2;
     try
     {
        facet_visData = new complexd[facet_nvis];
-       sizeGbytes = facet_nvis*sizeof(complexd)/((double)(1024*1024*1024));
-       cout << "rank " << rank << ": allocated gridded visibilities: " << facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
+       facet_sigma2 = new double[facet_nvis];
+       sizeGbytes = (facet_nvis*sizeof(complexd)+facet_ncoords*sizeof(double))/((double)(1024*1024*1024));
+       cout << "rank " << rank << ": allocated gridded visibilities and variances: " << facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
        totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -289,6 +307,7 @@ int main(int argc, char *argv[])
     par.vv = facet_v;
     par.data = facet_visData;
     par.count = count;
+    par.sigma2 = facet_sigma2;
 #else
     par.ncoords = num_coords;
     par.uu = uu_metres;
@@ -296,6 +315,7 @@ int main(int argc, char *argv[])
     par.ww = ww_metres;
     par.data = visData;
     par.count = 0;
+    par.sigma2 = sigma2_vis; // visibility noise variance
 #endif
     par.nchannels = num_channels;
     par.band_factor = channel_bandwidth_hz*PI/C0;
@@ -303,11 +323,7 @@ int main(int argc, char *argv[])
     par.spec = spec;
     par.wavenumbers = wavenumbers; // wavenumbers for the model
     par.mod = visMod;
-    par.sigma = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
 
-    if (rank==0) cout << "sigma_vis  = " << sqrt(par.sigma) << " muJy" << endl;
-    for (unsigned int b=0; b<num_baselines; b++) sigmab[b] = sqrt(par.sigma);
-        
     FILE *pFile;
     char filename[100];
     sprintf(filename,"ellipticities%d.txt",rank);
@@ -379,7 +395,6 @@ int main(int argc, char *argv[])
 #ifdef FACET
        facet = facet_size(R_mu,len);
        par.ncoords = evaluate_uv_grid(num_coords,facet_u,facet_v,uu_metres,vv_metres,len,facet,count);
-       //par.ncoords = evaluate_uv_circular_grid(num_coords,facet_u,facet_v,uu_metres,vv_metres,len,facet,count);
 #endif
 
 #ifdef _OPENMP
@@ -396,7 +411,7 @@ int main(int argc, char *argv[])
            double SNR_ch = 0.;
            for (unsigned long int vs = ch_vis; vs < ch_vis+num_coords; vs++)
                SNR_ch += visData[vs].real*visData[vs].real + visData[vs].imag*visData[vs].imag;
-           SNR_ch /= par.sigma;
+           SNR_ch /= sigma2;
 #ifdef _OPENMP
 #pragma omp critical
 #endif
@@ -411,13 +426,13 @@ int main(int argc, char *argv[])
 
             // gridding visibilities
             unsigned int ch_visfacet = ch*par.ncoords;
-            gridding_visibilities(num_coords,uu_metres,vv_metres,&(visData[ch_vis]),len,facet,&(facet_visData[ch_visfacet]),count);
-            //circular_gridding_visibilities(num_coords,uu_metres,vv_metres,&(visData[ch_vis]),len,facet,&(facet_visData[ch_visfacet]),count);
-#else
-            par.l0 = l0;
-            par.m0 = m0;
-#endif
+            gridding_visibilities(num_coords,uu_metres,vv_metres,&(visData[ch_vis]),&(sigma2_vis[ch_vis]),len,facet,&(facet_visData[ch_visfacet]),&(facet_sigma2[ch_visfacet]),count);
         }
+#else
+        }
+        par.l0 = l0;
+        par.m0 = m0;
+#endif
         cout << "SNR: " << sqrt(SNR_vis[g]) << endl;
           
 #ifdef USE_MPI
@@ -528,10 +543,12 @@ int main(int argc, char *argv[])
     delete[] vv_metres;
     delete[] wavenumbers;
     delete[] spec;
+    delete[] sigma2_vis;
 #ifdef FACET
     delete[] facet_u;
     delete[] facet_v;
     delete[] facet_visData;
+    delete[] facet_sigma2;
 #endif
 
 #ifdef USE_MPI
