@@ -277,7 +277,8 @@ int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long
         dh_dy_yo = 0.;
         d2h_dxdy_o = 0;
         value = 0;
-        
+        k = 0;
+   
         for (unsigned int ch=0; ch<nchannels; ch++)
         {
           wavenumber = wavenumbers[ch];
@@ -289,7 +290,6 @@ int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long
              a = xo*u + yo*v;
         
              // complex multiply, take only the real part
-             k = ch*n_uv_coords + i;
              real_part = (h_F[k].real * cos(a) - h_F[k].imag * sin(a));
              imag_part = (h_F[k].real * sin(a) + h_F[k].imag * cos(a));
              value += real_part;
@@ -300,6 +300,7 @@ int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long
              d2h_dx2_xo -= real_part * u*u;
              d2h_dy2_yo -= real_part * v*v;
              d2h_dxdy_o -= real_part * u*v;
+             k++;
           }
         }
         det  = d2h_dx2_xo*d2h_dy2_yo - d2h_dxdy_o*d2h_dxdy_o;
