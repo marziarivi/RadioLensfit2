@@ -97,8 +97,8 @@ int main(int argc, char *argv[])
     const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
     const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
     const unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
-    const double freq_start_hz = 1280e+6; //ms_freq_start_hz(ms);          // Start Frequency, in Hz
-    const double channel_bandwidth_hz = 240e+6; //ms_freq_inc_hz(ms);      // Frequency channel bandwidth, in Hz
+    const double freq_start_hz = ms_freq_start_hz(ms);          // Start Frequency, in Hz
+    const double channel_bandwidth_hz = ms_freq_inc_hz(ms);      // Frequency channel bandwidth, in Hz
     const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
     const int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
 
@@ -237,8 +237,7 @@ int main(int argc, char *argv[])
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     
-    unsigned long int facet_ncoords = evaluate_max_uv_grid_size(len, num_coords, uu_metres, vv_metres, facet, count);
-    //unsigned long int facet_ncoords = evaluate_max_uv_circular_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
+    unsigned long int facet_ncoords = evaluate_uv_grid_size(len, num_coords, uu_metres, vv_metres, facet, count);
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
@@ -326,7 +325,7 @@ int main(int argc, char *argv[])
 
     FILE *pFile;
     char filename[100];
-    sprintf(filename,"ellipticities%d.txt",rank);
+    sprintf(filename,"ellipticities-%dch.txt",num_channels);
     pFile = fopen(filename,"w");
     fprintf(pFile, "flux | e1 | m_e1 | err1 | e2 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
 
@@ -394,7 +393,8 @@ int main(int argc, char *argv[])
     
 #ifdef FACET
        facet = facet_size(R_mu,len);
-       par.ncoords = evaluate_uv_grid(num_coords,facet_u,facet_v,uu_metres,vv_metres,len,facet,count);
+       par.ncoords = evaluate_uv_grid_size(len,num_coords,uu_metres,vv_metres,facet,count);
+       evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #endif
 
 #ifdef _OPENMP

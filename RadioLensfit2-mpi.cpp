@@ -331,7 +331,7 @@ int main(int argc, char *argv[])
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
-    unsigned long int facet_ncoords = evaluate_max_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
+    unsigned long int facet_ncoords = evaluate_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
 
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
     // allocate temporary facet vis and sigma2 for the gridded visibilities of this MS to be sent to the task that will process the current source 
     unsigned long int temp_facet_nvis = facet_ncoords*num_channels;
     complexd* temp_facet_visData;
-    double *temp_facet_u,*temp_facet_v,*temp_facet_sigma2;
+    double *temp_facet_sigma2;
     try
     {
         temp_facet_visData = new complexd[temp_facet_nvis];
@@ -351,18 +351,6 @@ int main(int argc, char *argv[])
         sizeGbytes = (temp_facet_nvis*(sizeof(complexd)+sizeof(double)))/((double)(1024*1024*1024));
         cout << "rank " << rank << ": allocated temporary gridded visibilities and variances: " << temp_facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
-    }
-    catch (bad_alloc& ba)
-    {
-        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
-    }
-    try
-    {
-       temp_facet_u = new double[facet_ncoords];
-       temp_facet_v = new double[facet_ncoords];
-       sizeGbytes = (2*facet_ncoords*sizeof(double))/((double)(1024*1024*1024));
-       cout << "rank " << rank << ": allocated temporary grid coordinates: " << sizeGbytes  << " GB" << endl;
-       totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
     {
@@ -479,7 +467,10 @@ int main(int argc, char *argv[])
         mu = scale_mean(gflux[g]);
         R_mu[src] = exp(mu);
         //R_mu[src] = gscale[g];
-
+#ifdef FACET
+        int facet = facet_size(R_mu[src],len);
+        facet_ncoords = evaluate_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
+#endif
         if (rank == src)  // proc k will fit the current source
         {
           my_g = g;     
@@ -487,8 +478,9 @@ int main(int argc, char *argv[])
             rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);  // set log(prior) for scalelength of source g
 #ifdef FACET
            // extract my averaged visibilities and sigma2 contribution (my MS) for source g and store them in the corresponding section of my source facet array 
-           facet_ncoords = source_extraction(rank,my_freq_index, par.uu, par.vv, facet_visData, facet_sigma2,l0, m0, gflux[g], R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           source_extraction(rank,my_freq_index, facet, facet_ncoords, facet_visData, facet_sigma2,l0, m0, gflux[g], R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
            par.ncoords = facet_ncoords;
+           evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #ifdef USE_MPI
            // Buffer facet vis and sigma2 for collection of source g from the other procs (for their MS contribution) 
            recv_facet_buffer = (double *) facet_visData;
@@ -499,7 +491,7 @@ int main(int argc, char *argv[])
         else 
         {
            // extract my averaged visibilities and sigma2 contribution (my MS) for source g and store them in the temporary IF facet array
-           facet_ncoords = source_extraction(rank,0, temp_facet_u,temp_facet_v,temp_facet_visData, temp_facet_sigma2,l0, m0, gflux[g], R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           source_extraction(rank,0, facet,facet_ncoords,temp_facet_visData, temp_facet_sigma2,l0, m0, gflux[g], R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
            // Buffer temp facet vis and sigma2 (my MS) of source g to send to proc = k 
            recv_facet_buffer = 0;
            send_facet_buffer = (double *) temp_facet_visData;
@@ -532,7 +524,7 @@ int main(int argc, char *argv[])
 #endif
       double mes_e1, mes_e2, maxL;
       double var_e1, var_e2, oneDimvar;
-      if (my_g >= 0)  //this task will fit the current source
+      if (my_g >= 0) 
       {
         source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
         cout << "rank " << rank << ": n. " << my_g << " flux = " << gflux[my_g] << ": measured e = " << mes_e1 << "," << mes_e2 << endl;
@@ -627,14 +619,19 @@ int main(int argc, char *argv[])
         //R_mu[k] = gscale[gal];
         l0 = l[gal];  m0 = m[gal];
 
+#ifdef FACET
+        int facet = facet_size(R_mu[k],len);
+        facet_ncoords = evaluate_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
+#endif
         if (rank == src) // proc k will perform the fitting of the current source
         {
           my_g = gal;
           for (int nRo=1; nRo<numR; nRo++)
                 rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
 #ifdef FACET
-          facet_ncoords = source_extraction(rank,my_freq_index, par.uu, par.vv, facet_visData, facet_sigma2,l0, m0, flux, R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+          source_extraction(rank,my_freq_index, facet, facet_ncoords, facet_visData, facet_sigma2,l0, m0, flux, R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
           par.ncoords = facet_ncoords;
+          evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #ifdef USE_MPI
           // Buffer facet vis and sigma2 of source g for collection from the other procs of their MS contribution
           recv_facet_buffer = (double *) facet_visData;
@@ -644,7 +641,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-          facet_ncoords = source_extraction(rank,0., temp_facet_u,temp_facet_v,temp_facet_visData, temp_facet_sigma2,l0, m0, flux, R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+          source_extraction(rank,0.,facet,facet_ncoords,temp_facet_visData, temp_facet_sigma2,l0, m0, flux, R_mu[src], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
           // Buffer temp facet vis and sigma2 (my MS section) of source g to send to proc = k
           recv_facet_buffer = 0;
           send_facet_buffer = (double *) temp_facet_visData;
@@ -808,8 +805,6 @@ int main(int argc, char *argv[])
 #ifdef USE_MPI
     delete[] temp_facet_visData;
     delete[] temp_facet_sigma2;
-    delete[] temp_facet_u;
-    delete[] temp_facet_v;
 #endif
 #endif
 

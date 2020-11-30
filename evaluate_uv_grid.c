@@ -50,9 +50,8 @@ int facet_size(double theta_med, double len)
 }
 
 
-// Compute max number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered) 
-// to allocate all the grid arrays once
-unsigned long int evaluate_max_uv_grid_size(double len, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
+// Compute number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered) 
+unsigned long int evaluate_uv_grid_size(double len, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
 {
     unsigned long int p,n;
     unsigned long int size = sizeg*sizeg;
@@ -75,24 +74,13 @@ unsigned long int evaluate_max_uv_grid_size(double len, unsigned long int ncoord
 
 
 
-// Compute and count uv grid coordinates (number of non-empty cells)
- 
-unsigned long int evaluate_uv_grid(unsigned long int ncoords, double* grid_u, double* grid_v, double *u, double *v, double len, int sizeg, unsigned long int *count)
+// Compute uv facet coordinates 
+void evaluate_facet_coords(double* grid_u, double* grid_v, double len, int sizeg, unsigned long int *count)
 {
     unsigned int i,j;
     unsigned long int p,n;
     double  inc = 2*len/sizeg;
     unsigned long int size = sizeg*sizeg;
-
-    memset(count, 0, size*sizeof(unsigned long int));
-
-    for (unsigned long int k = 0; k < ncoords; k++)
-    {
-        unsigned int pu = (unsigned int) ((u[k] + len) / inc);
-        unsigned int pv = (unsigned int) ((v[k] + len) / inc);
-        unsigned long int pc = (unsigned long int) pv * sizeg + pu;
-        count[pc]++;
-    }
 
     n=0;
     for (p = 0; p < size; p++)
@@ -103,12 +91,9 @@ unsigned long int evaluate_uv_grid(unsigned long int ncoords, double* grid_u, do
             i = p%sizeg;
             grid_u[n] = (i+0.5)*inc - len;
             grid_v[n] = (j+0.5)*inc - len;
-            count[n] = count[p];
             n++;
          }
     }
-    return n;   // number of effective uv grid coordinates
-
 }
 
 
@@ -143,11 +128,11 @@ void gridding_visibilities(unsigned long int ncoords, double *u, double *v, comp
     n=0;
     for (p = 0; p < size; p++)
     {
-        if (temp_grid_vis[p].real)
+        if (count[p])
         {
-            new_vis[n].real = temp_grid_vis[p].real/count[n];
-            new_vis[n].imag = temp_grid_vis[p].imag/count[n];
-            new_sigma2[n] = temp_sigma2[p]/(count[n]*count[n]);
+            new_vis[n].real = temp_grid_vis[p].real/count[p];
+            new_vis[n].imag = temp_grid_vis[p].imag/count[p];
+            new_sigma2[n] = temp_sigma2[p]/(count[p]*count[p]);
             n++;
         }
     }
@@ -158,7 +143,7 @@ void gridding_visibilities(unsigned long int ncoords, double *u, double *v, comp
 
 
 // Compute max number of ucircular uv grid coordinates (coordinates are put in the center of the cell) to allocate all the grid arrays once
-unsigned long int evaluate_max_uv_circular_grid(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
+/*unsigned long int evaluate_max_uv_circular_grid(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
 {
     unsigned long int p,n;
     int size_r = sizeg/2;
@@ -291,7 +276,6 @@ void circular_gridding_visibilities(unsigned long int ncoords, double *u, double
 // Uniform gridding by convolution with the pillbox*sinc function, which is the FT of the rectangular function,
 // (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
 
-/*
 void gridding_visibilities_sinc(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, unsigned long int *count)
     {
         unsigned long int p,c;
