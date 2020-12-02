@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Lance Miller, Marzia Rivi
+ * Copyright (c) 2020 Lance Miller, Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -21,17 +21,9 @@
 #ifndef _marginalise_r_h
 #define _marginalise_r_h
 
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
-
 void set_posterior_values(int numR, double* L_r, double* rprior, double* Ro, double* xmarvals, double* ymarvals, int* numvals);
 double marginalise_posterior_r(int num_marvals, double *xmarvals, double *ymarvals);
     
 double marf(double x, void *params);
-
-//#ifdef __cplusplus
-//}
-//#endif
 
 #endif

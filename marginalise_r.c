@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Lance Miller, Marzia Rivi
+ * Copyright (c) 2020 Lance Miller, Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *

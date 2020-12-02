@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -53,10 +53,6 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
     {
         spectra = spec[ch];
         wavenumber = wavenumbers[ch];
-        //ch_freq = wavenumber*C0/(2.0*PI);
-        //beam_pattern = cos(BEAM_const*ch_freq*radius);
-        //beam_pattern = beam_pattern*beam_pattern*beam_pattern;
-        //beam_pattern *= beam_pattern;   // cos^6 model for the primary beam pattern
         wavenumber2 = wavenumber*wavenumber;
         
         for (unsigned long int i = 0; i < num_coords; ++i)
@@ -68,11 +64,10 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
             k2 = e2*uu + (1.-e1)*vv;
             
             den = 1. + scale_factor*wavenumber2*(k1*k1+k2*k2);
-            shape = /*beam_pattern*/spectra/(den*sqrt(den));
+            shape = spectra/(den*sqrt(den));
             Modvis[nv] = shape;
             
 #ifdef FACET
-          //  sum += Modvis[nv]*Modvis[nv]/count[i];
             sum += Modvis[nv]*Modvis[nv]/sigma2[nv];
 #else
             sum += Modvis[nv]*Modvis[nv]/sigma2[nv];
@@ -120,12 +115,9 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
           ww = ww_metres[i];
             
           phase = uu*l+vv*m+ww*n;
-          /*if (phase != 0.)
-          {
-             smear = band_factor*phase;
-             smear = sin(smear)/smear;
-          }
-          else smear = 1.;
+          /*
+           smear = band_factor*phase;
+           smear = sin(smear)/smear;
           */
           phase = wavenumber*phase;
  
@@ -167,12 +159,9 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
             w = ww_metres[i];
             
             phase = u*l+v*m+w*n;
-            /*if (phase !=0.)
-            {
-               smear = band_factor*phase;
-               smear = sin(smear)/smear;
-            }
-            else smear = 1.;
+            /*
+            smear = band_factor*phase;
+            smear = sin(smear)/smear;
             */
             phase = wavenumber*phase;
             
@@ -205,12 +194,9 @@ void data_galaxy_visibilities2D(double spectra, double wavenumber, double band_f
             v = vv_metres[i];
 
             phase = u*l+v*m;
-            /*if (phase !=0.)
-            {
-               smear = band_factor*phase;
-               smear = sin(smear)/smear;
-            }
-            else smear = 1.;
+            /*
+            smear = band_factor*phase;
+            smear = sin(smear)/smear;
             */
             phase = wavenumber*phase;
 

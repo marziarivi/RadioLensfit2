@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2019 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit2.
  *
@@ -28,7 +28,6 @@ extern "C" {
 #endif
     
 int read_catalog(unsigned long int nge, char *filename, double *gflux, double *gscale, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
-//int read_catalog(unsigned long int nge, char *filename, double *gflux, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
 {
     FILE *fp;
     char *token;

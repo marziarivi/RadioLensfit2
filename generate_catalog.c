@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit2.
  *
@@ -45,14 +45,7 @@ unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, 
     unsigned long int seed = random_seed();
     gsl_rng_set(gen,seed);
     
-//#ifdef USE_MPI
-//    unsigned long int my_gal = nge/nprocs;
-//    unsigned long int rem = nge%nprocs;
-//    if (rem)
-//    if (rank < rem) my_gal++;
-//#else
     unsigned long int my_gal = nge;
-//#endif
     unsigned long int diffgal = my_gal/(2*NP);
     my_gal = diffgal*2*NP;
     

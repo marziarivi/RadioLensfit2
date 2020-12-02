@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -142,140 +142,10 @@ void gridding_visibilities(unsigned long int ncoords, double *u, double *v, comp
 
 
 
-// Compute max number of ucircular uv grid coordinates (coordinates are put in the center of the cell) to allocate all the grid arrays once
-/*unsigned long int evaluate_max_uv_circular_grid(double ray, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
-{
-    unsigned long int p,n;
-    int size_r = sizeg/2;
-    unsigned long int size = sizeg*sizeg;
-
-    memset(count, 0, size*sizeof(unsigned long int));
-
-    double inc = ray/size_r;
-    double theta = PI/sizeg;
-
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-    for (unsigned long int k = 0; k < ncoords; k++)
-    {
-       double uu = u[k];
-       double vv = v[k];
-       // compute corresponding polar coordinates
-       double r = sqrt(uu*uu + vv*vv);
-       double ang = PI+atan2(vv,uu);
-       unsigned int pr = (unsigned int) (r / inc);
-       unsigned int pa = (unsigned int) (ang / theta);
-       unsigned long int pc = (unsigned long int) pa * size_r + pr;
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-      {
-         count[pc]++;
-      }
-    }
-
-    n=0;
-    for (p=0; p < size; p++)  if (count[p]) n++;
-    return n;
-}
-
-// Compute uv grid coordinates and count them (i.e. non-empty cells)
-unsigned long int evaluate_uv_circular_grid(unsigned long int ncoords, double *grid_u, double *grid_v, double *u, double *v, double ray, int sizeg, unsigned long int *count)
-{
-    unsigned int i,j;
-    unsigned long int p,n;
-    double r_grid, ang_grid;
-    int size_r = sizeg/2;
-    unsigned long int size = sizeg*sizeg;
-
-    double inc = ray/size_r;
-    double theta = PI/sizeg;
-
-    memset(count, 0, size*sizeof(unsigned long int));
-
-    for (unsigned long int k = 0; k < ncoords; k++)
-    {
-       double uu = u[k];
-       double vv = v[k];
-       // compute corresponding polar coordinates
-       double r = sqrt(uu*uu + vv*vv);
-       double ang = PI+atan2(vv,uu);
-       unsigned int pr = (unsigned int) (r / inc);
-       unsigned int pa = (unsigned int) (ang / theta);
-       unsigned long int pc = (unsigned long int) pa * size_r + pr;
-
-       count[pc]++;
-    }
-
-    // Compute grid coordinates once
-    n=0;
-    for (p = 0; p < size; p++)
-    {
-        if (count[p])
-        {
-           j = p/size_r;
-           i = p%size_r;
-           r_grid = (i+0.5)*inc;
-           ang_grid = (j+0.5)*theta;
-           grid_u[n] = r_grid*cos(ang_grid);
-           grid_v[n] = r_grid*sin(ang_grid);
-           count[n] = count[p];
-           n++;
-        }
-    }
-    return n;
-}
-
-
-// Compute gridded visibilities by adding all the original visibilities at the (u,v) points falling in the same cell
-void circular_gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double ray, int sizeg, complexd *new_vis, unsigned long int *count)
-{
-    unsigned int i,j;
-    unsigned long int p,n;
-    double r_grid, ang_grid;
-    int size_r = sizeg/2;
-    unsigned long int size = sizeg*sizeg;
-
-    double inc = ray/size_r;
-    double theta = PI/sizeg;
-    
-    complexd* temp_grid_vis = (complexd *) calloc(size,sizeof(complexd));
-
-    for (unsigned long int k = 0; k < ncoords; k++)
-    {
-       double uu = u[k];
-       double vv = v[k];
-       // compute corresponding polar coordinates
-       double r = sqrt(uu*uu + vv*vv);
-       double ang = PI+atan2(vv,uu);
-       unsigned int pr = (unsigned int) (r / inc);
-       unsigned int pa = (unsigned int) (ang / theta);
-       unsigned long int pc = (unsigned long int) pa * size_r + pr;
-
-       temp_grid_vis[pc].real += vis[k].real;
-       temp_grid_vis[pc].imag += vis[k].imag;
-    }
-
-    n=0;
-    for (p = 0; p < size; p++)
-    {
-        if (temp_grid_vis[p].real)
-        {
-           new_vis[n].real = temp_grid_vis[p].real/count[n];
-           new_vis[n].imag = temp_grid_vis[p].imag/count[n];
-           n++;
-        }
-    }
-
-    free(temp_grid_vis);
-}
-
-
 
 // Uniform gridding by convolution with the pillbox*sinc function, which is the FT of the rectangular function,
 // (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
-
+/*
 void gridding_visibilities_sinc(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, unsigned long int *count)
     {
         unsigned long int p,c;

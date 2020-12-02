@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -35,10 +35,10 @@ extern "C" {
 double e_pdf(double e)
 {
     const double e_max = E_MAX;   // ellipticity cutoff
-    const double e_0 = E_0; //0.0256;    // circularity parameter
-    const double a = DISP; //0.2539;      // dispersion
+    const double e_0 = E_0;       // circularity parameter
+    const double a = DISP;        // dispersion
         
-    const double A = NORM_E;  //2.43180252985281; // A=1/0.4112176 normalization factor
+    const double A = NORM_E;      // normalization factor 
         
     double p_e = A*e*(1.-exp((e-e_max)/a))/((1.+e)*sqrt(e*e+e_0*e_0));
     return p_e;
