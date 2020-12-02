@@ -16,6 +16,7 @@ This source catalog is written in a text file called *RWL_galaxy_catalog_(FoV)_(
 The corresponding simulated visibilities observed by the radio telescope are written in the DATA column of the same Measurement Set (I stokes component). The instrument noise is added. NO primary beam effect is currently considered.
   
 Usage: *Simulate* (filename MS) (effective field of view [arcmin]) (min flux [muJy]) (shear coord_1) (shear coord_2)
+
 Usage: *Simulate* (filename MS) (source catalog filename) (number of sources) (shear coord_1) (shear coord_2)
 
 The version of simulate must be selected in the Makefile
