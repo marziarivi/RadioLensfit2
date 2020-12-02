@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -79,7 +79,7 @@ void generate_ellipticity(gsl_rng * gen, int ne, int NP, double *e1, double *e2)
     // compute N points of the ellipticity cumulative distribution function
     double *F = (double *) malloc((N+1)*sizeof(double));
     
-    double h = 0.804/N;   // e_max = 0.804
+    double h = E_MAX/N; 
     F[0]=0.;
 #ifdef _OPENMP
 #pragma omp parallel for private(i)
