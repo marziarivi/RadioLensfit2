@@ -2,7 +2,7 @@
 
 **Radio Weak Lensing shear measurement in the Visibility Domain**
 
-This is version 2.0 of [RadioLensfit](https://github.com/marziarivi/RadioLensfit).
+This is complete version of [RadioLensfit](https://github.com/marziarivi/RadioLensfit).
 Three tools are provided:
 
 **Simulate**
