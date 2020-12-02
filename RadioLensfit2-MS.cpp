@@ -58,6 +58,7 @@
 #include "galaxy_visibilities.h"
 #include "distributions.h"
 #include "evaluate_uv_grid.h"
+#include "source_extraction.h"
 
 using namespace std;
 

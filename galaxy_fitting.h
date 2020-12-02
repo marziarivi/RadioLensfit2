@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Marzia Rivi
+ * Copyright (c) 2020 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -22,15 +22,6 @@
 #define ____galaxy_fitting__
 
 #include "datatype.h"
-
-#ifdef FACET
-void source_extraction(int rank, unsigned int my_start_index, int facet, unsigned long int facet_ncoords, complexd *facet_vis, double *facet_sigma2, double l0, double m0, double flux, double mu, double e1, double e2, 
-                       likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, unsigned int nchannels, 
-                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len);
-#else
-void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
-                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres);
-#endif
 
 int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes_e2, double *var_e1, double *var_e2, double *oneDimvar, double *maxL);
 

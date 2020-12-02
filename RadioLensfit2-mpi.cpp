@@ -62,6 +62,7 @@
 #include "galaxy_visibilities.h"
 #include "distributions.h"
 #include "evaluate_uv_grid.h"
+#include "source_extraction.h"
 
 using namespace std;
 
@@ -503,7 +504,7 @@ int main(int argc, char *argv[])
 #endif
         }
 #ifdef USE_MPI
-        MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Barrier(MPI_COMM_WORLD);
         // Proc k collects facet vis and sigma2 of the current source from the other procs (for their MS contribution)
         unsigned long int nvis = num_channels*facet_ncoords;
         com_time -= MPI_Wtime();
@@ -550,7 +551,7 @@ int main(int argc, char *argv[])
             res[4] = oneDimvar; res[5] = maxL;
          }
 #ifdef USE_MPI 
-         MPI_Barrier(MPI_COMM_WORLD);
+         //MPI_Barrier(MPI_COMM_WORLD);
          // Bcast shape results from proc k to the others
          com_time -= MPI_Wtime();
          double time_Bcast = MPI_Wtime();
@@ -653,7 +654,7 @@ int main(int argc, char *argv[])
 #endif
         }
 #ifdef USE_MPI
-        MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Barrier(MPI_COMM_WORLD);
         // Proc k collects facet vis and sigma2 of the current source from the other procs (for their MS contribution)
         unsigned long int nvis = num_channels*facet_ncoords;
         com_time -= MPI_Wtime();
@@ -700,7 +701,7 @@ int main(int argc, char *argv[])
             res[4] = oneDimvar; res[5] = maxL;
           }
 #ifdef USE_MPI  // Bcast shape results from proc k to the other
-          MPI_Barrier(MPI_COMM_WORLD);
+          //MPI_Barrier(MPI_COMM_WORLD);
           com_time -= MPI_Wtime();
           double time_Bcast = MPI_Wtime();
           MPI_Bcast(res,6,MPI_DOUBLE,k,MPI_COMM_WORLD);
