@@ -42,7 +42,7 @@ endif
 
 # GNU compiler
 # #-----------------
-OPTIMIZE = -O3
+OPTIMIZE = -O3 -msse2 -mfpmath=sse -ffast-math -ftree-vectorizer-verbose=2
 
 ifeq (USE_MPI,$(findstring USE_MPI,$(OPT)))
   CC  =  mpiCC -g 
