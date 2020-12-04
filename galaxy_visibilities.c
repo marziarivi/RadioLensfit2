@@ -36,44 +36,33 @@ extern "C" {
 #endif
     
 // Compute flux independent model galaxy visibilities analitically
-// model a galaxy at the phase centre: visibilities are real numbers (smearing? as data vis are shifted at zero...)
-void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, double* wavenumbers,
-                        double e1, double e2, double scalelength, double radius, unsigned long int num_coords, double* uu_metres, 
-                        double* vv_metres, const double *sigma2, double* Modvis)
+// model a galaxy at the phase centre: visibilities are real numbers 
+// facet uv points are in wavelength units
+void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength, unsigned long int num_coords, 
+                                       double* grid_u, double* grid_v, const double *sigma2, double* Modvis)
 {
-    double wavenumber,wavenumber2,den,uu,vv,k1,k2,spectra,shape,phase,ch_freq,beam_pattern;
+    double den,uu,vv,k1,k2,shape;
     double detA = 1.-e1*e1-e2*e2;
     double scale = scalelength*ARCS2RAD;
     double scale_factor = (scale*scale)/(detA*detA);
     
     double sum = 0.;
     unsigned long int nv = 0;
-    
-    for (unsigned int ch=0; ch<nchannels; ch++)
+    double cc2 = 4*PI*PI;   
+ 
+    for (unsigned long int i = 0; i < num_coords; ++i)
     {
-        spectra = spec[ch];
-        wavenumber = wavenumbers[ch];
-        wavenumber2 = wavenumber*wavenumber;
-        
-        for (unsigned long int i = 0; i < num_coords; ++i)
-        {
-            uu = uu_metres[i];
-            vv = vv_metres[i];
+       uu = grid_u[i];
+       vv = grid_v[i];
             
-            k1 = (1.+e1)*uu + e2*vv;
-            k2 = e2*uu + (1.-e1)*vv;
+       k1 = (1.+e1)*uu + e2*vv;
+       k2 = e2*uu + (1.-e1)*vv;
             
-            den = 1. + scale_factor*wavenumber2*(k1*k1+k2*k2);
-            shape = spectra/(den*sqrt(den));
-            Modvis[nv] = shape;
+       den = 1. + scale_factor*cc2*(k1*k1+k2*k2);
+       Modvis[nv] = 1./(den*sqrt(den));
             
-#ifdef FACET
-            sum += Modvis[nv]*Modvis[nv]/sigma2[nv];
-#else
-            sum += Modvis[nv]*Modvis[nv]/sigma2[nv];
-#endif
-            nv++;
-        }
+       sum += Modvis[nv]*Modvis[nv]/sigma2[nv];
+       nv++;
     }
     
     // normalise
@@ -85,7 +74,7 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
 // model galaxy at the galaxy position
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scalelength, double l,
-                               double m, double radius, unsigned long int num_coords, double* uu_metres,
+                               double m, unsigned long int num_coords, double* uu_metres,
                                double* vv_metres, double* ww_metres,
                                const double* sigma2, complexd* Modvis)
 {

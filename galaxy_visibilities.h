@@ -29,14 +29,12 @@ extern "C" {
 #endif
     
 // model agalaxy at the phase centre: visibilities are real numbers
-void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, double* wavenumbers,
-                                       double e1, double e2, double scalelength, double radius,
-                                       unsigned long int num_coords, double* uu_metres, double* vv_metres,
-                                       const double* sigma2, double* Modvis);
+void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength, unsigned long int num_coords, 
+                                       double* grid_u, double* grid_v,const double* sigma2, double* Modvis);
 
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scalelength, double l,
-                               double m, double radius, unsigned long int num_coords, double* uu_metres,
+                               double m, unsigned long int num_coords, double* uu_metres,
                                double* vv_metres, double* ww_metres, const double* sigma2, complexd* Modvis);
     
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
@@ -49,7 +47,6 @@ void data_galaxy_visibilities2D(double spectra, double wavenumber, double band_f
                               unsigned long int num_coords, double* uu_metres, double* vv_metres, complexd* vis);
 
     
-//void add_system_noise(gsl_rng * gen, unsigned int num_baselines, unsigned int num_times, complexd* vis, double* sigma);
 void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, double* sigma);
 
     

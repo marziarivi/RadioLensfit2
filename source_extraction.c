@@ -26,13 +26,13 @@
 // Notice: instructions execution order is important as arrays are reused!!!!
 
 #ifdef FACET
-void source_extraction(int rank, unsigned int my_start_index, int facet, unsigned long int facet_ncoords, complexd *facet_vis, double *facet_sigma2,
-                        double l0, double m0, double flux, double mu, double e1, double e2, 
-                       likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, unsigned int nchannels, 
+void source_extraction(int rank, unsigned int my_start_index, int facet, complexd *facet_vis, double *facet_sigma2,
+                       double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, 
+                       complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, unsigned int nchannels, 
                        unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
 #else
-void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, complexd *visData, complexd *visGal, 
-                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres)
+void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, 
+                       complexd *visData, complexd *visGal,unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres)
 #endif
 {
 #ifdef USE_MPI
@@ -72,11 +72,9 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
 #ifdef FACET
      // Phase shift data visibilities (to be done after gridding because real data will be gridded)
      data_visibilities_phase_shift((par->wavenumbers)[ch_ind], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
-       
-     // gridding visibilities
-     unsigned int ch_visfacet = (my_start_index + ch)*facet_ncoords;
-     gridding_visibilities(num_coords,uu_metres,vv_metres,&(visGal[ch_vis]),&(sigma2_vis[ch_vis]),len,facet,&(facet_vis[ch_visfacet]),&(facet_sigma2[ch_visfacet]),par->count);
-   }
+   }    
+   // gridding visibilities
+   gridding_visibilities(&(par->wavenumbers[my_freq_index]),nchannels,num_coords,uu_metres,vv_metres,visGal,sigma2_vis,len,facet,facet_vis,facet_sigma2,par->count);
 #else
    }
   par->l0 = l0;

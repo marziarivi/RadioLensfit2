@@ -62,11 +62,11 @@ typedef struct{
     double* vv;
     double l0;
     double m0;
-    double radius;
     complexd* data;
 #ifdef FACET
     double* mod;
     double* weights;
+    int facet;
 #else
     complexd* mod;
     double* ww;

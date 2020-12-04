@@ -44,14 +44,13 @@ double weight_func(double u, double v)
 // compute facet cell size by the relation: Du[wavelength units]=1/FoV[rad] (Briggs 1999)
 int facet_size(double theta_med, double len)
 {
-    double facet_du = C0/(REF_FREQ*PSF_NAT*theta_med*ARCS2RAD); // facet cell size in metres (as uv points)
+    double facet_du = 1./(PSF_NAT*theta_med*ARCS2RAD);
     int facet_size = 2*ceil(len/facet_du);
     return facet_size;
 }
 
-
-// Compute number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered) 
-unsigned long int evaluate_uv_grid_size(double len, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
+// Compute number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered)
+unsigned long int evaluate_uv_grid_size(double len, double *wavenumbers, unsigned int num_channels, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
 {
     unsigned long int p,n;
     unsigned long int size = sizeg*sizeg;
@@ -59,12 +58,16 @@ unsigned long int evaluate_uv_grid_size(double len, unsigned long int ncoords, d
     
     double inc = 2*len/sizeg;
 
-    for (unsigned long int k = 0; k < ncoords; k++)
+    for (unsigned int ch = 0; ch < num_channels; ch++)
     {
-        unsigned int pu = (unsigned int) ((u[k] + len) / inc);
-        unsigned int pv = (unsigned int) ((v[k] + len) / inc);
+      double inv_lambda = wavenumbers[ch]/(2.*PI);
+      for (unsigned long int k = 0; k < ncoords; k++)
+      {
+        unsigned int pu = (unsigned int) ((u[k]*inv_lambda + len) / inc);
+        unsigned int pv = (unsigned int) ((v[k]*inv_lambda + len) / inc);
         unsigned long int pc = (unsigned long int) pv * sizeg + pu;
         count[pc]++;
+      }
     }
  
     n = 0;
@@ -74,7 +77,7 @@ unsigned long int evaluate_uv_grid_size(double len, unsigned long int ncoords, d
 
 
 
-// Compute uv facet coordinates 
+// Compute uv facet coordinates in wavelength units
 void evaluate_facet_coords(double* grid_u, double* grid_v, double len, int sizeg, unsigned long int *count)
 {
     unsigned int i,j;
@@ -104,27 +107,45 @@ void evaluate_facet_coords(double* grid_u, double* grid_v, double len, int sizeg
  This is a gridding by convolution with the pillbox function
  (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
  */
-void gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, int sizeg, complexd *new_vis, double *new_sigma2, unsigned long int *count)
+void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned long int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, int sizeg, complexd *new_vis, double *new_sigma2, unsigned long int *count)
 {
     unsigned int i,j;
     unsigned long int p,n;
     double  inc = 2*len/sizeg;
     unsigned long int size = sizeg*sizeg;
 
+#ifdef USE_MPI
+    memset(new_vis, 0, size*sizeof(complexd));
+    memset(new_sigma2, 0, size*sizeof(double));
+#else
     complexd* temp_grid_vis = (complexd *) calloc(size,sizeof(complexd));
     double* temp_sigma2 = (double *) calloc(size,sizeof(double));
+#endif
 
-    for (unsigned long int k = 0; k < ncoords; k++)
+    n = 0;
+    for (unsigned int ch = 0; ch < num_channels; ch++)
     {
-        unsigned int pu = (unsigned int) ((u[k] + len) / inc);
-        unsigned int pv = (unsigned int) ((v[k] + len) / inc);
+      double inv_lambda = wavenumbers[ch]/(2.*PI);
+      for (unsigned long int k = 0; k < ncoords; k++)
+      {
+        unsigned int pu = (unsigned int) ((u[k]*inv_lambda + len) / inc);
+        unsigned int pv = (unsigned int) ((v[k]*inv_lambda + len) / inc);
         unsigned long int pc = (unsigned long int) pv * sizeg + pu;
-
-        temp_grid_vis[pc].real += vis[k].real;
-        temp_grid_vis[pc].imag += vis[k].imag;
-        temp_sigma2[pc] += sigma2[k];
+#ifdef USE_MPI
+        new_vis[pc].real += vis[n].real;
+        new_vis[pc].imag += vis[n].imag;
+        new_sigma2[pc] += sigma2[n];
+#else
+        temp_grid_vis[pc].real += vis[n].real;
+        temp_grid_vis[pc].imag += vis[n].imag;
+        temp_sigma2[pc] += sigma2[n];
+#endif
+        n++;
+      }
     }
 
+// in the MPI version the average and removal of empty cells are performed after the collection of gridded visibilities from the other spectral windows
+#ifndef USE_MPI
     n=0;
     for (p = 0; p < size; p++)
     {
@@ -138,16 +159,52 @@ void gridding_visibilities(unsigned long int ncoords, double *u, double *v, comp
     }
     free(temp_grid_vis);
     free(temp_sigma2);
+#endif
 }
 
 
+// average partial summed visibilities contained in the IFs facet
+ void average_facets(int nIFs, unsigned int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
+{
+   unsigned long int p;
+   unsigned long int n = size;
+
+   for (int k = 1; k < nIFs; k++)
+     for (p = 0; p < size; p++)
+     {
+        facet_vis[p].real += facet_vis[n].real;
+        facet_vis[p].imag += facet_vis[n].imag;
+        n++;
+     }
+
+   n = size;
+   for (int k = 1; k < nIFs; k++)
+     for (p = 0; p < size; p++)
+     {
+        facet_sigma2[p] += facet_sigma2[n];
+        n++;
+     }
+
+   // unsigned long int  n = 0;
+   n = 0;
+   for (p = 0; p < size; p++)
+   {
+      if (count[p])
+      {
+         facet_vis[n].real = facet_vis[p].real/count[p];
+         facet_vis[n].imag = facet_vis[p].imag/count[p];
+         facet_sigma2[n] = facet_sigma2[p]/(count[p]*count[p]);
+         n++;
+      }
+   }
+}
 
 
 // Uniform gridding by convolution with the pillbox*sinc function, which is the FT of the rectangular function,
 // (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
 /*
 void gridding_visibilities_sinc(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, unsigned long int *count)
-    {
+ i   {
         unsigned long int p,c;
         double x,y,sinc;
         double  inc = 2*len/sizeg;

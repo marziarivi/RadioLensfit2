@@ -233,18 +233,19 @@ int main(int argc, char *argv[])
 
     // Faceting uv coordinates ----------------------------------------------------------------------------------------
 #ifdef FACET
+    len = len*wavenumbers[num_channels-1]/(2*PI);
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
     
-    unsigned long int facet_ncoords = evaluate_uv_grid_size(len, num_coords, uu_metres, vv_metres, facet, count);
+    unsigned long int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
    
-    unsigned long int facet_nvis = num_channels*facet_ncoords;
+    unsigned long int facet_nvis = facet_ncoords;
     complexd* facet_visData;
     double* facet_sigma2;
     try
@@ -270,8 +271,8 @@ int main(int argc, char *argv[])
     try
     {
         unsigned long int model_ncoords = facet_ncoords;
-        visMod = new double[num_models*model_ncoords*num_channels];
-        sizeGbytes = num_models*model_ncoords*num_channels*sizeof(complexd)/((double)(1024*1024*1024));
+        visMod = new double[num_models*model_ncoords];
+        sizeGbytes = num_models*model_ncoords*sizeof(complexd)/((double)(1024*1024*1024));
 #else
         complexd* visMod;
         try
@@ -300,12 +301,12 @@ int main(int argc, char *argv[])
     par.numr = numR;
     par.ro = Ro;
     par.rprior = rprior;
+    par.mod = visMod;
 #ifdef FACET
     par.ncoords = facet_ncoords;
     par.uu = facet_u;
     par.vv = facet_v;
     par.data = facet_visData;
-    par.count = count;
     par.sigma2 = facet_sigma2;
 #else
     par.ncoords = num_coords;
@@ -315,13 +316,12 @@ int main(int argc, char *argv[])
     par.data = visData;
     par.count = 0;
     par.sigma2 = sigma2_vis; // visibility noise variance
-#endif
     par.nchannels = num_channels;
     par.band_factor = channel_bandwidth_hz*PI/C0;
     par.acc_time = time_acc;
     par.spec = spec;
     par.wavenumbers = wavenumbers; // wavenumbers for the model
-    par.mod = visMod;
+#endif
 
     FILE *pFile;
     char filename[100];
@@ -393,7 +393,7 @@ int main(int argc, char *argv[])
     
 #ifdef FACET
        facet = facet_size(R_mu,len);
-       par.ncoords = evaluate_uv_grid_size(len,num_coords,uu_metres,vv_metres,facet,count);
+       par.ncoords = evaluate_uv_grid_size(len,wavenumbers,num_channels,num_coords,uu_metres,vv_metres,facet,count);
        evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #endif
 
@@ -423,11 +423,9 @@ int main(int argc, char *argv[])
 #ifdef FACET
             // Phase shift data visibilities (to be done after gridding because real data will be gridded)
             data_visibilities_phase_shift(wavenumbers[ch], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visData[ch_vis]));
-
-            // gridding visibilities
-            unsigned int ch_visfacet = ch*par.ncoords;
-            gridding_visibilities(num_coords,uu_metres,vv_metres,&(visData[ch_vis]),&(sigma2_vis[ch_vis]),len,facet,&(facet_visData[ch_visfacet]),&(facet_sigma2[ch_visfacet]),count);
         }
+        // gridding visibilities
+        gridding_visibilities(wavenumbers,num_channels,num_coords,uu_metres,vv_metres,visData,sigma2_vis,len,facet,facet_visData,facet_sigma2,count);
 #else
         }
         par.l0 = l0;

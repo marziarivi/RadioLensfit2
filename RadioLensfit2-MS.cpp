@@ -94,8 +94,8 @@ int main(int argc, char *argv[])
     const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
     const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
     const unsigned long int num_rows = ms_num_rows(ms);                // Number of rows 
-    const double freq_start_hz = ms_freq_start_hz(ms); //1280e+6;          // Start Frequency, in Hz
-    const double channel_bandwidth_hz = ms_freq_inc_hz(ms); //240e+6;      // Frequency channel bandwidth, in Hz
+    const double freq_start_hz = 1280e+6; //ms_freq_start_hz(ms); //1280e+6;          // Start Frequency, in Hz
+    const double channel_bandwidth_hz = 240e+6; //ms_freq_inc_hz(ms); //240e+6;      // Frequency channel bandwidth, in Hz
     const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
     const int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
 
@@ -279,10 +279,11 @@ int main(int argc, char *argv[])
        
 #ifdef FACET
     // Faceting uv coordinates ----------------------------------------------------------------------------------------
+    len = len*wavenumbers[num_channels-1]/(2*PI);    // max len in wavelength units
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
-    unsigned long int facet_ncoords = evaluate_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
+    unsigned long int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, count);
 
     double *facet_u, *facet_v;
     try
@@ -298,7 +299,7 @@ int main(int argc, char *argv[])
         cerr << "bad_alloc caught: " << ba.what() << '\n';
     }    
 
-    unsigned long int facet_nvis = num_channels*facet_ncoords;
+    unsigned long int facet_nvis = facet_ncoords;
     complexd* facet_visData;
     double* facet_sigma2;
     try
@@ -319,8 +320,8 @@ int main(int argc, char *argv[])
     try
     {
         unsigned long int model_ncoords = facet_ncoords;
-        visMod = new double[num_models*model_ncoords*num_channels];
-        sizeGbytes = num_models*model_ncoords*num_channels*sizeof(double)/((double)(1024*1024*1024));
+        visMod = new double[num_models*model_ncoords];
+        sizeGbytes = num_models*model_ncoords*sizeof(double)/((double)(1024*1024*1024));
         cout << "allocated models: num_models= " << num_models << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
@@ -338,8 +339,6 @@ int main(int argc, char *argv[])
     par.sigma2 = facet_sigma2;   
  
 #else
-    par_sigma2 = sigma2_vis;
-
     complexd* visMod;
     try
     {
@@ -361,6 +360,7 @@ int main(int argc, char *argv[])
     par.data = visGal;
     par.count = 0;
     par.mod = visMod;
+    par_sigma2 = sigma2_vis;
 #endif
     
     cout << "Total Visibilities GBytes per rank: " << totGbytes << endl;
@@ -394,8 +394,9 @@ int main(int argc, char *argv[])
         l0 = l[g];  m0 = m[g];
 #ifdef FACET
         int facet = facet_size(R_mu,len);
-        par.ncoords = evaluate_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
-        source_extraction(0,0,facet,par.ncoords,par.data,par.sigma2,l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+        par.ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
+        evaluate_facet_coords(par.uu, par.vv, len, facet, count);
+        source_extraction(0,0,facet,par.data,par.sigma2,l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
         evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #else
         source_extraction(l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
@@ -473,8 +474,8 @@ int main(int argc, char *argv[])
         l0 = l[gal];  m0 = m[gal];
 #ifdef FACET
         int facet = facet_size(R_mu,len);
-        par.ncoords = evaluate_uv_grid_size(len,num_coords, uu_metres, vv_metres, facet, count);
-        source_extraction(0,0,facet,par.ncoords,par.data,par.sigma2,l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+        par.ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
+        source_extraction(0,0,facet,par.data,par.sigma2,l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
         evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #else
         source_extraction(l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
