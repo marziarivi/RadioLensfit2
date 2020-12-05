@@ -363,14 +363,14 @@ int main(int argc, char *argv[])
 
     // allocate facet data and model visibilities 
     // for the fitting of all visibilities of the current source by this task
-    unsigned long int facet_nvis = ncells; // and for reduction of partial facets from the other tasks
+    unsigned long int facet_nvis = ncells*nprocs; // and for reduction of partial facets from the other tasks
     complexd* facet_visData;
     double* facet_sigma2;
     try
     {
         facet_visData = new complexd[facet_nvis];
         facet_sigma2 = new double[facet_nvis];
-        sizeGbytes = (facet_nvis*sizeof(complexd)+facet_ncoords*sizeof(double))/((double)(1024*1024*1024));
+        sizeGbytes = (facet_nvis*(sizeof(complexd)+sizeof(double)))/((double)(1024*1024*1024));
         cout << "rank " << rank << ": allocated gridded visibilities and variances: " << facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
