@@ -234,11 +234,9 @@ int main(int argc, char *argv[])
 #ifdef USE_MPI
     end_data = MPI_Wtime();
     data_time = end_data - start_data;
-    double start_model = MPI_Wtime();
 #else
     end_data = current_timestamp();
     data_time = (double)(end_data - start_data)/1000.;
-    long long start_model = current_timestamp();
 #endif
     
     // Sky model visibilities computation --------------------------------------------------------------------------------------------------------------------------
@@ -280,7 +278,12 @@ int main(int argc, char *argv[])
         spec[ch] = pow(ch_freq/ref_frequency_hz,-0.7);
         ch_freq += channel_bandwidth_hz;
     }
-
+    
+#ifdef USE_MPI
+    double start_model = MPI_Wtime();
+#else
+    long long start_model = current_timestamp();
+#endif
     // compute sky model for this MS
     const unsigned int my_freq_index = rank*num_channels;
     sky_model(&(wavenumbers[my_freq_index]), &(spec[my_freq_index]), channel_bandwidth_hz, time_acc, num_channels, 
