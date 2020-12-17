@@ -360,7 +360,7 @@ int main(int argc, char *argv[])
     par.data = visGal;
     par.count = 0;
     par.mod = visMod;
-    par_sigma2 = sigma2_vis;
+    par.sigma2 = sigma2_vis;
 #endif
     
     cout << "Total Visibilities GBytes per rank: " << totGbytes << endl;
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
     {
         double mu = scale_mean(gflux[g]);
         double R_mu = exp(mu);
-        //double R_mu = gscale[g];
+     //   double R_mu = gscale[g];
 
         // set log(prior) for scalelength
         for (int nRo=1; nRo<numR; nRo++)
@@ -396,7 +396,7 @@ int main(int argc, char *argv[])
         int facet = facet_size(R_mu,len);
         par.ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
         evaluate_facet_coords(par.uu, par.vv, len, facet, count);
-        source_extraction(0,0,facet,par.data,par.sigma2,l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+        source_extraction(0,0,facet,par.data,par.sigma2,l0, m0, gflux[g], R_mu, 0.,0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
         evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #else
         source_extraction(l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);

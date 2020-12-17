@@ -173,7 +173,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
     error = cross_correlation(n_uv_coords, variance, grid_u, grid_v, weights, visData, visM, &ho, &det_sigma);
 #else
     model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, n_uv_coords, uu_metres, vv_metres, ww_metres, variance, visM);
-    error = cross_correlation(nchannels, wavenumbers, n_uv_coords, variance, uu_metres, vv_metres, weights, visData, visM, &ho, &det_sigma);
+    error = cross_correlation(nchannels, wavenumbers, n_uv_coords, variance, uu_metres, vv_metres, visData, visM, &ho, &det_sigma);
 #endif
     if (error) L_er = -1.e10;
     else

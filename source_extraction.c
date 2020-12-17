@@ -32,7 +32,8 @@ void source_extraction(int rank, unsigned int my_start_index, int facet, complex
                        unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
 #else
 void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, 
-                       complexd *visData, complexd *visGal,unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres)
+                       complexd *visData, complexd *visGal,double *sigma2_vis, unsigned int nchannels, unsigned long int num_coords, 
+                       double *uu_metres, double *vv_metres, double *ww_metres)
 #endif
 {
 #ifdef USE_MPI
