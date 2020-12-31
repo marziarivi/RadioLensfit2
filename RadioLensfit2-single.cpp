@@ -391,12 +391,6 @@ int main(int argc, char *argv[])
         start_data = current_timestamp();
 #endif
     
-#ifdef FACET
-       facet = facet_size(R_mu,len);
-       par.ncoords = evaluate_uv_grid_size(len,wavenumbers,num_channels,num_coords,uu_metres,vv_metres,facet,count);
-       evaluate_facet_coords(par.uu, par.vv, len, facet, count);
-#endif
-
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -425,7 +419,9 @@ int main(int argc, char *argv[])
             data_visibilities_phase_shift(wavenumbers[ch], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visData[ch_vis]));
         }
         // gridding visibilities
+        facet = facet_size(R_mu,len);
         gridding_visibilities(wavenumbers,num_channels,num_coords,uu_metres,vv_metres,visData,sigma2_vis,len,facet,facet_visData,facet_sigma2,count);
+        par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #else
         }
         par.l0 = l0;
@@ -547,6 +543,7 @@ int main(int argc, char *argv[])
     delete[] facet_v;
     delete[] facet_visData;
     delete[] facet_sigma2;
+    delete[] count;
 #endif
 
 #ifdef USE_MPI

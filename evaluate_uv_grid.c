@@ -76,9 +76,8 @@ unsigned long int evaluate_uv_grid_size(double len, double *wavenumbers, unsigne
 }
 
 
-
-// Compute uv facet coordinates in wavelength units
-void evaluate_facet_coords(double* grid_u, double* grid_v, double len, int sizeg, unsigned long int *count)
+// Compute uv facet coordinates in wavelength units and their number
+unsigned long int evaluate_facet_coords(double* grid_u, double* grid_v, double len, int sizeg, unsigned long int *count)
 {
     unsigned int i,j;
     unsigned long int p,n;
@@ -97,6 +96,7 @@ void evaluate_facet_coords(double* grid_u, double* grid_v, double len, int sizeg
             n++;
          }
     }
+    return n;
 }
 
 
@@ -113,6 +113,7 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
     unsigned long int p,n;
     double  inc = 2*len/sizeg;
     unsigned long int size = sizeg*sizeg;
+    memset(count, 0, size*sizeof(unsigned long int));
 
 #ifdef USE_MPI
     memset(new_vis, 0, size*sizeof(complexd));
@@ -140,6 +141,7 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
         temp_grid_vis[pc].imag += vis[n].imag;
         temp_sigma2[pc] += sigma2[n];
 #endif
+        count[pc]++;
         n++;
       }
     }
@@ -164,7 +166,7 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
 
 
 // average partial summed visibilities contained in the IFs facet
- void average_facets(int nIFs, unsigned int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
+void average_facets(int nIFs, unsigned int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
 {
    unsigned long int p;
    unsigned long int n = size;
@@ -185,7 +187,14 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
         n++;
      }
 
-   // unsigned long int  n = 0;
+   n = size;
+   for (int k = 1; k < nIFs; k++)
+     for (p = 0; p < size; p++)
+     {
+        count[p] += count[n];
+        n++;
+     }
+
    n = 0;
    for (p = 0; p < size; p++)
    {

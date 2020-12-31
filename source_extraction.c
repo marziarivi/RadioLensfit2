@@ -26,8 +26,8 @@
 // Notice: instructions execution order is important as arrays are reused!!!!
 
 #ifdef FACET
-void source_extraction(int rank, unsigned int my_start_index, int facet, complexd *facet_vis, double *facet_sigma2,
-                       double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, 
+void source_extraction(int rank, int facet, likelihood_params *par, complexd *facet_vis, double *facet_sigma2,
+                       unsigned long int *count, double l0, double m0, double flux, double mu, double e1, double e2,  
                        complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, unsigned int nchannels, 
                        unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
 #else
@@ -36,21 +36,14 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
                        double *uu_metres, double *vv_metres, double *ww_metres)
 #endif
 {
-#ifdef USE_MPI
-   unsigned int my_freq_index = rank*nchannels; 
-#else
-   unsigned int my_freq_index = 0;
-#endif
-
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
    for (unsigned int ch = 0; ch < nchannels; ch++)
    {
      unsigned long int ch_vis = ch*num_coords;
-     unsigned int ch_ind = my_freq_index + ch;
      // get small round source at the current position and flux
-     data_galaxy_visibilities((par->spec)[ch_ind], (par->wavenumbers)[ch_ind], par->band_factor, par->acc_time, e1, e2, mu,
+     data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, e1, e2, mu,
                               flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
     
      for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
@@ -72,10 +65,10 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
     
 #ifdef FACET
      // Phase shift data visibilities (to be done after gridding because real data will be gridded)
-     data_visibilities_phase_shift((par->wavenumbers)[ch_ind], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
+     data_visibilities_phase_shift((par->wavenumbers)[ch], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
    }    
    // gridding visibilities
-   gridding_visibilities(&(par->wavenumbers[my_freq_index]),nchannels,num_coords,uu_metres,vv_metres,visGal,sigma2_vis,len,facet,facet_vis,facet_sigma2,par->count);
+   gridding_visibilities(par->wavenumbers,nchannels,num_coords,uu_metres,vv_metres,visGal,sigma2_vis,len,facet,facet_vis,facet_sigma2,count);
 #else
    }
   par->l0 = l0;

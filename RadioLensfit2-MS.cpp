@@ -394,10 +394,8 @@ int main(int argc, char *argv[])
         l0 = l[g];  m0 = m[g];
 #ifdef FACET
         int facet = facet_size(R_mu,len);
-        par.ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
-        evaluate_facet_coords(par.uu, par.vv, len, facet, count);
-        source_extraction(0,0,facet,par.data,par.sigma2,l0, m0, gflux[g], R_mu, 0.,0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
-        evaluate_facet_coords(par.uu, par.vv, len, facet, count);
+        source_extraction(0,facet,&par,par.data,par.sigma2,count,l0, m0, gflux[g], R_mu, 0.,0., visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+        par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #else
         source_extraction(l0, m0, gflux[g], R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
@@ -474,9 +472,9 @@ int main(int argc, char *argv[])
         l0 = l[gal];  m0 = m[gal];
 #ifdef FACET
         int facet = facet_size(R_mu,len);
-        par.ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
-        source_extraction(0,0,facet,par.data,par.sigma2,l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
-        evaluate_facet_coords(par.uu, par.vv, len, facet, count);
+        //par.ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
+        source_extraction(0,facet,&par,par.data,par.sigma2,count,l0, m0, flux, R_mu, 0., 0., visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+        par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #else
         source_extraction(l0, m0, flux, R_mu, 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
@@ -551,6 +549,7 @@ int main(int argc, char *argv[])
     delete[] wavenumbers;
     delete[] spec;
 #ifdef FACET
+    delete[] count;
     delete[] facet_u;
     delete[] facet_v;
     delete[] facet_visData;
