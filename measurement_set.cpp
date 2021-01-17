@@ -225,16 +225,18 @@ double ms_read_coords(RL_MeasurementSet* p,
 
     double umax = 0.;
     double vmax = 0.;
+    double uuabs, vvabs;
 
     for (unsigned int i = 0; i < num_coords; ++i)
     {
         uu[i] = matrix(0, i);
         vv[i] = matrix(1, i);
         ww[i] = matrix(2, i);
-        if (fabs(uu[i]) > umax) umax = uu[i];
-        if (fabs(vv[i]) > vmax) vmax = vv[i];
+        uuabs = fabs(uu[i]);
+        vvabs = fabs(vv[i]);
+        if (uuabs > umax) umax = uuabs;
+        if (vvabs > vmax) vmax = vvabs;
     }
-
     return ceil(fmax(umax,vmax));
 }
 
