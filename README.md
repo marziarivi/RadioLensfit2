@@ -54,7 +54,7 @@ Edit the Makefile:
 - update CASACORE include and library path
 - set the compiler and compilation flags you want to use (default: GNU)
 
-- check/change default parameters in the default_params.h file 
+Check/change default parameters in the default_params.h file 
 
 *make all*
 
