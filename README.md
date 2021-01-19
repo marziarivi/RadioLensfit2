@@ -2,25 +2,21 @@
 
 **Radio Weak Lensing shear measurement in the Visibility Domain**
 
-This is complete version of [RadioLensfit](https://github.com/marziarivi/RadioLensfit).
+This is a complete version of [RadioLensfit](https://github.com/marziarivi/RadioLensfit).
 Three tools are provided:
 
 **Simulate**
 
-Simulation of a radio weak lensing observation with a given reduced cosmic shear and a source flux threshold Fmin (or a given source catalog).
+Simulation of a radio weak lensing observation with a given reduced cosmic shear and a given source catalog.
 Radio telescope configuration and observing time sampling must be provided in a Measurement Set.
-
-The simulated faint radio catalog is populated by star-forming galaxies according to flux, scalelength, ellipticity distributions estimated by JVLA observations (SWIRE and COSMOS). The number of galaxies is dependent on the flux prior and provided flux-cut.
-Sources are simulated according to the RING TEST to avoid shape noise: same source flux and size for a fixed number of ellipticity values simmetrically distributed on the same ring. The effect of the input reduced cosmic shear is applied to galaxies ellipticity.
-This source catalog is written in a text file called *RWL_galaxy_catalog_(FoV)_(Fmin).txt*, where FoV is the provided effective field of view. 
-The corresponding simulated visibilities observed by the radio telescope are written in the DATA column of the same Measurement Set (I stokes component). The instrument noise is added. NO primary beam effect is currently considered.
-  
-Usage: *Simulate* (filename MS) (effective field of view [arcmin]) (min flux [muJy]) (shear coord_1) (shear coord_2)
+The effect of the input reduced cosmic shear is applied to galaxies ellipticity. 
+The corresponding simulated visibilities observed by the radio telescope are written in the DATA column of the same Measurement Set (I stokes component). 
+The instrument gaussian noise variance is computed based on the antenna SEFD of the radiotelescope and time and frequency sampling interval. 
 
 Usage: *Simulate* (filename MS) (source catalog filename) (number of sources) (shear coord_1) (shear coord_2)
-
-The version of simulate must be selected in the Makefile
  
+MPI version is also available.
+
 **RadioLensfit2**
 
 Measurement of star forming galaxy ellipticies from a radio weak lensing observation.
@@ -32,7 +28,7 @@ Serial version usage: *RadioLensfit2* (source catalog filename) (number of sourc
 
 MPI version usage: *RadioLensfit2-mpi* (source catalog filename) (number of sources) (filename MSs prefix).MS
 
-MS must be split in individual spectral windows. All MS must have the same name ending with the number of the spectral window.
+For the MPI versions, MS must be split in individual spectral windows. All MS must have the same name ending with the number of the spectral window.
 Filename prefix consists in the common part of all the MS name, i.e. (without the final number and extension)  
  
 **shear.py** 
@@ -57,6 +53,8 @@ Edit the Makefile:
 
 - update CASACORE include and library path
 - set the compiler and compilation flags you want to use (default: GNU)
+
+- check/change default parameters in the default_params.h file 
 
 *make all*
 
