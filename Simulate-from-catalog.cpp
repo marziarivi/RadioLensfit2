@@ -141,7 +141,12 @@ int main(int argc, char *argv[])
     }
 
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
-
+    /* For catalog generation use function galaxy_catalog() and set the followings
+       double fov_eff_arcmin = atof(argv[2]);
+       double fov_eff = fov_eff_arcmin*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // field of view in RAD
+       double Fmin = atof(argv[3]);
+       unsigned long int nge = ceil((flux_CDF(M_EXP, FMAX) - flux_CDF(M_EXP, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
+    */
     unsigned long int nge = atoi(argv[3]);
 
     double *gflux = new double[nge];
