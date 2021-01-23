@@ -101,9 +101,9 @@ void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth
                 visData[i].imag += visGal[i].imag;
             }
         }
-        SNR_vis[g] /= sigma;
-        SNR_vis[g] = sqrt(SNR_vis[g]);
-        printf("n. %d flux = %f SNR = %f\n",g,gflux[g],SNR_vis[g]);
+    //    SNR_vis[g] /= sigma;
+    //    SNR_vis[g] = sqrt(SNR_vis[g]);
+    //    printf("n. %d flux = %f SNR = %f\n",g,gflux[g],SNR_vis[g]);
     }
     
     // Add a random Gaussian noise component to the visibilities.
@@ -135,8 +135,8 @@ void sky_model(double *wavenumbers, double *spec, double channel_bandwidth_hz, i
     for (unsigned long int g=0; g<n_gal; g++)
     {
 
-        R_mu = exp(scale_mean(gflux[g]));
-        //R_mu = gscale[g]; 
+        //R_mu = exp(scale_mean(gflux[g]));
+        R_mu = gscale[g]; 
         l0 = l[g];
         m0 = m[g];
 

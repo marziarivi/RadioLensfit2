@@ -33,6 +33,9 @@
     argv[5]  g2 shear component
 */
 
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -43,6 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "default_params.h"
 #include "datatype.h"
 #include "utils.h"
 #include "measurement_set.h"
@@ -54,25 +58,40 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    long long start_tot, end_tot;
+    int nprocs, rank, num_threads=1;
+#ifdef USE_MPI
+    MPI_Init(&argc, &argv) ;
+    MPI_Comm_size(MPI_COMM_WORLD, &nprocs) ;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    double start_tot = MPI_Wtime();
+#else
+    nprocs=1;
+    rank=0;
+    long long start_tot;
     start_tot = current_timestamp();
+#endif
 
 #ifdef _OPENMP
-    int num_threads;
 #pragma omp parallel
     num_threads = omp_get_num_threads();
-    cout << "Number of OpenMP threads = " << num_threads << endl;
+    if (rank == 0) cout << "Number of OpenMP threads = " << num_threads << endl;
 #endif
     
     if (argc < 5)
     {
+      if (rank == 0)
+      {
         cout << "ERROR: parameter missing!" << endl;
         cout << "usage: Simulate <filename MS> <galaxy catalog filename> <number of sources> <shear1> <shear2> " << endl;
-        exit(EXIT_FAILURE);
+      }
+      exit(EXIT_FAILURE);
     }
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    RL_MeasurementSet* ms = ms_open(argv[1]);
+    char filename[100];
+    sprintf(filename,"%s%d.MS",argv[1],rank);
+    RL_MeasurementSet* ms = ms_open(filename);
+    cout << "rank " << rank << ": reading " << filename << "... " << endl;
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
@@ -84,34 +103,58 @@ int main(int argc, char *argv[])
     double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
     int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
 
-    double efficiency = 0.9;     // system efficiency
-    double SEFD_SKA = 400e+6;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
+    double efficiency = EFFICIENCY;     // system efficiency
+    double SEFD = SEFD_JVLA;    // System Equivalent Flux Density (in micro-Jy) of each VLA antenna
+    
 
     double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
 
-    cout << "Number baselines: " << num_baselines << endl;
-    cout << "Number of channels: " << num_channels << endl;
-    cout << "Channels bandwidth (Hz): " << channel_bandwidth_hz << endl;
-    cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
-    cout << "Starting frequency (Hz): " << freq_start_hz << endl;
-    cout << "Accumulation time (sec): " << time_acc << endl;
-    
+    if (rank == 0)
+    {
+      cout << "Number stations: " << num_stations << endl;
+      cout << "Number of channels: " << num_channels << endl;
+      cout << "Channels bandwidth (Hz): " << channel_bandwidth_hz << endl;
+      cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
+      cout << "Starting frequency (Hz): " << freq_start_hz << endl;
+      cout << "Accumulation time (sec): " << time_acc << endl;
+    }
     double sizeGbytes, totGbytes = 0.;
     
     // Allocate and read uv coordinates 
     unsigned long int num_coords = ms_num_rows(ms);
+    cout << "rank " << rank << ": number of rows: " << num_coords << endl;
     double* uu_metres = new double[num_coords];
     double* vv_metres = new double[num_coords];
     double* ww_metres = new double[num_coords];
     sizeGbytes = 3*num_coords*sizeof(double)/((double)(1024*1024*1024));
-    cout << "allocated original coordinates: " << sizeGbytes  << " GB" << endl;
+    cout << "rank " << rank << ": allocated original coordinates: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
     
     int status;
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
-    
+    if (status) 
+    {
+        cout << "rank " << rank << ": ERROR reading MS - uvw points: " << status << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
+
+    unsigned long int nge = atoi(argv[3]);
+
+    double *gflux = new double[nge];
+    double *gscale = new double[nge];
+    double *ge1 = new double[nge];
+    double *ge2 = new double[nge];
+    double *l = new double[nge];
+    double *m = new double[nge];
+    double *temp_SNR = new double[nge];
+
+    unsigned long int ngalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,temp_SNR);
+    if (rank == 0) cout << "Read catalog. Number of sources: " << ngalaxies << endl;
+
     // Allocate Galaxy and Sky Visibilities -----------------------------------------------------------------------------------------------------------------------
     unsigned long int num_rawvis  = (unsigned long int) num_channels * num_coords;
     complexd *visGal, *visData;
@@ -119,50 +162,39 @@ int main(int argc, char *argv[])
     {
         visGal = new complexd[num_rawvis];
         sizeGbytes = num_rawvis*sizeof(complexd)/((double)(1024*1024*1024));
-        cout << "allocated galaxy visibilities: " << num_rawvis << ", size = " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated galaxy visibilities: " << num_rawvis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
     {
-        cerr << "bad_alloc caught: " << ba.what() << '\n';
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
     
     try
     {
         visData = new complexd[num_rawvis];
-        cout << "allocated original data visibilities: " << num_rawvis << ", size = " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated original data visibilities: " << num_rawvis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
     {
-        cerr << "bad_alloc caught: " << ba.what() << '\n';
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
     memset(visData, 0, num_rawvis*sizeof(complexd));
     
-    long long start_data,end_data;
-    start_data = current_timestamp();
-
-    // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
-
-    unsigned long int nge = atoi(argv[3]);
-   
-    double *gflux = new double[nge];
-    double *gscale = new double[nge];
-    double *ge1 = new double[nge];
-    double *ge2 = new double[nge];
-    double *l = new double[nge];
-    double *m = new double[nge];
-    double *SNR_vis = new double[nge];
- 
-    unsigned long int mygalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,SNR_vis);
-    cout << "num gal: " << mygalaxies << endl;
-    
     // Visibilities Simulation --------------------------------------------------------------------------------------------------------------------------
-    double g1 = atof(argv[4]);  // shear to be applied
+    // shear to be applied
+    double g1 = atof(argv[4]); 
     double g2 = atof(argv[5]);
-    
-    double sigma = (SEFD_SKA*SEFD_SKA)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
-    cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
+ 
+#ifdef USE_MPI
+    double start_sim = MPI_Wtime();
+#else
+    long long start_sim = current_timestamp();
+#endif
+   
+    double sigma = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
+    if (rank == 0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
     
     // Pre-compute wavenumber and spectral factor for each channel 
     // They corresponds to the central frequency of each channel
@@ -178,25 +210,54 @@ int main(int argc, char *argv[])
     }
     
     data_simulation(wavenumbers, spec, channel_bandwidth_hz, time_acc, num_channels, 
-                    num_baselines, sigma, mygalaxies, g1, g2, ge1, ge2, gflux, gscale, l, m, SNR_vis, num_coords, 
+                    num_baselines, sigma, ngalaxies, g1, g2, ge1, ge2, gflux, gscale, l, m, temp_SNR, num_coords, 
                     uu_metres, vv_metres, ww_metres, visGal, visData);
-    
-    end_data = current_timestamp();
-    double data_time = (double)(end_data - start_data)/1000.;
+   
+#ifdef USE_MPI
+    double *SNR_vis = new double[ngalaxies];
+    MPI_Reduce(temp_SNR,SNR_vis,ngalaxies,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+    double simulation_time = MPI_Wtime() - start_sim;
+#else
+    double *SNR_vis = temp_SNR;
+    long long end_sim = current_timestamp();
+    double simulation_time = (double)(end_sim - start_sim)/1000.;
+#endif
 
     // Write visibilities on the DATA column of the Measurement Set
     ms_write_vis(ms,0,0,num_channels,num_coords,visData);
-
-    end_tot = current_timestamp();
-    double total_time = (double)(end_tot - start_tot)/1000.;
-   
-    cout << "Data generation time (sec): " << data_time << endl;
-    
     ms_close(ms);
-    
-    cout << "I/O time (sec): " << total_time - data_time << endl;
-    cout << "Total time (sec): " << total_time << endl;
-    
+   
+    // Write catalog: SNR, positions [rad], flux [uJy], scalelength [arcsec] 
+    if (rank == 0)
+    {
+      FILE *pf;
+      sprintf(filename,"%s_SNR",argv[2]);
+      pf = fopen(filename,"w");
+      // fprintf(pf, "SNR | l | m | flux | scale | e1 | e2 \n"); 
+      for (unsigned long int g = 0; g < ngalaxies; g++)
+      {
+        SNR_vis[g] /= sigma;
+        SNR_vis[g] = sqrt(SNR_vis[g]);
+  
+        fprintf(pf, "%f %f %f %f %f %f %f \n",SNR_vis[g],l[g],m[g],gflux[g],gscale[g],ge1[g],ge2[g]);
+        cout << "n. " << g << " flux = " << gflux[g] << ", scale-length = " << gscale[g] << ", SNR = " << SNR_vis[g] << endl;
+      }
+      fclose(pf);
+    }
+#ifdef USE_MPI
+    double total_time = MPI_Wtime() - start_tot;
+#else
+    long long end_tot = current_timestamp();
+    double total_time = (double)(end_tot - start_tot)/1000.;
+#endif
+   
+    if (rank == 0)
+    {
+      cout << "Simulation time (sec): " << simulation_time << endl;
+      cout << "I/O time (sec): " << total_time - simulation_time << endl;
+      cout << "Total time (sec): " << total_time << endl;
+    }
+
     // free memory ----------------------------------------------------------------------------------------------------------------
     delete[] visData;
     delete[] visGal;
@@ -207,11 +268,17 @@ int main(int argc, char *argv[])
     delete[] l;
     delete[] m;
     delete[] SNR_vis;
+#ifdef USE_MPI
+    delete[] temp_SNR;
+#endif  
     delete[] uu_metres;
     delete[] vv_metres;
     delete[] ww_metres;
     delete[] wavenumbers;
     delete[] spec;
 
+#ifdef USE_MPI
+     MPI_Finalize() ;
+#endif
     return 0;
 }
