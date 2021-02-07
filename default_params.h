@@ -28,6 +28,7 @@
 #define EFFICIENCY 0.9     // system efficiency
 #define SEFD_SKA 400e+6    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
 #define SEFD_MKT 551e+6    // SEFD of each MeerKat antenna (in micro-Jy)
+#define SEFD_JVLA 420e+6   // SEFD of JVLA annetnna
 
 // Frequency reference of the source flux
 #define REF_FREQ 1.4e+9
@@ -79,5 +80,7 @@
 // Parameter for likelihood sampling
 #define NP_MAX 30  // min number of sampling points with likelihood above 5%ML
 #define E_RES 3.0e-3  // sampling resolution
+
+#define VAR 1e-4  // minimum measurement variance for acceptance after sampling (otherwise re-fitting at the end)
 
 #endif
