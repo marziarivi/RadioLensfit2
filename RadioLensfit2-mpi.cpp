@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     const unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
 
     const double efficiency = EFFICIENCY;     // system efficiency
-    const double SEFD = SEFD_JVLA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
+    const double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
 
     const double ref_frequency_hz = REF_FREQ;  // Reference frequency in Hz at which fluxes are measured    
 
