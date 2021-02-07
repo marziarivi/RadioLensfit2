@@ -35,7 +35,7 @@
 extern "C" {
 #endif
     
-// Compute flux independent model galaxy visibilities analitically
+// Compute flux independent facet model galaxy visibilities for likelihood computation
 // model a galaxy at the phase centre: visibilities are real numbers 
 // facet uv points are in wavelength units
 void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength, unsigned long int num_coords, 
@@ -71,7 +71,8 @@ void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength,
 }
     
     
-// model galaxy at the galaxy position
+// model galaxy at the galaxy position for likelihood computation
+// original uvw ponts in metres
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scalelength, double l,
                                double m, unsigned long int num_coords, double* uu_metres,
@@ -92,9 +93,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
         spectra = spec[ch];
         wavenumber = wavenumbers[ch];
         //ch_freq = wavenumber*C0/(2.0*PI);
-        //beam_pattern = cos(BEAM_const*ch_freq*radius);
-        //beam_pattern = beam_pattern*beam_pattern*beam_pattern;
-        //beam_pattern *= beam_pattern;   // cos^6 model for the primary beam pattern
+        //beam_profile = primary_beam_profile(ch_freq,source_pos);
         wavenumber2 = wavenumber*wavenumber;
         
         for (unsigned long int i = 0; i < num_coords; ++i)
@@ -104,17 +103,14 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
           ww = ww_metres[i];
             
           phase = uu*l+vv*m+ww*n;
-          /*
-           smear = band_factor*phase;
-           smear = sin(smear)/smear;
-          */
+          // smear = fq_smear(band_factor,phase)*t_smear(acc_time,phase);
           phase = wavenumber*phase;
  
           k1 = (1.+e1)*uu + e2*vv;
           k2 = e2*uu + (1.-e1)*vv;
         
           den = 1. + scale_factor*wavenumber2*(k1*k1+k2*k2);
-          shape = /*beam_pattern*/spectra/(den*sqrt(den));
+          shape = /*beam_profile*/spectra/(den*sqrt(den));
           Modvis[nv].real = shape*cos(phase); //*smear;
           Modvis[nv].imag = shape*sin(phase); //*smear;
  
@@ -129,7 +125,8 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
 }
     
     
-// Compute data galaxy visibilities per channel  
+// Compute galaxy visibilities per channel for data and sky model simulation
+// original uvw points in metres
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
                               double e1, double e2, double scalelength, double flux, double l, double m,
                               unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis)
@@ -148,59 +145,45 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
             w = ww_metres[i];
             
             phase = u*l+v*m+w*n;
-            /*
-            smear = band_factor*phase;
-            smear = sin(smear)/smear;
-            */
+            // smear = fq_smear(band_factor,phase)*t_smear(acc_time,phase);
             phase = wavenumber*phase;
             
             k1 = (1.+e1)*u + e2*v;
             k2 = e2*u + (1.-e1)*v;
                 
             den = 1. + scale_factor*wavenumber2*(k1*k1+k2*k2);
-            shape = spectra*flux/(den*sqrt(den));  //primary beam effect already included in the flux value
+            shape = spectra*flux/(den*sqrt(den));  //primary beam attenuation already included in the flux value?
+            
             vis[i].real = shape*cos(phase); //*smear;
             vis[i].imag = shape*sin(phase); //*smear;
         }
-        
 }
 
-
-// Compute data galaxy visibilities per channel (with w = 0)
-void data_galaxy_visibilities2D(double spectra, double wavenumber, double band_factor, double acc_time,
-                              double e1, double e2, double scalelength, double flux, double l, double m,
-                              unsigned long int num_coords, double* uu_metres, double* vv_metres, complexd* vis)
+// frequency smearing effect in the visibilities (see Rivi & Miller, 2018)  
+double fq_smear(double band_factor, double phase)
 {
-        double den,u,v,k1,k2,phase,shape;
-        double detA = 1.-e1*e1-e2*e2;
-        double scale = scalelength*ARCS2RAD;  // scale in rad
-        double scale_factor = (scale*scale)/(detA*detA);
-        double wavenumber2 = wavenumber*wavenumber;
-
-        for (unsigned long int i = 0; i < num_coords; ++i)
-        {
-            u = uu_metres[i];
-            v = vv_metres[i];
-
-            phase = u*l+v*m;
-            /*
-            smear = band_factor*phase;
-            smear = sin(smear)/smear;
-            */
-            phase = wavenumber*phase;
-
-            k1 = (1.+e1)*u + e2*v;
-            k2 = e2*u + (1.-e1)*v;
-
-            den = 1. + scale_factor*wavenumber2*(k1*k1+k2*k2);
-            shape = spectra*flux/(den*sqrt(den));  //primary beam effect already included in the flux value
-            vis[i].real = shape*cos(phase); //*smear;
-            vis[i].imag = shape*sin(phase); //*smear;
-        }
-
+   double smear = band_factor*phase;
+   smear = sin(smear)/smear;
+   return smear;
 }
-
-
+    
+// time smearing effect in the visibilities
+/*
+double t_smear(double acc_time, double phase)
+{
+    double smear = 
+    return smear
+}
+*/
+    
+// primary beam pattern attenuation: WSRT model (see ....)
+double primary_beam_profile(double ch_freq, double source_pos)
+{
+   double beam_pattern = cos(BEAM_const*ch_freq*source_pos);
+   beam_pattern = beam_pattern*beam_pattern*beam_pattern;
+   beam_pattern *= beam_pattern;
+   return beam_pattern
+}    
 
 // Add a random Gaussian noise component to the visibilities.
 void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, double* sigma)
@@ -254,39 +237,7 @@ void data_visibilities_phase_shift(double wavenumber, double l, double m,
         vis[i].imag = temp.imag;
     }
 
-}
-
-
-// Shift galaxy visibilities phase (with w = 0) to the origin
-// there only the real part contains galaxy signal, the imaginary part contains only noise
-// so take only the real part for shape fitting
-void data_visibilities_phase_shift2D(double wavenumber, double l, double m,
-                                   unsigned long int num_coords,
-                                   double* uu_metres, double* vv_metres, complexd* vis)
-{
-    double u,v,phase, sp,cp;
-    double ch_freq = wavenumber*C0/(2.0*PI);
-    complexd temp;
-
-    for (unsigned long int i = 0; i < num_coords; ++i)
-    {
-        u = uu_metres[i];
-        v = vv_metres[i];
-
-        phase = u*l+v*m;
-        phase *= -wavenumber;
-        sp = sin(phase);
-        cp = cos(phase);
-
-        temp.real = vis[i].real*cp - vis[i].imag*sp;
-        temp.imag = vis[i].real*sp + vis[i].imag*cp;
-        vis[i].real = temp.real;
-        vis[i].imag = temp.imag;
-    }
-
-}
-
- 
+} 
     
 #ifdef __cplusplus
 }
