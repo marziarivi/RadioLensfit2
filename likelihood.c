@@ -499,7 +499,6 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
     float start1 = edim1;
     float start2 = edim2;
  
-    int k=0;
     while (np < np_max && sampling > E_RES)
     {
         for(ie1 = -start1/sampling; ie1 <= start1/sampling; ie1 +=2)
@@ -518,7 +517,7 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
                     {
                         // dividing each likelihood by exp(Lmax) the mean and variance doesn't change
                         L=exp(L_e-maxL);
-                        if (L >= threshold)
+                        if (L >= threshold && !isinf(L))
                         {
                             np++;
                             xL1 = x_e1*L;
@@ -530,7 +529,6 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
                             cov += x_e1*xL2;
                             totL += L;
                        }
-                       k++;
                     }
                  }
                }
@@ -546,7 +544,7 @@ void likelihood_sampling(double *mes_e1, double *mes_e2, double maxL, void *para
     var1 /= totL; var1 -= average_1*average_1;
     var2 /= totL; var2 -= average_2*average_2;
     cov /= totL; cov -= average_1*average_2;
-    
+
     *mes_e1 = average_1;
     *mes_e2 = average_2;
     

@@ -93,7 +93,7 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
     {
         likelihood_sampling(mes_e1, mes_e2, *maxL, par, np_max, var_e1, var_e2, oneDimvar);
         printf("rank %d: average: %f,%f variance: %e,%e 1Dvar: %e\n",rank,*mes_e1,*mes_e2,*var_e1,*var_e2,*oneDimvar);
-        if (*var_e1 < 1e-4 || *var_e2 < 1e-4 || *oneDimvar < 1e-4)
+        if (*var_e1 < VAR || *var_e2 < VAR || *oneDimvar < VAR)
         {
            printf("rank %d: ERROR likelihood sampling!\n",rank);
            error = 1;
