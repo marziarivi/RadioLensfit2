@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
     char filename[100];
     sprintf(filename,"%s%d.MS",argv[3],rank);
     RL_MeasurementSet* ms = ms_open(filename);
+    cout << "rank " << rank << ": reading " << filename << "... " << endl;
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
@@ -131,7 +132,7 @@ int main(int argc, char *argv[])
     const unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
 
     const double efficiency = EFFICIENCY;     // system efficiency
-    const double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
+    const double SEFD = SEFD_JVLA;    // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
 
     const double ref_frequency_hz = REF_FREQ;  // Reference frequency in Hz at which fluxes are measured    
 
@@ -224,8 +225,8 @@ int main(int argc, char *argv[])
     double *SNR_vis = new double[nge];
  
     unsigned long int ngalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis);
-    if (rank == 0) cout << "Read catalog. Number of sources: " << ngalaxies << endl;
-   
+    if (rank == 0)  cout << "Read catalog. Number of sources: " << ngalaxies << endl;
+
 #ifdef USE_MPI
     end_data = MPI_Wtime();
     data_time = end_data - start_data;
@@ -343,12 +344,27 @@ int main(int argc, char *argv[])
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells*nprocs];
+    unsigned long int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, count);
 
-    double* facet_u = new double[ncells];
-    double* facet_v = new double[ncells];
-    sizeGbytes = (2*ncells*sizeof(double)+ncells*nprocs*sizeof(unsigned long int))/((double)(1024*1024*1024));
+    double* facet_u = new double[facet_ncoords];
+    double* facet_v = new double[facet_ncoords];
+    sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*nprocs*sizeof(unsigned long int))/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
+
+    // allocate facet model visibilities 
+    double* visMod;
+    try
+    {
+      visMod = new double[num_models*facet_ncoords];
+      sizeGbytes = num_models*facet_ncoords*sizeof(double)/((double)(1024*1024*1024));
+      cout << "rank " << rank << ": allocated facet model visibilities, size = " << sizeGbytes  << " GB" << endl;
+      totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+      cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
   
 #ifdef USE_MPI
     // allocate facet vis and sigma2 for the gridded visibilities of this MS to be sent to the task that will process the current source 
@@ -389,7 +405,7 @@ int main(int argc, char *argv[])
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
 
-    double* visMod; // allocate after computing the effective facet size (for the largest source)
+    par.mod = visMod;
     par.uu = facet_u;
     par.vv = facet_v;
     //par.weights = weights;
@@ -418,7 +434,8 @@ int main(int argc, char *argv[])
     par.mod = visMod;
     par_sigma2 = sigma2_vis;
 #endif
-    
+    cout << "rank " << rank << ": Total Visibilities GBytes: " << totGbytes << endl;
+      
     // Data Processing -----------------------------------------------------------------------------------------------------------------------------------
     // Only rank 0 writes the output file 
     FILE *pFile = 0;
@@ -455,15 +472,15 @@ int main(int argc, char *argv[])
       {
         l0 = l[g];  m0 = m[g];
         mu = scale_mean(gflux[g]);
-        R_mu[src] = exp(mu);
-        //R_mu[src] = gscale[g];
+        //R_mu[src] = exp(mu);
+        R_mu[src] = gscale[g];
 #ifdef FACET
         int facet = facet_size(R_mu[src],len);
         unsigned long int size = facet*facet;
 #endif
         if (rank == src)  // proc k will fit the current source
         {
-          my_g = g;     
+          my_g = g;  
           for (int nRo=1; nRo<numR; nRo++)   
             rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);  // set log(prior) for scalelength of source g
 #ifdef FACET
@@ -519,23 +536,6 @@ int main(int argc, char *argv[])
          // compute facet coordinates their number
          par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, par.facet, count);
       }
-      // allocate facet model visibilities once
-      if (my_g == rank) // first source fitting for the current proc
-      {
-        try
-        {
-          visMod = new double[num_models*par.ncoords];
-          sizeGbytes = num_models*par.ncoords*sizeof(double)/((double)(1024*1024*1024));
-          cout << "rank " << rank << ": allocated facet model visibilities, size = " << sizeGbytes  << " GB" << endl;
-          totGbytes += sizeGbytes;
-          cout << "rank " << rank << ": Total Visibilities GBytes: " << totGbytes << endl; 
-        }
-        catch (bad_alloc& ba)
-        {
-          cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
-        }
-        par.mod = visMod;
-      }
 #endif
 
       // source fitting of this task --------------------------------------------------------------------------------------------------
@@ -579,7 +579,7 @@ int main(int argc, char *argv[])
          MPI_Bcast(res,6,MPI_DOUBLE,k,MPI_COMM_WORLD);          
          com_time += MPI_Wtime();
 #endif
-         if (res[5] < -1e+10 || res[2] < 1e-4 || res[3] < 1e-4 || res[4] < 1e-4)  // bad measurement
+         if (res[5] < -1e+10 || res[2] < VAR || res[3] < VAR || res[4] < VAR)  // bad measurement
          {
             bad_list[bad] = ind;  // each proc store the index of bad measurements to be fit again at the end
             bad++;
@@ -613,7 +613,7 @@ int main(int argc, char *argv[])
                   visData[i].imag -= visGal[i].imag;
                }
             }
-            if (rank == 0) fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[ind],ge1[ind],res[0],sqrt(res[2]),ge2[ind],res[1],sqrt(res[3]),res[4],SNR_vis[ind],l0/(ARCS2RAD),m0/(ARCS2RAD));
+            if (rank == 0) fprintf(pFile, "%f | %f | %f | %e | %f | %f | %e | %e | %f | %f | %f \n",gflux[ind],ge1[ind],res[0],sqrt(res[2]),ge2[ind],res[1],sqrt(res[3]),res[4],SNR_vis[ind],l0/(ARCS2RAD),m0/(ARCS2RAD));
          }
          k++;
          ind++;
@@ -636,8 +636,8 @@ int main(int argc, char *argv[])
         unsigned long int gal = bad_list[b]; // source global index
         double flux = gflux[gal];
         mu = scale_mean(flux);
-        R_mu[k] = exp(mu);
-        //R_mu[k] = gscale[gal];
+        //R_mu[k] = exp(mu);
+        R_mu[k] = gscale[gal];
         l0 = l[gal];  m0 = m[gal];
 
 #ifdef FACET
@@ -708,7 +708,7 @@ int main(int argc, char *argv[])
       if (my_g >= 0) //this task will fit the current source
       {
         source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
-        cout << "rank " << rank << ": n. " << my_g << " flux = " << gflux[my_g] << "): measured e = " << mes_e1 << "," << mes_e2 << endl;
+        cout << "rank " << rank << ": n. " << my_g << " flux = " << gflux[my_g] << ": measured e = " << mes_e1 << "," << mes_e2 << endl;
       }
 #ifdef USE_MPI
       fitting_time += MPI_Wtime() - start_fitting;
@@ -739,8 +739,8 @@ int main(int argc, char *argv[])
           com_time += MPI_Wtime();
 #endif    
           if (rank == 0)   // write shape measurement (always!)
-             fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f  \n",gflux[gal],ge1[gal],res[0],sqrt(res[2]),ge2[gal],res[1],sqrt(res[3]),res[4],SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
-          if (res[5] < -1e+10 || res[2] < 1e-4 || res[3] < 1e-4 || res[4] < 1e-4) // bad measurement 
+             fprintf(pFile, "%f | %f | %f | %e | %f | %f | %e | %e | %f | %f | %f  \n",gflux[gal],ge1[gal],res[0],sqrt(res[2]),ge2[gal],res[1],sqrt(res[3]),res[4],SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
+          if (res[5] < -1e+10 || res[2] < VAR || res[3] < VAR || res[4] < VAR) // bad measurement 
           {
              bad++; 
              res[0] = 0.; res[1] = 0.; // remove round source model from original data

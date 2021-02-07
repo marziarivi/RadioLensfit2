@@ -17,6 +17,10 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,11 +54,12 @@ int facet_size(double theta_med, double len)
 }
 
 // Compute number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered)
-unsigned long int evaluate_uv_grid_size(double len, double *wavenumbers, unsigned int num_channels, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
+unsigned long int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wavenumbers, unsigned int num_channels, unsigned long int ncoords, double* u, double* v, int sizeg, unsigned long int* count)
 {
     unsigned long int p,n;
     unsigned long int size = sizeg*sizeg;
-    memset(count, 0, size*sizeof(unsigned long int));
+    unsigned long int *temp_count = &(count[rank*size]);
+    memset(temp_count, 0, size*sizeof(unsigned long int));
     
     double inc = 2*len/sizeg;
 
@@ -66,9 +71,20 @@ unsigned long int evaluate_uv_grid_size(double len, double *wavenumbers, unsigne
         unsigned int pu = (unsigned int) ((u[k]*inv_lambda + len) / inc);
         unsigned int pv = (unsigned int) ((v[k]*inv_lambda + len) / inc);
         unsigned long int pc = (unsigned long int) pv * sizeg + pu;
-        count[pc]++;
+        temp_count[pc]++;
       }
     }
+
+#ifdef USE_MPI
+    MPI_Allgather(temp_count,size,MPI_UNSIGNED_LONG,count,size,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
+    n = size;
+    for (int k = 1; k < nprocs; k++)
+      for (p = 0; p < size; p++)
+      {
+        count[p] += count[n];
+        n++;
+      }
+#endif
  
     n = 0;
     for (p = 0; p < size; p++)  if (count[p]) n++;

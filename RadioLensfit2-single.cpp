@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     const double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
     
     double efficiency = EFFICIENCY;     // system efficiency
-    double SEFD = SEFD_SKA;      // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
+    double SEFD = SEFD_JVLA;      // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
     if (rank==0)
@@ -120,8 +120,6 @@ int main(int argc, char *argv[])
     }
     
     double sizeGbytes, totGbytes = 0.;
-    double fov = 3600*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // 1 degree field of view in RAD
-    printf("field of view: %e [rad] %f [arcsec] \n",fov,fov/(ARCS2RAD));
     
     // Allocate and read uv coordinates ------------------------------------------------------------------------------
     unsigned long int num_coords = ms_num_rows(ms);
@@ -237,7 +235,7 @@ int main(int argc, char *argv[])
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
-    
+
     unsigned long int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];

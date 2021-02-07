@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
-    unsigned long int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, count);
+    unsigned long int facet_ncoords = evaluate_uv_grid_size(0,1,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, count);
 
     double *facet_u, *facet_v;
     try
