@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     const double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
     
     double efficiency = EFFICIENCY;     // system efficiency
-    double SEFD = SEFD_JVLA;      // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
+    double SEFD = SEFD_SKA;      // System Equivalent Flux Density (in micro-Jy) of each SKA1 antenna
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
     if (rank==0)
