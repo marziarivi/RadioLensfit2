@@ -28,7 +28,6 @@
 extern "C" {
 #endif
     
-// model agalaxy at the phase centre: visibilities are real numbers
 void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength, unsigned long int num_coords, 
                                        double* grid_u, double* grid_v,const double* sigma2, double* Modvis);
 
@@ -42,19 +41,14 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
                               unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres,
                               complexd* vis);
 
-void data_galaxy_visibilities2D(double spectra, double wavenumber, double band_factor, double acc_time,
-                              double e1, double e2, double scalelength, double flux, double l, double m,
-                              unsigned long int num_coords, double* uu_metres, double* vv_metres, complexd* vis);
+double fq_smear(double band_factor, double phase);
 
-    
 void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, double* sigma);
 
     
 void data_visibilities_phase_shift(double wavenumber, double l, double m, unsigned long int num_coords,
                                        double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis);
-
-void data_visibilities_phase_shift2D(double wavenumber, double l, double m, unsigned long int num_coords,
-                                       double* uu_metres, double* vv_metres, complexd* vis);    
+   
 #ifdef __cplusplus
 }
 #endif
