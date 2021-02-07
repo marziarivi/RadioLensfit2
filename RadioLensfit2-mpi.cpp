@@ -472,8 +472,8 @@ int main(int argc, char *argv[])
       {
         l0 = l[g];  m0 = m[g];
         mu = scale_mean(gflux[g]);
-        //R_mu[src] = exp(mu);
-        R_mu[src] = gscale[g];
+        R_mu[src] = exp(mu);
+        //R_mu[src] = gscale[g];
 #ifdef FACET
         int facet = facet_size(R_mu[src],len);
         unsigned long int size = facet*facet;
@@ -636,8 +636,8 @@ int main(int argc, char *argv[])
         unsigned long int gal = bad_list[b]; // source global index
         double flux = gflux[gal];
         mu = scale_mean(flux);
-        //R_mu[k] = exp(mu);
-        R_mu[k] = gscale[gal];
+        R_mu[k] = exp(mu);
+        //R_mu[k] = gscale[gal];
         l0 = l[gal];  m0 = m[gal];
 
 #ifdef FACET
