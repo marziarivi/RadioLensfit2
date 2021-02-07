@@ -159,7 +159,7 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
         }
 }
 
-// frequency smearing effect in the visibilities (see Rivi & Miller, 2018)  
+// frequency smearing effect in the visibilities (see Chang et al 2004, Smirnov 2011, Rivi & Miller 2018)  
 double fq_smear(double band_factor, double phase)
 {
    double smear = band_factor*phase;
@@ -167,24 +167,27 @@ double fq_smear(double band_factor, double phase)
    return smear;
 }
     
-// time smearing effect in the visibilities
+// time smearing effect in the visibilities (see Smirnov 2011)
 /*
 double t_smear(double acc_time, double phase)
 {
-    double smear = 
+    double smear = phase*PI/(C0*acc_time); 
+    smear = sin(smear)/smear;
     return smear
 }
 */
     
-// primary beam pattern attenuation: WSRT model (see ....)
+// primary beam pattern attenuation: WSRT cos^3 model (Smirnov 2011)
+// Jinc function for VLA (Uson & Cotton 2008)
+/*    
 double primary_beam_profile(double ch_freq, double source_pos)
 {
    double beam_pattern = cos(BEAM_const*ch_freq*source_pos);
    beam_pattern = beam_pattern*beam_pattern*beam_pattern;
-   beam_pattern *= beam_pattern;
    return beam_pattern
 }    
-
+*/
+    
 // Add a random Gaussian noise component to the visibilities.
 void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, double* sigma)
 {
