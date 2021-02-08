@@ -17,10 +17,6 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -79,7 +75,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
                                double* vv_metres, double* ww_metres,
                                const double* sigma2, complexd* Modvis)
 {
-    double wavenumber,wavenumber2,den,uu,vv,ww,k1,k2,spectra,shape,phase,smear,ch_freq,beam_pattern;
+    double wavenumber,wavenumber2,den,uu,vv,ww,k1,k2,spectra,shape,phase,smear; //ch_freq,beam_profile;
     double detA = 1.-e1*e1-e2*e2;
     double scale = scalelength*ARCS2RAD;
     double scale_factor = (scale*scale)/(detA*detA);
@@ -93,7 +89,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
         spectra = spec[ch];
         wavenumber = wavenumbers[ch];
         //ch_freq = wavenumber*C0/(2.0*PI);
-        //beam_profile = primary_beam_profile(ch_freq,source_pos);
+        //beam_profile = primary_beam_profile(source_pos,...);
         wavenumber2 = wavenumber*wavenumber;
         
         for (unsigned long int i = 0; i < num_coords; ++i)
@@ -131,12 +127,14 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
                               double e1, double e2, double scalelength, double flux, double l, double m,
                               unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis)
 {
-        double den,u,v,w,k1,k2,phase,shape;
+        double den,u,v,w,k1,k2,phase,shape;//ch_freq,beam_profile;
         double detA = 1.-e1*e1-e2*e2;
         double scale = scalelength*ARCS2RAD;  // scale in rad
         double scale_factor = (scale*scale)/(detA*detA);
         double wavenumber2 = wavenumber*wavenumber;
         double n = sqrt(1.-l*l-m*m) - 1.;
+        //ch_freq = wavenumber*C0/(2.0*PI);
+        //beam_profile = primary_beam_profile(source_pos,...);
     
         for (unsigned long int i = 0; i < num_coords; ++i)
         {
@@ -152,7 +150,7 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
             k2 = e2*u + (1.-e1)*v;
                 
             den = 1. + scale_factor*wavenumber2*(k1*k1+k2*k2);
-            shape = spectra*flux/(den*sqrt(den));  //primary beam attenuation already included in the flux value?
+            shape = /*beam_profile*/spectra*flux/(den*sqrt(den));   
             
             vis[i].real = shape*cos(phase); //*smear;
             vis[i].imag = shape*sin(phase); //*smear;
@@ -167,7 +165,7 @@ double fq_smear(double band_factor, double phase)
    return smear;
 }
     
-// time smearing effect in the visibilities (see Smirnov 2011)
+// time smearing effect in the visibilities (see Chang et al 2004, Smirnov 2011)
 /*
 double t_smear(double acc_time, double phase)
 {
@@ -178,7 +176,7 @@ double t_smear(double acc_time, double phase)
 */
     
 // primary beam pattern attenuation: WSRT cos^3 model (Smirnov 2011)
-// Jinc function for VLA (Uson & Cotton 2008)
+// Jinc function for VLA (Chang et al 2004, Uson & Cotton 2008)
 /*    
 double primary_beam_profile(double ch_freq, double source_pos)
 {
