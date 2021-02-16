@@ -144,6 +144,7 @@ int main(int argc, char *argv[])
       cout << "Channels bandwidth (Hz): " << channel_bandwidth_hz << endl;
       cout << "Inital frequency (Hz): " << freq_start_hz << endl;
       cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
+      cout << "Number of polarizations: " << ms_num_pols(ms) << endl;
     }
     cout << "rank " << rank << ": starting frequency (Hz): " << freq_start_hz << endl;
     cout << "rank " << rank << ": number of rows: " << num_rows << endl;
