@@ -20,8 +20,8 @@ MPI version is also available.
 **RadioLensfit2**
 
 Measurement of star forming galaxy ellipticies from a radio weak lensing observation.
-Data visibilities and observation configuration must be provided in a Measurement Set. 
-The number of galaxies and the corresponding source catalog (ordered by decreasing flux) containing source SNR, position and flux must be provided. Source position and flux is used for source visibilities extraction, then shape measurement is performed according to RadioLensfit methodology: a single model fitting approach where the likelihood is marginalised over position, flux and scalelength source parameters.  
+Data visibilities and observation configuration must be provided in a Measurement Set. If the MS contains 4 polarizations, I stokes is computed from them, otherwise a single polarization is expected to contain I stokes.
+The number of galaxies and the corresponding source catalog (ordered by decreasing flux or SNR) containing source SNR, position and flux must be provided (scalelength is optional but highly recommended). Source position and flux (and scalelength) are used for source visibilities extraction, then shape measurement is performed according to RadioLensfit methodology: a single model fitting approach where the likelihood is marginalised over position, flux and scalelength source parameters.  
 The list of galaxies with the measured ellipticities is written in a text file called *ellipticities.txt*.
 
 Serial version usage: *RadioLensfit2* (source catalog filename) (number of sources) (filename MS).MS
