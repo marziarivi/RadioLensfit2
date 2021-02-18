@@ -80,9 +80,9 @@ RL_MeasurementSet* ms_open(const char* filename)
     p->num_channels = 0;
     if (p->ms->polarization().nrow() > 0)
         p->num_pols = p->msc->polarization().numCorr().get(0);
-    if (p->num_pols != 1)
+    if (p->num_pols != 1 && p->num_pols != 4)
     {
-        fprintf(stderr, "RadioLensfit can only read Measurement Sets with a sigle polarization (I stokes)\n");
+        fprintf(stderr, "RadioLensfit can only read Measurement Sets with a sigle polarization (I stokes) or standard 4 correlations from which compute I stoke\n");
         fflush(stderr);
         ms_close(p);
         return 0;
@@ -338,7 +338,9 @@ void ms_read_Flag(RL_MeasurementSet* p,
 /*
    Read a block of visibilities from the specified column of the main table of the Measurement Set.
    
-   It is assumed the MS contains a single stokes component: the flux I.
+   if num pols = 1, it is assumed the MS contains a single stokes component: the flux I.
+   if num pols = 4, it is assumed they are the standard four correlations from which I is computed: 
+   (LL+RR)/2 or (XX+YY)/2
    The dimensionality of the complex vis data block is: num_channels * num_coords 
    with num_coords the fastest varying dimension, and num_channels the slowest.
    The vis array must be allocated to the correct size on entry. 
@@ -368,7 +370,7 @@ void ms_read_vis(RL_MeasurementSet* p,
         num_coords = total_rows - start_row;
 
     // Create the slicers for the column.
-    unsigned int num_pols = 1;
+    unsigned int num_pols = p->num_pols;
     IPosition start1(1, start_row);
     IPosition length1(1, num_coords);
     Slicer row_range(start1, length1);
@@ -387,10 +389,21 @@ void ms_read_vis(RL_MeasurementSet* p,
     {
         for (unsigned int b = 0; b < num_coords; ++b)
         {
-                unsigned int i = (b * num_channels + c) << 1;
-                unsigned int j = (c * num_coords + b);
-                vis[j].real = in[i];
-                vis[j].imag = in[i + 1];
+            // read first polarization p = 0  
+            unsigned int i = (num_pols*(b * num_channels + c)) << 1;
+            unsigned int j = (c * num_coords + b);
+            vis[j].real = in[i];
+            vis[j].imag = in[i + 1];
+
+            if (num_pols == 4)
+            {
+              // read last polarization p = 3 and compute I 
+              i += 6;
+              vis[j].real += in[i];
+              vis[j].imag += in[i + 1]; 
+              vis[j].real *= 0.5;
+              vis[j].imag *= 0.5;
+            }
         }
     }
 }
@@ -400,7 +413,7 @@ void ms_read_vis(RL_MeasurementSet* p,
    Writes the given block of visibility data to the data column of the Measurement Set, 
    extending it if necessary.
   
-   It is assumed to write on a MS with a single polarization column.
+   It is assumed to write on a MS with a single polarization column (I stokes).
    The dimensionality of the complex vis data block is: num_channels * num_coords,
    with num_coords the fastest varying dimension and num_channels the slowest.
 */
