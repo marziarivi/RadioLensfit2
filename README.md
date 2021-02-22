@@ -24,11 +24,11 @@ Data visibilities and observation configuration must be provided in a Measuremen
 The number of galaxies and the corresponding source catalog (ordered by decreasing flux or SNR) containing source SNR, position and flux must be provided (scalelength is optional but highly recommended). Source position and flux (and scalelength) are used for source visibilities extraction, then shape measurement is performed according to RadioLensfit methodology: a single model fitting approach where the likelihood is marginalised over position, flux and scalelength source parameters.  
 The list of galaxies with the measured ellipticities is written in a text file called *ellipticities.txt*.
 
-Serial version usage: *RadioLensfit2* (source catalog filename) (number of sources) (filename MS).MS
+Serial version usage: *RadioLensfit2* (source catalog filename) (number of sources) (filename MS)
 
-MPI version usage: *RadioLensfit2-mpi* (source catalog filename) (number of sources) (filename MSs prefix).MS
+MPI version usage: *RadioLensfit2-mpi* (source catalog filename) (number of sources) (filename MSs prefix)
 
-For the MPI versions, MS must be split in individual spectral windows. All MS must have the same name ending with the number of the spectral window.
+For the MPI versions, MS must be split in individual spectral windows. All MS must have the same name ending with the number of the spectral window and extension  ".MS".
 Filename prefix consists in the common part of all the MS name, i.e. (without the final number and extension)  
  
 **shear.py** 
@@ -43,8 +43,6 @@ Requirements:
 - CASACORE library for Measurement Set I/O
 - GSL library 
 - MPI library (for the parallel version)
-
-Possibly you can modify the fixed parameters defined in the *default_params.h* file
 
 Edit the Makefile:
 
@@ -62,6 +60,6 @@ Check/change default parameters in the *default_params.h* file
 
 If you use RadioLensfit2 and find it useful, please consider citing the related papers:
 
-Rivi M., Miller L., Makhathini S., Abdalla F. B., 2016, MNRAS, 463, 1881 - [arXiv:1603.04784](https://arxiv.org/abs/1603.04784)
-
 Rivi M., Miller L., 2018, MNRAS, 476, 2053 - [arXiv:1709.01827](https://arxiv.org/abs/1709.01827)
+
+Rivi M., Miller L., Makhathini S., Abdalla F. B., 2016, MNRAS, 463, 1881 - [arXiv:1603.04784](https://arxiv.org/abs/1603.04784)
