@@ -333,9 +333,8 @@ unsigned long int ms_read_Flag(RL_MeasurementSet* p,
          flag[j] = in[i];
 
          if (num_pols == 4)
-            flag[j] = flag[j] || in[i+3];  // flag vis if either LL or RR are flagged
-        if (flag[j]) count++;
-        if (i<80)   cout << " flag " << j << " = " << flag[j] << endl;
+            flag[j] = (flag[j] || in[i+3]);  // flag vis if either LL or RR are flagged
+         if (flag[j]) count++;
        }
     }
     return count;
