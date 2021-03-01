@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     if (argc != 4)
     {
       cout << "ERROR: bad number of parameters!" << endl;
-      cout << "usage: RadioLensfit2-MS <source catalog filename> <num_sources> <filename MS> " << endl;
+      cout << "usage: RadioLensfit2 <source catalog filename> <num_sources> <filename MS> " << endl;
       exit(EXIT_FAILURE);
     }
 
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
         cout <<"ERROR reading MS - uvw points: " << status << endl;
         exit(EXIT_FAILURE);
     }
-    
+ 
     // Allocate and read Data visibilities
     unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
     complexd *visData;
@@ -155,6 +155,30 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    // Allocate and read FLAG column
+    bool *flag;
+    try
+    {
+        flag = new bool[num_vis];
+        sizeGbytes = num_vis*sizeof(bool)/((double)(1024*1024*1024));
+        cout << "allocated flag column: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
+
+    unsigned long int nF = ms_read_Flag(ms, 0, 0, num_channels, num_rows, "FLAG",flag, &status);
+    if (status)
+    {
+      cout << "ERROR reading MS - flag: " << status << endl;
+      exit(EXIT_FAILURE);
+    }
+    else
+      cout << "Number of flagged visibilities: " << nF << endl;
+
+    // Allocate and read SIGMA column
     double *sigma2_vis;
     try
     {
@@ -190,8 +214,9 @@ int main(int argc, char *argv[])
     double *ge2 = new double[nge];
     double *gscale = new double[nge];
     double *SNR_vis = new double[nge];
+    bool readSNR = true;
  
-    unsigned long int mygalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis);
+    unsigned long int mygalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis,readSNR);
     cout << "Read catalog. Number of sources: " << mygalaxies << endl;
    
     end_data = current_timestamp();
