@@ -283,18 +283,18 @@ void ms_read_sigma(RL_MeasurementSet* p,
  *    with num_coords the fastest varying dimension, and num_channels the slowest.
  *    The flag array must be allocated to the correct size on entry. 
  */
-void ms_read_Flag(RL_MeasurementSet* p,
+unsigned long int ms_read_Flag(RL_MeasurementSet* p,
 		  unsigned int start_row, unsigned int start_channel,
 	          unsigned int num_channels, unsigned int num_coords,
 	          const char* column, bool* flag, int* status)
 {
-  if (!p->ms || !p->msmc || num_coords == 0 || num_channels == 0) return;
+  if (!p->ms || !p->msmc || num_coords == 0 || num_channels == 0) return 0;
   
   // Check that the column exists.
   if (!p->ms->tableDesc().isColumn(column))
   {
     *status = ERR_MS_COLUMN_NOT_FOUND;
-    return;
+    return 0;
   }
 
   // Check that the row is within the table bounds.
@@ -302,13 +302,13 @@ void ms_read_Flag(RL_MeasurementSet* p,
   if (start_row >= total_rows)
   {
     *status = ERR_MS_OUT_OF_RANGE;
-    return;
+    return 0;
   }
   if (start_row + num_coords > total_rows)
     num_coords = total_rows - start_row;
 
     // Create the slicers for the column.
-    unsigned int num_pols = 1;
+    unsigned int num_pols = p->num_pols;
     IPosition start1(1, start_row);
     IPosition length1(1, num_coords);
     Slicer row_range(start1, length1);
@@ -320,18 +320,25 @@ void ms_read_Flag(RL_MeasurementSet* p,
     ArrayColumn<Bool> ac(*(p->ms), column);
     Array<Bool> column_range = ac.getColumnRange(row_range, array_section);
 
-    // Copy the visibility data into the supplied array,
+    // Copy the flag data into the supplied array,
     // swapping coords and channel dimensions.
+    unsigned long int count = 0;
     const bool* in = (const bool*) column_range.data();
     for (unsigned int c = 0; c < num_channels; ++c)
     {
        for (unsigned int b = 0; b < num_coords; ++b)
        {
-         unsigned int i = (b * num_channels + c);
+         unsigned int i = num_pols*(b * num_channels + c);
          unsigned int j = (c * num_coords + b);
          flag[j] = in[i];
+
+         if (num_pols == 4)
+            flag[j] = flag[j] || in[i+3];  // flag vis if either LL or RR are flagged
+        if (flag[j]) count++;
+        if (i<80)   cout << " flag " << j << " = " << flag[j] << endl;
        }
     }
+    return count;
 }
 
 
@@ -404,6 +411,9 @@ void ms_read_vis(RL_MeasurementSet* p,
               vis[j].real *= 0.5;
               vis[j].imag *= 0.5;
             }
+            // convert Jy in micro-Jy
+            vis[j].real *= 1e+6;
+            vis[j].imag *= 1e+6;
         }
     }
 }
@@ -438,8 +448,9 @@ void ms_write_vis(RL_MeasurementSet* p,
         {
                 unsigned int i = (c * num_coords + b);
                 unsigned int j = (b * num_channels + c) << 1;
-                out[j]     = vis[i].real;
-                out[j + 1] = vis[i].imag;
+                // write in Jy 
+                out[j]     = vis[i].real*1e-6;
+                out[j + 1] = vis[i].imag*1e-6;
         }
     }
 

@@ -67,7 +67,7 @@ void ms_read_sigma(RL_MeasurementSet* p,
                       unsigned int start_row, unsigned int num_coords,
                       float* sigma2, int* status);
 
-void ms_read_Flag(RL_MeasurementSet* p,
+unsigned long int ms_read_Flag(RL_MeasurementSet* p,
 		  unsigned int start_row, unsigned int start_channel,
                   unsigned int num_channels, unsigned int num_coords,
 		  const char* column, bool* flag, int* status);
