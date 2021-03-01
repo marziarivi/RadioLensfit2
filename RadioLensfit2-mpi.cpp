@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
       if (rank == 0)
       {
         cout << "ERROR: bad number of parameters!" << endl;
-        cout << "usage: RadioLensfit2-MS <source catalog filename> <num_sources> <MS filename prefix>" << endl;
+        cout << "usage: RadioLensfit2-mpi <source catalog filename> <num_sources> <MS filename prefix>" << endl;
         cout << "number of MS must be equal to the number of MPI tasks" << endl;
         cout << "filename of input MS should be <prefix><IF number>.MS" << endl;
       }  
@@ -188,7 +188,31 @@ int main(int argc, char *argv[])
         cout << "rank " << rank << ": ERROR reading MS - DATA column: " << status << endl;
         exit(EXIT_FAILURE);
     }
+  
+    // allocate and read FLAG column
+    bool *flag;
+    try
+    {
+        flag = new bool[num_vis];
+        sizeGbytes = num_vis*sizeof(bool)/((double)(1024*1024*1024));
+        cout << "rank " << rank << ": allocated flag column: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
 
+    unsigned long int nF = ms_read_Flag(ms, 0, 0, num_channels, num_rows, "FLAG",flag, &status);
+    if (status)
+    {
+      cout << "rank " << rank << ": ERROR reading MS - flag: " << status << endl;
+      exit(EXIT_FAILURE);
+    }
+    else
+      cout << "rank " << rank << ": Number of flagged visibilities: " << nF << endl;
+
+    // allocate and read SIGMA column
     double *sigma2_vis;
     try
     {
@@ -224,8 +248,9 @@ int main(int argc, char *argv[])
     double *ge2 = new double[nge];
     double *gscale = new double[nge];
     double *SNR_vis = new double[nge];
+    bool readSNR = true;
  
-    unsigned long int ngalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis);
+    unsigned long int ngalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis,readSNR);
     if (rank == 0)  cout << "Read catalog. Number of sources: " << ngalaxies << endl;
 
 #ifdef USE_MPI
