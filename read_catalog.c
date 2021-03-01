@@ -27,7 +27,7 @@
 extern "C" {
 #endif
     
-int read_catalog(unsigned long int nge, char *filename, double *gflux, double *gscale, double *ge1, double *ge2, double *l, double *m, double *SNR_vis)
+int read_catalog(unsigned long int nge, char *filename, double *gflux, double *gscale, double *ge1, double *ge2, double *l, double *m, double *SNR_vis, bool readSNR)
 {
     FILE *fp;
     char *token;
@@ -48,7 +48,12 @@ int read_catalog(unsigned long int nge, char *filename, double *gflux, double *g
     while (!feof(fp) && g<nge)
     {
         fgets(line, 1000, fp);
-        sscanf(line, "%lf %lf %lf %lf %lf %lf %lf",&SNR,&ll,&mm,&flux,&scale, &e1, &e2);
+        if (readSNR)  
+        { 
+          sscanf(line, "%lf %lf %lf %lf %lf %lf %lf",&SNR,&ll,&mm,&flux,&scale, &e1, &e2);
+          SNR_vis[g] = SNR;
+        }
+        else sscanf(line, "%lf %lf %lf %lf %lf %lf",&ll,&mm,&flux,&scale, &e1, &e2);
 
         l[g] = ll;
         m[g] = mm;
@@ -56,8 +61,7 @@ int read_catalog(unsigned long int nge, char *filename, double *gflux, double *g
         gscale[g] = scale;
         ge1[g] = e1;
         ge2[g] = e2;
-        SNR_vis[g] = SNR;
- 
+        
         g++;
         
     }

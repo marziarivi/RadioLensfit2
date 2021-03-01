@@ -156,8 +156,9 @@ int main(int argc, char *argv[])
     double *l = new double[nge];
     double *m = new double[nge];
     double *temp_SNR = new double[nge];
+    bool readSNR = false;
 
-    unsigned long int ngalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,temp_SNR);
+    unsigned long int ngalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,temp_SNR,readSNR);
     if (rank == 0) cout << "Read catalog. Number of sources: " << ngalaxies << endl;
 
     // Allocate Galaxy and Sky Visibilities -----------------------------------------------------------------------------------------------------------------------
