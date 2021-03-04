@@ -28,7 +28,7 @@
 #ifdef FACET
 void source_extraction(int rank, int facet, likelihood_params *par, complexd *facet_vis, double *facet_sigma2,
                        unsigned long int *count, double l0, double m0, double flux, double mu, double e1, double e2,  
-                       complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, unsigned int nchannels, 
+                       complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, bool *flag, unsigned int nchannels, 
                        unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
 #else
 void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, 
@@ -68,7 +68,7 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
      data_visibilities_phase_shift((par->wavenumbers)[ch], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
    }    
    // gridding visibilities
-   gridding_visibilities(par->wavenumbers,nchannels,num_coords,uu_metres,vv_metres,visGal,sigma2_vis,len,facet,facet_vis,facet_sigma2,count);
+   gridding_visibilities(par->wavenumbers,nchannels,num_coords,uu_metres,vv_metres,visGal,sigma2_vis,len,facet,facet_vis,facet_sigma2,flag,count);
 #else
    }
   par->l0 = l0;
