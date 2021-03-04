@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
     }
     else
-      cout << "rank " << rank << ": Number of flagged visibilities: " << nF << endl;
+      cout << "rank " << rank << ": percentage of flagged visibilities: " << ceil(nF*100./num_vis) << "%" << endl;
 
     // allocate and read SIGMA column
     double *sigma2_vis;
@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells*nprocs];
-    unsigned long int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, count);
+    unsigned long int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag, count);
 
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
@@ -512,7 +512,7 @@ int main(int argc, char *argv[])
 #ifdef FACET
            // extract my averaged visibilities, sigma2 and count contribution (my MS) for source g and store them in the corresponding section of my source facet array 
            par.facet = facet;
-           source_extraction(rank,facet,&par,&(facet_visData[rank*size]),&(facet_sigma2[rank*size]),&(count[rank*size]),l0, m0, gflux[g], R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           source_extraction(rank,facet,&par,&(facet_visData[rank*size]),&(facet_sigma2[rank*size]),&(count[rank*size]),l0, m0, gflux[g], R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
 #ifdef USE_MPI
            // Buffer facet vis, sigma2 and count for collection of source g from the other procs (for their MS contribution) 
            recv_facet_buffer = (double *) facet_visData;
@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
         else 
         {
            // extract my averaged visibilities, sigma2 and count contribution (my MS) for source g and store them in the temporary IF facet array
-           source_extraction(rank,facet,&par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, gflux[g], R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           source_extraction(rank,facet,&par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, gflux[g], R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
            // Buffer facet vis, sigma2 and count (my MS) of source g to send to proc = k 
            recv_facet_buffer = 0;
            send_facet_buffer = (double *) temp_facet_visData;
@@ -677,7 +677,7 @@ int main(int argc, char *argv[])
                 rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
 #ifdef FACET
           par.facet = facet;
-          source_extraction(rank,facet, &par, &(facet_visData[rank*size]), &(facet_sigma2[rank*size]), &(count[rank*size]),l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+          source_extraction(rank,facet, &par, &(facet_visData[rank*size]), &(facet_sigma2[rank*size]), &(count[rank*size]),l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
 #ifdef USE_MPI
           // Buffer facet vis and sigma2 of source g for collection from the other procs of their MS contribution
           recv_facet_buffer = (double *) facet_visData;
@@ -689,7 +689,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-          source_extraction(rank,facet,&par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
+          source_extraction(rank,facet,&par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
           // Buffer temp facet vis and sigma2 (my MS section) of source g to send to proc = k
           recv_facet_buffer = 0;
           send_facet_buffer = (double *) temp_facet_visData;
