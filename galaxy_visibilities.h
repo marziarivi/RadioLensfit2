@@ -27,17 +27,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
-void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength, unsigned long int num_coords, 
+
+double gaussian_shape(double k1, double k2, double scale_factor, double wave_factor);
+double sersic_shape(double k1, double k2, double scale_factor, double wave_factor);    
+
+void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsigned long int num_coords, 
                                        double* grid_u, double* grid_v,const double* sigma2, double* Modvis);
 
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
-                               double acc_time, double e1, double e2, double scalelength, double l,
+                               double acc_time, double e1, double e2, double scale, double l,
                                double m, unsigned long int num_coords, double* uu_metres,
                                double* vv_metres, double* ww_metres, const double* sigma2, complexd* Modvis);
     
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
-                              double e1, double e2, double scalelength, double flux, double l, double m,
+                              double e1, double e2, double scale, double flux, double l, double m,
                               unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres,
                               complexd* vis);
 

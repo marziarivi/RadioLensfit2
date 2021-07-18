@@ -23,6 +23,11 @@
 #include <stdlib.h>
 #include "read_catalog.h"
 
+// source size factor conversion from FWHM: scale = FWHM/factor
+#define EXP_SCALE_FACTOR 1.386294361119891   // 2*ln2
+#define GAUSS_SIGMA_FACTOR 2.3548200450309493   // 2*sqrt(2*ln2)
+#define EXP_MATCH_FACTOR 0.2979121736888488   // 1/(2*exp_hlr_factor) 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,9 +45,9 @@ int read_catalog(unsigned long int nge, char *filename, double *gflux, double *g
         exit(EXIT_FAILURE);
         return 1;
     }
-    // SNR | l | m | flux | scale | e1 | e2 (last 3 params are provided for simulations)
+    // SNR | l | m | flux | FWHM | e1 | e2 (last 3 params are provided for simulations)
     double SNR,ll,mm,flux;
-    double scale,e1,e2;
+    double fwhm,scale,e1,e2;
     
     unsigned long int g = 0;
     while (!feof(fp) && g<nge)
@@ -58,7 +63,15 @@ int read_catalog(unsigned long int nge, char *filename, double *gflux, double *g
         l[g] = ll;
         m[g] = mm;
         gflux[g] = flux;
+#ifdef GAUSSIAN
+        gscale[g] = fwhm/GAUSS_SIGMA_FACTOR;      // Gaussian sigma 
+#else
+#ifdef MATCH_EXP
+        gscale[g] = fwhm*EXP_MATCH_FACTOR;     // Galsim Exponential matched  scalelength
+#else
         gscale[g] = scale;
+#endif
+#endif
         ge1[g] = e1;
         ge2[g] = e2;
         

@@ -26,20 +26,42 @@
 #include "galaxy_visibilities.h"
 #include "utils.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
+
+// Parameter scale:
+// Gaussian sources size is defined by sigma
+// Sersic sources size is defined by scalelength
+
+
+// Galaxy Gaussian shape
+// scale factor is sigma^2 in radians
+double gaussian_shape(double k1, double k2, double scale_factor, double wave_factor)
+{
+    double vis = exp(-0.5*scale_factor*wave_factor*(k1*k1+k2*k2));  
+    return vis;
+}
+
+// Galaxy Sersic shape
+// scale factor is the exponential scalelength squared in radians
+double sersic_shape(double k1, double k2, double scale_factor, double wave_factor)
+{
+    double den = 1. + scale_factor*wave_factor*(k1*k1+k2*k2);
+    double vis = 1./(den*sqrt(den));
+    return vis;
+}
+
+
 // Compute flux independent facet model galaxy visibilities for likelihood computation
 // model a galaxy at the phase centre: visibilities are real numbers 
 // facet uv points are in wavelength units
-void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength, unsigned long int num_coords, 
+void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsigned long int num_coords, 
                                        double* grid_u, double* grid_v, const double *sigma2, double* Modvis)
 {
-    double den,uu,vv,k1,k2,shape;
+    double uu,vv,k1,k2;
     double detA = 1.-e1*e1-e2*e2;
-    double scale = scalelength*ARCS2RAD;
+    scale *= ARCS2RAD;
     double scale_factor = (scale*scale)/(detA*detA);
     
     double sum = 0.;
@@ -54,9 +76,11 @@ void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength,
        k1 = (1.+e1)*uu + e2*vv;
        k2 = e2*uu + (1.-e1)*vv;
             
-       den = 1. + scale_factor*cc2*(k1*k1+k2*k2);
-       Modvis[nv] = 1./(den*sqrt(den));
-            
+#ifdef GAUSSIAN
+       Modvis[nv] = gaussian_shape(k1,k2,scale_factor,cc2); 
+#else
+       Modvis[nv] = sersic_shape(k1,k2,scale_factor,cc2);
+#endif            
        sum += Modvis[nv]*Modvis[nv]/sigma2[nv];
        nv++;
     }
@@ -70,14 +94,14 @@ void model_galaxy_visibilities_at_zero(double e1, double e2, double scalelength,
 // model galaxy at the galaxy position for likelihood computation
 // original uvw ponts in metres
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
-                               double acc_time, double e1, double e2, double scalelength, double l,
+                               double acc_time, double e1, double e2, double scale, double l,
                                double m, unsigned long int num_coords, double* uu_metres,
                                double* vv_metres, double* ww_metres,
                                const double* sigma2, complexd* Modvis)
 {
-    double wavenumber,wavenumber2,den,uu,vv,ww,k1,k2,spectra,shape,phase,smear; //ch_freq,beam_profile;
+    double wavenumber,wavenumber2,uu,vv,ww,k1,k2,spectra,shape,phase,smear; //ch_freq,beam_profile;
     double detA = 1.-e1*e1-e2*e2;
-    double scale = scalelength*ARCS2RAD;
+    scale  *= ARCS2RAD;
     double scale_factor = (scale*scale)/(detA*detA);
     double n = sqrt(1.-l*l-m*m) - 1.;     
 
@@ -105,8 +129,12 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
           k1 = (1.+e1)*uu + e2*vv;
           k2 = e2*uu + (1.-e1)*vv;
         
-          den = 1. + scale_factor*wavenumber2*(k1*k1+k2*k2);
-          shape = /*beam_profile*/spectra/(den*sqrt(den));
+#ifdef GAUSSIAN
+          shape = gaussian_shape(k1,k2,scale_factor,wavenumber2);
+#else
+          shape = sersic_shape(k1,k2,scale_factor,wavenumber2); 
+#endif
+          shape *= /*beam_profile*/spectra;    
           Modvis[nv].real = shape*cos(phase); //*smear;
           Modvis[nv].imag = shape*sin(phase); //*smear;
  
@@ -124,12 +152,12 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
 // Compute galaxy visibilities per channel for data and sky model simulation
 // original uvw points in metres
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
-                              double e1, double e2, double scalelength, double flux, double l, double m,
+                              double e1, double e2, double scale, double flux, double l, double m,
                               unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis)
 {
-        double den,u,v,w,k1,k2,phase,shape;//ch_freq,beam_profile;
+        double u,v,w,k1,k2,phase,shape;//ch_freq,beam_profile;
         double detA = 1.-e1*e1-e2*e2;
-        double scale = scalelength*ARCS2RAD;  // scale in rad
+        scale *= ARCS2RAD;  // scale in rad
         double scale_factor = (scale*scale)/(detA*detA);
         double wavenumber2 = wavenumber*wavenumber;
         double n = sqrt(1.-l*l-m*m) - 1.;
@@ -149,8 +177,12 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
             k1 = (1.+e1)*u + e2*v;
             k2 = e2*u + (1.-e1)*v;
                 
-            den = 1. + scale_factor*wavenumber2*(k1*k1+k2*k2);
-            shape = /*beam_profile*/spectra*flux/(den*sqrt(den));   
+#ifdef GAUSSIAN
+            shape = gaussian_shape(k1,k2,scale_factor,wavenumber2);
+#else
+            shape = sersic_shape(k1,k2,scale_factor,wavenumber2);
+#endif
+            shape *= /*beam_profile*/spectra*flux;
             
             vis[i].real = shape*cos(phase); //*smear;
             vis[i].imag = shape*sin(phase); //*smear;
