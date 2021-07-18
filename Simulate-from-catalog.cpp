@@ -84,7 +84,12 @@ int main(int argc, char *argv[])
         cout << "ERROR: parameter missing!" << endl;
         cout << "usage: Simulate <filename MS> <galaxy catalog filename> <number of sources> <shear1> <shear2> " << endl;
       }
+#ifdef USE_MPI
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#else
       exit(EXIT_FAILURE);
+#endif
     }
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -102,6 +107,7 @@ int main(int argc, char *argv[])
     double channel_bandwidth_hz = ms_freq_inc_hz(ms);       // Frequency channel bandwidth, in Hz
     double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
     int time_acc = ms_time_inc_sec(ms);                     // accumulation time (sec)
+    unsigned int num_pols = ms_num_pols(ms);                          // number of polarizations
 
     double efficiency = EFFICIENCY;     // system efficiency
     double SEFD = SEFD_JVLA;    // System Equivalent Flux Density (in micro-Jy) of each VLA antenna
@@ -110,6 +116,18 @@ int main(int argc, char *argv[])
     double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
+
+    if (num_pols != 1)
+    {
+      cout << "MS ERROR: number of polarizations is " << num_pols << endl;
+      cout << "A single polarization is required!" << endl;
+#ifdef USE_MPI
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#else
+      exit(EXIT_FAILURE);
+#endif
+    }
 
     if (rank == 0)
     {
@@ -137,7 +155,12 @@ int main(int argc, char *argv[])
     if (status) 
     {
         cout << "rank " << rank << ": ERROR reading MS - uvw points: " << status << endl;
+#ifdef USE_MPI
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#else
         exit(EXIT_FAILURE);
+#endif
     }
 
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
@@ -198,7 +221,6 @@ int main(int argc, char *argv[])
 #else
     long long start_sim = current_timestamp();
 #endif
-   
     double sigma = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
     if (rank == 0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
     
