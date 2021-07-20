@@ -100,7 +100,12 @@ int main(int argc, char *argv[])
         cout << "number of MS must be equal to the number of MPI tasks" << endl;
         cout << "filename of input MS should be <prefix><IF number>.MS" << endl;
       }  
+#ifdef USE_MPI
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#else
       exit(EXIT_FAILURE);
+#endif
     }
 
     double data_time = 0.;
@@ -164,7 +169,12 @@ int main(int argc, char *argv[])
     if (status) 
     {
         cout << "rank " << rank << ": ERROR reading MS - uvw points: " << status << endl;
+#ifdef USE_MPI
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#else
         exit(EXIT_FAILURE);
+#endif
     }
     
     // Allocate and read Data visibilities of the current MS 
@@ -186,7 +196,12 @@ int main(int argc, char *argv[])
     if (status) 
     {
         cout << "rank " << rank << ": ERROR reading MS - DATA column: " << status << endl;
+#ifdef USE_MPI
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#else
         exit(EXIT_FAILURE);
+#endif
     }
   
     // allocate and read FLAG column
@@ -207,10 +222,15 @@ int main(int argc, char *argv[])
     if (status)
     {
       cout << "rank " << rank << ": ERROR reading MS - flag: " << status << endl;
+#ifdef USE_MPI
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#else
       exit(EXIT_FAILURE);
+#endif
     }
     else
-      cout << "rank " << rank << ": percentage of flagged visibilities: " << ceil(nF*100./num_vis) << "%" << endl;
+      cout << "rank " << rank << ": percentage of flagged visibilities: " << round(nF*100./num_vis) << "%" << endl;
 
     // allocate and read SIGMA column
     double *sigma2_vis;
@@ -230,12 +250,18 @@ int main(int argc, char *argv[])
     if (status)
     {
         cout << "rank " << rank << ": ERROR reading MS - sigma: " << status << endl;
+#ifdef USE_MPI
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#else
         exit(EXIT_FAILURE);
+#endif
     }
     double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
     for (unsigned long int i = 0; i<num_vis; i++)
         sigma2_vis[i] = sigma2; // visibility noise variance
  
+    cout << "rank " << rank << ": MS data GBytes: " << totGbytes << endl;
     ms_close(ms); 
 
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
@@ -248,8 +274,10 @@ int main(int argc, char *argv[])
     double *ge2 = new double[nge];
     double *gscale = new double[nge];
     double *SNR_vis = new double[nge];
+    sizeGbytes = nge*sizeof(double)/((double)(1024*1024*1024));
+    totGbytes += sizeGbytes;
+
     bool readSNR = true;
- 
     unsigned long int ngalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis,readSNR);
     if (rank == 0)  cout << "Read catalog. Number of sources: " << ngalaxies << endl;
 
@@ -268,6 +296,7 @@ int main(int argc, char *argv[])
     {
         visGal = new complexd[num_vis];
         cout << "rank " << rank << ": allocated galaxy visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        sizeGbytes = num_vis*sizeof(complexd)/((double)(1024*1024*1024));
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -309,6 +338,7 @@ int main(int argc, char *argv[])
     // compute sky model for this MS
     sky_model(wavenumbers,spec, channel_bandwidth_hz, time_acc, num_channels,
                ngalaxies, gflux, gscale, l, m, num_coords, uu_metres, vv_metres, ww_metres, visGal, visSkyMod);
+    cout << "rank " << rank << ": computed sky model " << endl;
 #ifdef USE_MPI
     double model_time = MPI_Wtime() - start_model;
 #else
@@ -360,7 +390,7 @@ int main(int argc, char *argv[])
 #ifdef USE_MPI
     double send_len[nprocs],recv_len[nprocs];          // Will contain the maximum uv distance (in units of wavelengths) for each spectral window
     for (int spw = 0; spw < nprocs; spw++) send_len[spw] = len;
-    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     double com_time = -MPI_Wtime();
     // Send and receive uv distance for each spectral window from each task 
     MPI_Alltoall(send_len,1,MPI_DOUBLE,recv_len,1,MPI_DOUBLE,MPI_COMM_WORLD);
@@ -369,13 +399,35 @@ int main(int argc, char *argv[])
 #endif
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
-    unsigned long int* count = new unsigned long int[ncells*nprocs];
+    unsigned long int* count;
+    try
+    {
+        count = new unsigned long int[ncells*nprocs];
+        sizeGbytes = ncells*nprocs*sizeof(unsigned long int)/((double)(1024*1024*1024));
+        totGbytes += sizeGbytes;
+    }
+     catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
+    cout << "rank " << rank << ": allocated  array counter: " << sizeGbytes  << " GB" << endl;
+
     unsigned long int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag, count);
 
-    double* facet_u = new double[facet_ncoords];
-    double* facet_v = new double[facet_ncoords];
-    sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*nprocs*sizeof(unsigned long int))/((double)(1024*1024*1024));
-    cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
+    double* facet_u;
+    double* facet_v;
+    try
+    {
+        facet_u = new double[facet_ncoords];
+        facet_v = new double[facet_ncoords];
+        sizeGbytes = 2*facet_ncoords*sizeof(double)/((double)(1024*1024*1024));
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
+    cout << "rank " << rank << ": allocated facet coordinates: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
 
     // allocate facet model visibilities 
@@ -400,11 +452,11 @@ int main(int argc, char *argv[])
     double* temp_facet_sigma2;
     try
     {
-        temp_count = new unsigned long int[ncells];
+        temp_count = new unsigned long int[temp_facet_nvis];
         temp_facet_visData = new complexd[temp_facet_nvis];
         temp_facet_sigma2 = new double[temp_facet_nvis];
-        sizeGbytes = (temp_facet_nvis*(sizeof(complexd)+sizeof(double))+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated my gridded visibilities and variances: " << temp_facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
+        sizeGbytes = temp_facet_nvis*(sizeof(complexd)+sizeof(double)+sizeof(unsigned long int))/((double)(1024*1024*1024));
+        cout << "rank " << rank << ": allocated my facet visibilities, variances and count: " << temp_facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -834,6 +886,10 @@ int main(int argc, char *argv[])
     cout << "rank " << rank << ": Source extraction computation time (sec): " << extraction_time << endl;
     cout << "rank " << rank << ": Data fitting computation time (sec): " << fitting_time << endl;
 
+#ifdef USE_MPI
+     MPI_Finalize() ;
+#endif
+
     // free memory ----------------------------------------------------------------------------------------------------------------
     delete[] visMod;
     delete[] visGal;
@@ -867,8 +923,5 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-#ifdef USE_MPI
-     MPI_Finalize() ;
-#endif
     return 0;
 }
