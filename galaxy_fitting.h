@@ -23,6 +23,14 @@
 
 #include "datatype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes_e2, double *var_e1, double *var_e2, double *oneDimvar, double *maxL);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* defined(____galaxy_fitting__) */

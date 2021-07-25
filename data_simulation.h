@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2021 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -23,6 +23,10 @@
  
 #include "datatype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth_hz, int time_acc, unsigned int num_channels,
                      unsigned int num_baselines, double sigma, unsigned long int n_gal, double g1, double g2,
                      double *ge1, double *ge2, double *gflux, double *gscale, double *l, double *m,
@@ -33,6 +37,8 @@ void sky_model(double *wavenumbers, double *spec, double channel_bandwidth_hz, i
                      unsigned long int n_gal, double *gflux, double *gscale, double *l, double *m, unsigned long int num_coords,
                      double *uu_metres, double *vv_metres, double *ww_metres, complexd *visGal, complexd* visMod);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* defined(____data_simulation__) */

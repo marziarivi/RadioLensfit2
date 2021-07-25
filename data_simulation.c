@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2021 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -33,6 +33,9 @@
 #include "distributions.h"
 #include "data_simulation.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Simulate data visibilities
 void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth_hz, 
@@ -159,3 +162,6 @@ void sky_model(double *wavenumbers, double *spec, double channel_bandwidth_hz, i
     }
 }
 
+#ifdef __cplusplus
+}
+#endif

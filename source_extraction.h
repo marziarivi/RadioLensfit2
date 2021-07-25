@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2021 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -23,6 +23,10 @@
 
 #include "datatype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef FACET
 void source_extraction(int rank, int facet, likelihood_params *par, complexd *facet_vis, double *facet_sigma2, 
                        unsigned long int *count, double l0, double m0, double flux, double mu, double e1, double e2,                        
@@ -32,6 +36,10 @@ void source_extraction(int rank, int facet, likelihood_params *par, complexd *fa
 void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, 
                        complexd *visData, complexd *visGal,double *sigma2_vis,unsigned int nchannels, unsigned long int num_coords, 
                        double *uu_metres, double *vv_metres, double *ww_metres);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* defined(____source_extraction__) */

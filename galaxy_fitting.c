@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2021 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -30,6 +30,10 @@
 #include "marginalise_r.h"
 #include "galaxy_fitting.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Model fitting  -----------------------------------------------------
 // Search for the maximum posterior to find starting ellipticity points
@@ -111,3 +115,8 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
     
     return error;
 }
+
+#ifdef __cplusplus
+}
+#endif
+

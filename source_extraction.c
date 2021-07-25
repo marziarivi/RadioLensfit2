@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2021 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -17,10 +17,17 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "galaxy_visibilities.h"
 #include "evaluate_uv_grid.h"
 #include "source_extraction.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Source extraction --------------------------------------------------------
 // Notice: instructions execution order is important as arrays are reused!!!!
@@ -77,3 +84,6 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
   
 }
 
+#ifdef __cplusplus
+}
+#endif
