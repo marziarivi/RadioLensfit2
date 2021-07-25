@@ -54,7 +54,7 @@ OPTIONS = -std=gnu++11 -D_GLIBCXX_USE_CXX11_ABI=0 $(OPTIMIZE) $(OPT)
 
 ifeq (MPI,$(findstring MPI,$(OPT)))
 EXEC1 = RadioLensfit2-mpi
-OBJS1  = RadioLensfit2-mpi.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o 
+OBJS1  = RadioLensfit2-mpi.o data_processing.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o 
 else
 EXEC1 = RadioLensfit2
 OBJS1  = RadioLensfit2-MS.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o
@@ -66,7 +66,7 @@ endif
 EXEC2 = Simulate
 OBJS2 = Simulate-from-catalog.o read_catalog.o distributions.o utils.o galaxy_visibilities.o measurement_set.o data_simulation.o
 
-OBJS = RadioLensfit2-MS.o RadioLensfit-mpi.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
+OBJS = RadioLensfit2-MS.o RadioLensfit-mpi.o data_procesiing.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
 
 
 EXEC3 = RadioLensfit2-single   
