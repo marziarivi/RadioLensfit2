@@ -78,8 +78,8 @@ void data_processing(bool re_fitting, unsigned long int *bad_list, int nprocs, i
         l0 = l[gal];  m0 = m[gal];
         flux = gflux[gal];
         mu = scale_mean(flux);
-        //R_mu[src] = exp(mu);
-        R_mu[src] = gscale[gal];
+        R_mu[src] = exp(mu);
+        //R_mu[src] = gscale[gal];
 #ifdef FACET
         int facet = facet_size(R_mu[src],len);
         unsigned long int size = facet*facet;
