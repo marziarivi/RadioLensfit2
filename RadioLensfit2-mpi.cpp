@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2021 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -50,23 +50,15 @@
 
 #include <iostream>
 #include <new>
-#include <math.h>
-#include <stdlib.h>
 #include <string.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_multimin.h>
 
 #include "datatype.h"
 #include "default_params.h"
-#include "utils.h"
 #include "measurement_set.h"
 #include "data_simulation.h"
 #include "read_catalog.h"
-#include "galaxy_fitting.h"
-#include "galaxy_visibilities.h"
-#include "distributions.h"
 #include "evaluate_uv_grid.h"
-#include "source_extraction.h"
+#include "data_processing.h"
 
 using namespace std;
 
@@ -112,16 +104,19 @@ int main(int argc, char *argv[])
     double extraction_time = 0.;
     double fitting_time = 0.;
 #ifdef USE_MPI
-    double start_data,end_data,start_fitting,end_fitting,start_extraction,end_extraction;
+    double start_data,end_data,start_extraction,end_extraction;
     start_data = MPI_Wtime();
 #else
-    long long start_data,end_data,start_fitting,end_fitting,start_extraction,end_extraction;
+    long long start_data,end_data,start_extraction,end_extraction;
     start_data = current_timestamp();
 #endif
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     char filename[100];
-    sprintf(filename,"%s%d.MS",argv[3],rank);
+    //if (rank < 15)
+       sprintf(filename,"%s%d.MS",argv[3],rank);   // JVLA MS
+    //else
+    //   sprintf(filename,"%s%d.MS",argv[4],rank%15);  // eMERLIN MS
     RL_MeasurementSet* ms = ms_open(filename);
     cout << "rank " << rank << ": reading " << filename << "... " << endl;
 
@@ -129,7 +124,7 @@ int main(int argc, char *argv[])
     //double Dec = ms_phase_centre_dec_rad(ms);   
     const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
     const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
-    const unsigned long int num_rows = ms_num_rows(ms);                // Number of rows 
+    const unsigned long int num_coords = ms_num_rows(ms);                // Number of rows 
     const double freq_start_hz = ms_freq_start_hz(ms); //1280e+6;          // Start Frequency, in Hz
     const double channel_bandwidth_hz = ms_freq_inc_hz(ms); //240e+6      // Frequency channel bandwidth, in Hz
     const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
@@ -152,11 +147,10 @@ int main(int argc, char *argv[])
       cout << "Number of polarizations: " << ms_num_pols(ms) << endl;
     }
     cout << "rank " << rank << ": starting frequency (Hz): " << freq_start_hz << endl;
-    cout << "rank " << rank << ": number of rows: " << num_rows << endl;
+    cout << "rank " << rank << ": number of rows: " << num_coords << endl;
     double sizeGbytes, totGbytes = 0.;
     
     // Allocate and read uv coordinates
-    unsigned long int num_coords = num_rows; 
     double* uu_metres = new double[num_coords];
     double* vv_metres = new double[num_coords];
     double* ww_metres = new double[num_coords];
@@ -192,7 +186,7 @@ int main(int argc, char *argv[])
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
 
-    ms_read_vis(ms, 0, 0, num_channels, num_rows, "DATA", visData, &status);
+    ms_read_vis(ms, 0, 0, num_channels, num_coords, "DATA", visData, &status);
     if (status) 
     {
         cout << "rank " << rank << ": ERROR reading MS - DATA column: " << status << endl;
@@ -218,7 +212,7 @@ int main(int argc, char *argv[])
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
 
-    unsigned long int nF = ms_read_Flag(ms, 0, 0, num_channels, num_rows, "FLAG",flag, &status);
+    unsigned long int nF = ms_read_Flag(ms, 0, 0, num_channels, num_coords, "FLAG",flag, &status);
     if (status)
     {
       cout << "rank " << rank << ": ERROR reading MS - flag: " << status << endl;
@@ -258,7 +252,10 @@ int main(int argc, char *argv[])
 #endif
     }
     double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
-    for (unsigned long int i = 0; i<num_vis; i++)
+    /*if (rank < 15) sigma2 = 16e+10;
+    else 
+     sigma2 = 1e+12; //eMERLIN noise
+  */  for (unsigned long int i = 0; i<num_vis; i++)
         sigma2_vis[i] = sigma2; // visibility noise variance
  
     cout << "rank " << rank << ": MS data GBytes: " << totGbytes << endl;
@@ -346,7 +343,7 @@ int main(int argc, char *argv[])
     double model_time = (double)(end_model - start_model)/1000.;
 #endif
 
-    // Setup Model Fitting ----------------------------------------------------------------------------------------------------------------------------------------
+    // Setup Model fitting -------------------------------------------------------------------------------------------------------------------------- 
     // define steps in galaxy scalelength (Ro in ARCSEC)
     const double Rmin = RMIN;
     double Rmax = RMAX;
@@ -384,7 +381,6 @@ int main(int argc, char *argv[])
     par.count = 0;
 
 #ifdef FACET
-    // Faceting uv coordinates ----------------------------------------------------------------------------------------
     // Compute max uv distance in units of wavelenghts (for all spectral windows)
     len = len*wavenumbers[num_channels-1]/(2*PI);
 #ifdef USE_MPI
@@ -397,13 +393,15 @@ int main(int argc, char *argv[])
     com_time += MPI_Wtime();
     for (int spw = 0; spw < nprocs; spw++) len = fmax(len,recv_len[spw]); 
 #endif
+
+    // Compute facet number of coordinates
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count;
     try
     {
-        count = new unsigned long int[ncells*nprocs];
-        sizeGbytes = ncells*nprocs*sizeof(unsigned long int)/((double)(1024*1024*1024));
+        count = new unsigned long int[ncells];
+        sizeGbytes = ncells*sizeof(unsigned long int)/((double)(1024*1024*1024));
         totGbytes += sizeGbytes;
     }
      catch (bad_alloc& ba)
@@ -414,6 +412,7 @@ int main(int argc, char *argv[])
 
     unsigned long int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag, count);
 
+    // allocate facet arrays
     double* facet_u;
     double* facet_v;
     try
@@ -430,7 +429,6 @@ int main(int argc, char *argv[])
     cout << "rank " << rank << ": allocated facet coordinates: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
 
-    // allocate facet model visibilities 
     double* visMod;
     try
     {
@@ -443,20 +441,34 @@ int main(int argc, char *argv[])
     {
       cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
-  
+ 
+    // these arrays are used also for visibilities averaging and counting (therefore their size is ncells)
+    complexd* facet_visData;
+    double* facet_sigma2;
+    try
+    {
+        facet_visData = new complexd[ncells];
+        facet_sigma2 = new double[ncells];
+        sizeGbytes = (ncells*(sizeof(complexd)+sizeof(double)))/((double)(1024*1024*1024));
+        cout << "rank " << rank << ": allocated gridded visibilities and variances: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    } 
 #ifdef USE_MPI
-    // allocate facet vis and sigma2 for the gridded visibilities of this MS to be sent to the task that will process the current source 
-    unsigned long int temp_facet_nvis = ncells;
+    // these arrays are used to collect/send facet data (before averaging) from/to an other task 
     unsigned long int* temp_count;
     complexd* temp_facet_visData;
     double* temp_facet_sigma2;
     try
     {
-        temp_count = new unsigned long int[temp_facet_nvis];
-        temp_facet_visData = new complexd[temp_facet_nvis];
-        temp_facet_sigma2 = new double[temp_facet_nvis];
-        sizeGbytes = temp_facet_nvis*(sizeof(complexd)+sizeof(double)+sizeof(unsigned long int))/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated my facet visibilities, variances and count: " << temp_facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
+        temp_count = new unsigned long int[ncells];
+        temp_facet_visData = new complexd[ncells];
+        temp_facet_sigma2 = new double[ncells];
+        sizeGbytes = ncells*(sizeof(complexd)+sizeof(double)+sizeof(unsigned long int))/((double)(1024*1024*1024));
+        cout << "rank " << rank << ": allocated my facet visibilities, variances and count: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -464,24 +476,6 @@ int main(int argc, char *argv[])
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
 #endif
-
-    // allocate facet data visibilities 
-    // for the fitting of all visibilities of the current source by this task
-    unsigned long int facet_nvis = ncells*nprocs; // and for reduction of partial facets from the other tasks
-    complexd* facet_visData;
-    double* facet_sigma2;
-    try
-    {
-        facet_visData = new complexd[facet_nvis];
-        facet_sigma2 = new double[facet_nvis];
-        sizeGbytes = (facet_nvis*(sizeof(complexd)+sizeof(double)))/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated gridded visibilities and variances: " << facet_nvis << ", size = " << sizeGbytes  << " GB" << endl;
-        totGbytes += sizeGbytes;
-    }
-    catch (bad_alloc& ba)
-    {
-        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
-    }
 
     par.mod = visMod;
     par.uu = facet_u;
@@ -510,7 +504,7 @@ int main(int argc, char *argv[])
     par.ww = ww_metres;
     par.data = visGal;
     par.mod = visMod;
-    par_sigma2 = sigma2_vis;
+    par.sigma2 = sigma2_vis;
 #endif
     cout << "rank " << rank << ": Total Visibilities GBytes: " << totGbytes << endl;
       
@@ -526,336 +520,23 @@ int main(int argc, char *argv[])
     }
 #ifdef USE_MPI
     start_extraction = MPI_Wtime();
-    double *recv_facet_buffer, *recv_sigma2_buffer;
-    double *send_facet_buffer, *send_sigma2_buffer;
-    unsigned long int *send_count_buffer, *recv_count_buffer;
 #else
     start_extraction = current_timestamp();
 #endif
 
-    double l0,m0;
+    // data_processing
     unsigned long int bad_list[ngalaxies];  // all tasks update the bad_list to avoid communication
-    int k, bad = 0;
-    long int my_g, ind; 
-    double mu, R_mu[nprocs];
+    int bad = 0;
+    data_processing(false, bad_list, nprocs, rank, ngalaxies, len, num_coords, pFile, &par, l, m, gflux, gscale, ge1, ge2, SNR_vis, 
+                    count, visGal, visSkyMod, visData, sigma2_vis, flag, uu_metres, vv_metres, ww_metres, temp_facet_visData, 
+                    temp_facet_sigma2, temp_count, &com_time, &fitting_time, &bad);
 
-    long int g = 0; // source global index
-    while (g < ngalaxies)
-    { 
-      k = 0; // source local index
-      my_g = -1;  // if sources are finished, current task has my_g = -1 and has no source to fit
-
-      // extract facet visibilities for nproc consecutive sources that will be fit each one by a different task -----------------------
-      for(int src = 0; src < nprocs && g < ngalaxies; src++)
-      {
-        l0 = l[g];  m0 = m[g];
-        mu = scale_mean(gflux[g]);
-        R_mu[src] = exp(mu);
-        //R_mu[src] = gscale[g];
-#ifdef FACET
-        int facet = facet_size(R_mu[src],len);
-        unsigned long int size = facet*facet;
-#endif
-        if (rank == src)  // proc k will fit the current source
-        {
-          my_g = g;  
-          for (int nRo=1; nRo<numR; nRo++)   
-            rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);  // set log(prior) for scalelength of source g
-#ifdef FACET
-           // extract my averaged visibilities, sigma2 and count contribution (my MS) for source g and store them in the corresponding section of my source facet array 
-           par.facet = facet;
-           source_extraction(rank,facet,&par,&(facet_visData[rank*size]),&(facet_sigma2[rank*size]),&(count[rank*size]),l0, m0, gflux[g], R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
-#ifdef USE_MPI
-           // Buffer facet vis, sigma2 and count for collection of source g from the other procs (for their MS contribution) 
-           recv_facet_buffer = (double *) facet_visData;
-           send_facet_buffer = (double *) &(facet_visData[rank*size]);
-           recv_sigma2_buffer = facet_sigma2;
-           send_sigma2_buffer = &(facet_sigma2[rank*size]);
-           recv_count_buffer = count;
-           send_count_buffer = &(count[rank*size]);
-        }
-        else 
-        {
-           // extract my averaged visibilities, sigma2 and count contribution (my MS) for source g and store them in the temporary IF facet array
-           source_extraction(rank,facet,&par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, gflux[g], R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
-           // Buffer facet vis, sigma2 and count (my MS) of source g to send to proc = k 
-           recv_facet_buffer = 0;
-           send_facet_buffer = (double *) temp_facet_visData;
-           recv_sigma2_buffer = 0;
-           send_sigma2_buffer = temp_facet_sigma2;
-           recv_count_buffer = 0;
-           send_count_buffer = temp_count;
-#endif
-#else
-           source_extraction(l0, m0, gflux[g], R_mu[k], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
-#endif
-        }
-#ifdef USE_MPI
-        //MPI_Barrier(MPI_COMM_WORLD);
-        // Proc k collects facet vis and sigma2 (and their counts) of the current source from the other procs (for their MS contribution)
-        com_time -= MPI_Wtime();
-        double time_Gather = MPI_Wtime();
-        MPI_Gather(send_facet_buffer,2*size,MPI_DOUBLE,recv_facet_buffer,2*size,MPI_DOUBLE,k,MPI_COMM_WORLD);
-        MPI_Gather(send_sigma2_buffer,size,MPI_DOUBLE,recv_sigma2_buffer,size,MPI_DOUBLE,k,MPI_COMM_WORLD);
-        MPI_Gather(send_count_buffer,size,MPI_UNSIGNED_LONG,recv_count_buffer,size,MPI_UNSIGNED_LONG,k,MPI_COMM_WORLD);
-        com_time += MPI_Wtime();
-#endif
-        g++;
-        k++;
-      }
-      
-#ifdef FACET
-      if (my_g >= 0)
-      {
-#ifdef USE_MPI
-         // average partial sum of visibilities
-         average_facets(nprocs, par.facet*par.facet, facet_visData, facet_sigma2, count);
-#endif
-         // compute facet coordinates their number
-         par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, par.facet, count);
-      }
-#endif
-
-      // source fitting of this task --------------------------------------------------------------------------------------------------
-#ifdef USE_MPI
-      start_fitting = MPI_Wtime();
-#else
-      start_fitting = current_timestamp();
-#endif
-      double mes_e1, mes_e2, maxL;
-      double var_e1, var_e2, oneDimvar;
-      if (my_g >= 0) 
-      {
-        source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
-        cout << "rank " << rank << ": n. " << my_g << " flux = " << gflux[my_g] << ": measured e = " << mes_e1 << "," << mes_e2 << endl;
-      }
-#ifdef USE_MPI
-      fitting_time += MPI_Wtime() - start_fitting;
-#else
-      fitting_time += (double) (current_timestamp() -start_fitting)/1000.;
-#endif
-
-      // removal of the fit sources visibilities from the MS data and sky model ----------------------------------------------------------
-      double res[6]; // shape fitting results to be sent to the other procs
-      ind = g - k;  // source global index
-      k = 0;  // source local index
-      for (int src = 0 ; src < nprocs && ind < ngalaxies; src++)
-      {
-         l0 = l[ind];  m0 = m[ind];
-
-         if (rank == k)
-         {
-            res[0] = mes_e1; res[1] = mes_e2;
-            res[2] = var_e1; res[3] = var_e2;
-            res[4] = oneDimvar; res[5] = maxL;
-         }
-#ifdef USE_MPI 
-         //MPI_Barrier(MPI_COMM_WORLD);
-         // Bcast shape results from proc k to the others
-         com_time -= MPI_Wtime();
-         double time_Bcast = MPI_Wtime();
-         MPI_Bcast(res,6,MPI_DOUBLE,k,MPI_COMM_WORLD);          
-         com_time += MPI_Wtime();
-#endif
-         if (res[5] < -1e+10 || res[2] < VAR || res[3] < VAR || res[4] < VAR)  // bad measurement
-         {
-            bad_list[bad] = ind;  // each proc store the index of bad measurements to be fit again at the end
-            bad++;
-         }
-         else     
-         {
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-            for (unsigned int ch = 0; ch < num_channels; ch++)
-            {
-               unsigned long int ch_vis = ch*num_coords;
-         
-               // remove current round source model from the sky model
-               data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, 0., 0., R_mu[k],
-                                           gflux[ind], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
-                  
-               for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
-               {
-                  visSkyMod[i].real -= visGal[i].real;
-                  visSkyMod[i].imag -= visGal[i].imag;
-               }
-            
-               // remove current source model fit from original data
-               data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, res[0], res[1], R_mu[k],
-                                           gflux[ind], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
-                  
-               for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
-               {
-                  visData[i].real -= visGal[i].real;
-                  visData[i].imag -= visGal[i].imag;
-               }
-            }
-            if (rank == 0) fprintf(pFile, "%f | %f | %f | %e | %f | %f | %e | %e | %f | %f | %f \n",gflux[ind],ge1[ind],res[0],sqrt(res[2]),ge2[ind],res[1],sqrt(res[3]),res[4],SNR_vis[ind],l0/(ARCS2RAD),m0/(ARCS2RAD));
-         }
-         k++;
-         ind++;
-      }
-    }
-
-    // Re-fitting bad sources again -------------------------------------------------------------------------------------------------------------------------------------
+    // Re-fitting bad sources 
     if (rank == 0) cout << "Re-fitting " << bad << " bad sources" << endl;
     
-    int nsources = bad;
-    bad = 0;
-    unsigned long int b = 0; 
-    while (b < nsources)
-    {
-      k = 0;  // source local index
-      my_g = -1;
-      
-      for (int src = 0; src < nprocs && b < nsources; src++)
-      {
-        unsigned long int gal = bad_list[b]; // source global index
-        double flux = gflux[gal];
-        mu = scale_mean(flux);
-        R_mu[k] = exp(mu);
-        //R_mu[k] = gscale[gal];
-        l0 = l[gal];  m0 = m[gal];
-
-#ifdef FACET
-        int facet = facet_size(R_mu[k],len);
-        unsigned long int size = facet*facet;
-#endif
-        if (rank == src) // proc k will perform the fitting of the current source
-        {
-          my_g = gal;
-          for (int nRo=1; nRo<numR; nRo++)
-                rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
-#ifdef FACET
-          par.facet = facet;
-          source_extraction(rank,facet, &par, &(facet_visData[rank*size]), &(facet_sigma2[rank*size]), &(count[rank*size]),l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
-#ifdef USE_MPI
-          // Buffer facet vis and sigma2 of source g for collection from the other procs of their MS contribution
-          recv_facet_buffer = (double *) facet_visData;
-          send_facet_buffer = (double *) &(facet_visData[rank*size]);
-          recv_sigma2_buffer = facet_sigma2;
-          send_sigma2_buffer = &(facet_sigma2[rank*size]);
-          recv_count_buffer = count;
-          send_count_buffer = &(count[rank*size]);
-        }
-        else
-        {
-          source_extraction(rank,facet,&par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
-          // Buffer temp facet vis and sigma2 (my MS section) of source g to send to proc = k
-          recv_facet_buffer = 0;
-          send_facet_buffer = (double *) temp_facet_visData;
-          recv_sigma2_buffer = 0;
-          send_sigma2_buffer = temp_facet_sigma2;
-          recv_count_buffer = 0;
-          send_count_buffer = temp_count;
-#endif
-#else
-          source_extraction(l0, m0, flux, R_mu[k], 0., 0., &par, visSkyMod, visData, visGal, sigma2_vis, num_channels, num_coords, uu_metres, vv_metres, ww_metres);
-#endif
-        }
-#ifdef USE_MPI
-        //MPI_Barrier(MPI_COMM_WORLD);
-        // Proc k collects facet vis and sigma2 of the current source from the other procs (for their MS contribution)
-        com_time -= MPI_Wtime();
-        double time_gather = MPI_Wtime();
-        MPI_Gather(send_facet_buffer,2*size,MPI_DOUBLE,recv_facet_buffer,2*size,MPI_DOUBLE,k,MPI_COMM_WORLD);
-        MPI_Gather(send_sigma2_buffer,size,MPI_DOUBLE,recv_sigma2_buffer,size,MPI_DOUBLE,k,MPI_COMM_WORLD);
-        MPI_Gather(send_count_buffer,size,MPI_UNSIGNED_LONG,recv_count_buffer,size,MPI_UNSIGNED_LONG,k,MPI_COMM_WORLD);
-        com_time += MPI_Wtime();
-#endif
-        b++;
-        k++;
-      }
-        
-      if (my_g >= 0)
-      {
-#ifdef USE_MPI
-        // average partial sum of visibilities and count coordinates
-        average_facets(nprocs, par.facet*par.facet, facet_visData, facet_sigma2, count);
-#endif
-        par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, par.facet, count);
-      }
-#ifdef USE_MPI
-      start_fitting = MPI_Wtime();
-#else
-      start_fitting = current_timestamp();
-#endif
-      double mes_e1, mes_e2, maxL;
-      double var_e1, var_e2, oneDimvar;
-      if (my_g >= 0) //this task will fit the current source
-      {
-        source_fitting(rank, &par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
-        cout << "rank " << rank << ": n. " << my_g << " flux = " << gflux[my_g] << ": measured e = " << mes_e1 << "," << mes_e2 << endl;
-      }
-#ifdef USE_MPI
-      fitting_time += MPI_Wtime() - start_fitting;
-#else
-      fitting_time += (double) (current_timestamp() - start_fitting)/1000.;
-#endif
-
-      // Removal of the fit sources visibilities from the MS data and sky model
-      double res[6];
-      ind = b - k;  
-      k = 0; // source local index
-      for (int proc = 0 ; proc < nprocs && ind < nsources; proc++)
-      {
-          unsigned long int gal = bad_list[ind];  //source global index
-          l0 = l[gal];  m0 = m[gal];
-
-          if (rank == k)
-          {
-            res[0] = mes_e1; res[1] = mes_e2;
-            res[2] = var_e1; res[3] = var_e2;
-            res[4] = oneDimvar; res[5] = maxL;
-          }
-#ifdef USE_MPI  // Bcast shape results from proc k to the other
-          //MPI_Barrier(MPI_COMM_WORLD);
-          com_time -= MPI_Wtime();
-          double time_Bcast = MPI_Wtime();
-          MPI_Bcast(res,6,MPI_DOUBLE,k,MPI_COMM_WORLD);
-          com_time += MPI_Wtime();
-#endif    
-          if (rank == 0)   // write shape measurement (always!)
-             fprintf(pFile, "%f | %f | %f | %e | %f | %f | %e | %e | %f | %f | %f  \n",gflux[gal],ge1[gal],res[0],sqrt(res[2]),ge2[gal],res[1],sqrt(res[3]),res[4],SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
-          if (res[5] < -1e+10 || res[2] < VAR || res[3] < VAR || res[4] < VAR) // bad measurement 
-          {
-             bad++; 
-             res[0] = 0.; res[1] = 0.; // remove round source model from original data
-          }
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-          for (unsigned int ch = 0; ch < num_channels; ch++)
-          {
-            unsigned long int ch_vis = ch*num_coords;
-
-            // remove current round source model from the sky model
-            data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, 0., 0., R_mu[k],
-                                       gflux[gal], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
-
-            for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
-            {
-               visSkyMod[i].real -= visGal[i].real;
-               visSkyMod[i].imag -= visGal[i].imag;
-            }
- 
-            // remove current source model from original data
-            data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, res[0], res[1], R_mu[k],
-                                     gflux[gal], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
- 
-            for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
-            {
-              visData[i].real -= visGal[i].real;
-              visData[i].imag -= visGal[i].imag;
-            }
-          }
-          k++;
-          ind++;
-      }
-    }
-    
-    if (rank == 0 && pFile != 0) fclose(pFile);
+    data_processing(true, bad_list, nprocs, rank, bad, len, num_coords, pFile, &par, l, m, gflux, gscale, ge1, ge2, SNR_vis, 
+                    count, visGal, visSkyMod, visData, sigma2_vis, flag, uu_metres, vv_metres, ww_metres, temp_facet_visData,                                        
+                    temp_facet_sigma2, temp_count, &com_time, &fitting_time, &bad);
     
 #ifdef USE_MPI
     end_extraction = MPI_Wtime();
@@ -869,6 +550,7 @@ int main(int argc, char *argv[])
     double total_time = (double)(end_tot - start_tot)/1000.;
 #endif
 
+    if (rank == 0 && pFile != 0) fclose(pFile);
     if (rank == 0)
     {
        cout << "Removed " << bad << " bad data galaxies" << endl << endl;
@@ -887,7 +569,7 @@ int main(int argc, char *argv[])
     cout << "rank " << rank << ": Data fitting computation time (sec): " << fitting_time << endl;
 
 #ifdef USE_MPI
-     MPI_Finalize() ;
+    MPI_Finalize() ;
 #endif
 
     // free memory ----------------------------------------------------------------------------------------------------------------

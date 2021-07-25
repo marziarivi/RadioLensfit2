@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2021 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -23,7 +23,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <math.h>
 #include "evaluate_uv_grid.h"
 #include "default_params.h"
@@ -45,21 +44,20 @@ double weight_func(double u, double v)
 // Compute facet size dependent on source flux
 // use scalelength-flux relation: mu=log(theta_med[arcsec]) = ADD + ESP*log(flux[uJy]) to estimate galaxy scalelength
 // multiply by a PSF factor to estimate facet FoV for that flux range and reference frequency
-// compute facet cell size by the relation: Du[wavelength units]=1/FoV[rad] (Briggs 1999)
+// compute facet cell by the relation: Du[wavelength units]=1/FoV[rad] (Briggs 1999)
 int facet_size(double theta_med, double len)
 {
-    double facet_du = 1./(PSF_NAT*theta_med*ARCS2RAD);
-    int facet_size = 2*ceil(len/facet_du);
+    //double facet_du = 1./(PSF_NAT*theta_med*ARCS2RAD);
+    int facet_size = 2*ceil(len*PSF_NAT*theta_med*ARCS2RAD);
     return facet_size;
 }
 
-// Compute number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered)
+// Compute max number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered)
 unsigned long int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wavenumbers, unsigned int num_channels, unsigned long int ncoords, double* u, double* v, int sizeg, bool *flag, unsigned long int* count)
 {
     unsigned long int p,n;
     unsigned long int size = sizeg*sizeg;
-    unsigned long int *temp_count = &(count[rank*size]);
-    memset(temp_count, 0, size*sizeof(unsigned long int));
+    memset(count, 0, size*sizeof(unsigned long int));
     
     double inc = 2*len/sizeg;
 
@@ -74,25 +72,36 @@ unsigned long int evaluate_uv_grid_size(int rank, int nprocs, double len, double
           unsigned int pu = (unsigned int) ((u[k]*inv_lambda + len) / inc);
           unsigned int pv = (unsigned int) ((v[k]*inv_lambda + len) / inc);
           unsigned long int pc = (unsigned long int) pv * sizeg + pu;
-          temp_count[pc]++;
+          count[pc]++;
         }
         n++;
       }
     }
 
+    if (rank == 0)
+    {
 #ifdef USE_MPI
-    MPI_Allgather(temp_count,size,MPI_UNSIGNED_LONG,count,size,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
-    n = size;
-    for (int k = 1; k < nprocs; k++)
-      for (p = 0; p < size; p++)
+      MPI_Status stat;
+      unsigned long int *temp_count = new unsigned long int[size];
+      int k = 1;
+      while (k<nprocs)
       {
-        count[p] += count[n];
-        n++;
-      }
+         MPI_Recv(temp_count,size,MPI_UNSIGNED_LONG,MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&stat);
+         for (unsigned long int i = 0; i<size; i++) count[i] += temp_count[i];
+         k++;
+      } 
+      delete[] temp_count;
 #endif
- 
-    n = 0;
-    for (p = 0; p < size; p++)  if (count[p]) n++;
+      n = 0;
+      for (p = 0; p < size; p++)  if (count[p]) n++;
+    }
+#ifdef USE_MPI
+    else
+      MPI_Send(count,size,MPI_UNSIGNED_LONG,0,0,MPI_COMM_WORLD);
+  
+    MPI_Bcast(&n,1,MPI_UNSIGNED_LONG,0,MPI_COMM_WORLD);
+#endif
+
     return n;
 }
 
@@ -124,7 +133,7 @@ unsigned long int evaluate_facet_coords(double* grid_u, double* grid_v, double l
 
 /*
  Compute gridded visibilities by adding all the original visibilities at the (u,v)
- points falling in the same cell
+ points falling in the same cell (for the current spectral window/task)
  This is a gridding by convolution with the pillbox function
  (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
  */
@@ -170,7 +179,8 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
       }
     }
 
-// in the MPI version the average and removal of empty cells are performed after the collection of gridded visibilities from the other spectral windows
+// in the MPI version the average and removal of empty cells are performed after the collection of facet visibilities from the other spectral windows
+
 #ifndef USE_MPI
     n=0;
     for (p = 0; p < size; p++)
@@ -189,37 +199,11 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
 }
 
 
-// average partial summed visibilities contained in the IFs facet
-void average_facets(int nIFs, unsigned int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
+// average (already summed) facet visibilities and variances 
+void average_facets(unsigned int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
 {
    unsigned long int p;
-   unsigned long int n = size;
-
-   for (int k = 1; k < nIFs; k++)
-     for (p = 0; p < size; p++)
-     {
-        facet_vis[p].real += facet_vis[n].real;
-        facet_vis[p].imag += facet_vis[n].imag;
-        n++;
-     }
-
-   n = size;
-   for (int k = 1; k < nIFs; k++)
-     for (p = 0; p < size; p++)
-     {
-        facet_sigma2[p] += facet_sigma2[n];
-        n++;
-     }
-
-   n = size;
-   for (int k = 1; k < nIFs; k++)
-     for (p = 0; p < size; p++)
-     {
-        count[p] += count[n];
-        n++;
-     }
-
-   n = 0;
+   unsigned long int n = 0;
    for (p = 0; p < size; p++)
    {
       if (count[p])
