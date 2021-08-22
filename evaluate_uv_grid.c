@@ -45,15 +45,15 @@ double weight_func(double u, double v)
 // use scalelength-flux relation: mu=log(theta_med[arcsec]) = ADD + ESP*log(flux[uJy]) to estimate galaxy scalelength
 // multiply by a PSF factor to estimate facet FoV for that flux range and reference frequency
 // compute facet cell by the relation: Du[wavelength units]=1/FoV[rad] (Briggs 1999)
-int facet_size(double theta_med, double len)
+unsigned int facet_size(double theta_med, double len)
 {
     //double facet_du = 1./(PSF_NAT*theta_med*ARCS2RAD);
-    int facet_size = 2*ceil(len*PSF_NAT*theta_med*ARCS2RAD);
+    unsigned int facet_size = (unsigned int) 2*ceil(len*PSF_NAT*theta_med*ARCS2RAD);
     return facet_size;
 }
 
 // Compute max number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered)
-unsigned long int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wavenumbers, unsigned int num_channels, unsigned long int ncoords, double* u, double* v, int sizeg, bool *flag, unsigned long int* count)
+unsigned int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double* u, double* v, unsigned int sizeg, bool *flag, unsigned long int* count)
 {
     unsigned long int p,n;
     unsigned long int size = sizeg*sizeg;
@@ -65,7 +65,7 @@ unsigned long int evaluate_uv_grid_size(int rank, int nprocs, double len, double
     for (unsigned int ch = 0; ch < num_channels; ch++)
     {
       double inv_lambda = wavenumbers[ch]/(2.*PI);
-      for (unsigned long int k = 0; k < ncoords; k++)
+      for (unsigned int k = 0; k < ncoords; k++)
       {
         if (!flag[n])
         {
@@ -102,17 +102,17 @@ unsigned long int evaluate_uv_grid_size(int rank, int nprocs, double len, double
     MPI_Bcast(&n,1,MPI_UNSIGNED_LONG,0,MPI_COMM_WORLD);
 #endif
 
-    return n;
+    return (unsigned int) n;
 }
 
 
 // Compute uv facet coordinates in wavelength units and their number
-unsigned long int evaluate_facet_coords(double* grid_u, double* grid_v, double len, int sizeg, unsigned long int *count)
+unsigned int evaluate_facet_coords(double* grid_u, double* grid_v, double len, unsigned int sizeg, unsigned long int *count)
 {
     unsigned int i,j;
     unsigned long int p,n;
     double  inc = 2*len/sizeg;
-    unsigned long int size = sizeg*sizeg;
+    unsigned long int size = (unsigned long int) sizeg*sizeg;
 
     n=0;
     for (p = 0; p < size; p++)
@@ -126,7 +126,7 @@ unsigned long int evaluate_facet_coords(double* grid_u, double* grid_v, double l
             n++;
          }
     }
-    return n;
+    return (unsigned int) n;
 }
 
 
@@ -137,12 +137,12 @@ unsigned long int evaluate_facet_coords(double* grid_u, double* grid_v, double l
  This is a gridding by convolution with the pillbox function
  (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
  */
-void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned long int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, int sizeg, complexd *new_vis, double *new_sigma2, bool *flag, unsigned long int *count)
+void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, unsigned int sizeg, complexd *new_vis, double *new_sigma2, bool *flag, unsigned long int *count)
 {
     unsigned int i,j;
     unsigned long int p,n;
     double  inc = 2*len/sizeg;
-    unsigned long int size = sizeg*sizeg;
+    unsigned long int size = (unsigned long int) sizeg*sizeg;
     memset(count, 0, size*sizeof(unsigned long int));
 
 #ifdef USE_MPI
@@ -157,7 +157,7 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
     for (unsigned int ch = 0; ch < num_channels; ch++)
     {
       double inv_lambda = wavenumbers[ch]/(2.*PI);
-      for (unsigned long int k = 0; k < ncoords; k++)
+      for (unsigned int k = 0; k < ncoords; k++)
       {
          if (!flag[n])
          {
@@ -200,7 +200,7 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
 
 
 // average (already summed) facet visibilities and variances 
-void average_facets(unsigned int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
+void average_facets(unsigned long int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
 {
    unsigned long int p;
    unsigned long int n = 0;

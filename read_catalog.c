@@ -32,7 +32,7 @@
 extern "C" {
 #endif
     
-int read_catalog(unsigned long int nge, char *filename, double *gflux, double *gscale, double *ge1, double *ge2, double *l, double *m, double *SNR_vis, bool readSNR)
+unsigned int read_catalog(unsigned int nge, char *filename, double *gflux, double *gscale, double *ge1, double *ge2, double *l, double *m, double *SNR_vis, bool readSNR)
 {
     FILE *fp;
     char *token;
@@ -49,7 +49,7 @@ int read_catalog(unsigned long int nge, char *filename, double *gflux, double *g
     double SNR,ll,mm,flux;
     double fwhm,scale,e1,e2;
     
-    unsigned long int g = 0;
+    unsigned int g = 0;
     while (!feof(fp) && g<nge)
     {
         fgets(line, 1000, fp);

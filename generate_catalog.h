@@ -21,6 +21,6 @@
 #ifndef ____generate_catalog__
 #define ____generate_catalog__
 
-unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m);
+unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m);
 
 #endif /* defined(____generate_catalog__) */

@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     //double Dec = ms_phase_centre_dec_rad(ms);   
     const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
     const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
-    const unsigned long int num_rows = ms_num_rows(ms);                // Number of rows 
+    const unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
     const double freq_start_hz = ms_freq_start_hz(ms); //1280e+6;          // Start Frequency, in Hz
     const double channel_bandwidth_hz = ms_freq_inc_hz(ms); //240e+6;      // Frequency channel bandwidth, in Hz
     const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
     ms_close(ms); 
 
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
-    unsigned long int nge = atof(argv[2]);
+    unsigned int nge = atof(argv[2]);
     
     double *gflux = new double[nge];
     double *l = new double[nge];
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
     double *SNR_vis = new double[nge];
     bool readSNR = true;
  
-    unsigned long int mygalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis,readSNR);
+    unsigned int mygalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis,readSNR);
     cout << "Read catalog. Number of sources: " << mygalaxies << endl;
    
     end_data = current_timestamp();
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
-    unsigned long int facet_ncoords = evaluate_uv_grid_size(0,1,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag, count);
+    unsigned int facet_ncoords = evaluate_uv_grid_size(0,1,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag, count);
 
     double *facet_u, *facet_v;
     try
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
         cerr << "bad_alloc caught: " << ba.what() << '\n';
     }    
 
-    unsigned long int facet_nvis = facet_ncoords;
+    unsigned int facet_nvis = facet_ncoords;
     complexd* facet_visData;
     double* facet_sigma2;
     try
@@ -345,7 +345,7 @@ int main(int argc, char *argv[])
     double* visMod;
     try
     {
-        unsigned long int model_ncoords = facet_ncoords;
+        unsigned int model_ncoords = facet_ncoords;
         visMod = new double[num_models*model_ncoords];
         sizeGbytes = num_models*model_ncoords*sizeof(double)/((double)(1024*1024*1024));
         cout << "allocated models: num_models= " << num_models << ", size = " << sizeGbytes  << " GB" << endl;
@@ -368,7 +368,7 @@ int main(int argc, char *argv[])
     complexd* visMod;
     try
     {
-        unsigned long int model_ncoords = num_coords;
+        unsigned int model_ncoords = num_coords;
         visMod = new complexd[num_models*model_ncoords*num_channels];
         sizeGbytes = num_models*model_ncoords*num_channels*sizeof(complexd)/((double)(1024*1024*1024));
         cout << "allocated models: num_models= " << num_models << ", size = " << sizeGbytes  << " GB" << endl;
@@ -404,10 +404,10 @@ int main(int argc, char *argv[])
     double l0,m0;
     double mes_e1, mes_e2, maxL;
     double var_e1, var_e2, oneDimvar;
-    unsigned long int bad_list[mygalaxies];
+    unsigned int bad_list[mygalaxies];
     int bad = 0;
     
-    for (unsigned long int g=0; g<mygalaxies; g++)
+    for (unsigned int g=0; g<mygalaxies; g++)
     {
         double mu = scale_mean(gflux[g]);
         double R_mu = exp(mu);
@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
         
         l0 = l[g];  m0 = m[g];
 #ifdef FACET
-        int facet = facet_size(R_mu,len);
+        unsigned int facet = facet_size(R_mu,len);
         source_extraction(0,facet,&par,par.data,par.sigma2,count,l0, m0, gflux[g], R_mu, 0.,0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
         par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, facet, count);
 #else
@@ -443,7 +443,7 @@ int main(int argc, char *argv[])
 #endif
               for (unsigned int ch = 0; ch < num_channels; ch++)
               {             
-                 unsigned long int ch_vis = ch*num_coords;
+                 unsigned long int ch_vis = (unsigned long int) ch*num_coords;
                  data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, 0., 0., R_mu,
                                              gflux[g], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                
@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
              // get current source model fit and remove it from the original data
              for (unsigned int ch = 0; ch < num_channels; ch++)
              {
-                unsigned long int ch_vis = ch*num_coords;
+                unsigned long int ch_vis = (unsigned long int) ch*num_coords;
                 data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, mes_e1, mes_e2, R_mu,
                                            gflux[g], l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                   
@@ -483,9 +483,9 @@ int main(int argc, char *argv[])
     
     int nsources = bad;
     bad = 0;
-    for (unsigned long int b = 0; b < nsources; b++)
+    for (unsigned int b = 0; b < nsources; b++)
     {
-        unsigned long int gal = bad_list[b];
+        unsigned int gal = bad_list[b];
         double flux = gflux[gal];
         double mu = scale_mean(flux);
         double R_mu = exp(mu);
@@ -497,7 +497,7 @@ int main(int argc, char *argv[])
         
         l0 = l[gal];  m0 = m[gal];
 #ifdef FACET
-        int facet = facet_size(R_mu,len);
+        unsigned int facet = facet_size(R_mu,len);
         //par.ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
         source_extraction(0,facet,&par,par.data,par.sigma2,count,l0, m0, flux, R_mu, 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_channels, num_coords, uu_metres, vv_metres, ww_metres, len);
         par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, facet, count);
@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
 #endif
         for (unsigned int ch = 0; ch < num_channels; ch++)
         {
-            unsigned long int ch_vis = ch*num_coords;
+            unsigned long int ch_vis = (unsigned int ) ch*num_coords;
             // get current source model fit
             data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, mes_e1, mes_e2, R_mu,
                                      flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));

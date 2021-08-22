@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     double sizeGbytes, totGbytes = 0.;
     
     // Allocate and read uv coordinates 
-    unsigned long int num_coords = ms_num_rows(ms);
+    unsigned int num_coords = ms_num_rows(ms);
     cout << "rank " << rank << ": number of rows: " << num_coords << endl;
     double* uu_metres = new double[num_coords];
     double* vv_metres = new double[num_coords];
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
        double Fmin = atof(argv[3]);
        unsigned long int nge = ceil((flux_CDF(M_EXP, FMAX) - flux_CDF(M_EXP, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
     */
-    unsigned long int nge = atoi(argv[3]);
+    unsigned int nge = atoi(argv[3]);
 
     double *gflux = new double[nge];
     double *gscale = new double[nge];
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
     double *temp_SNR = new double[nge];
     bool readSNR = false;
 
-    unsigned long int ngalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,temp_SNR,readSNR);
+    unsigned int ngalaxies = read_catalog(nge, argv[2],gflux,gscale,ge1,ge2,l,m,temp_SNR,readSNR);
     if (rank == 0) cout << "Read catalog. Number of sources: " << ngalaxies << endl;
 
     // Allocate Galaxy and Sky Visibilities -----------------------------------------------------------------------------------------------------------------------
@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
       sprintf(filename,"%s_SNR",argv[2]);
       pf = fopen(filename,"w");
       // fprintf(pf, "SNR | l | m | flux | scale | e1 | e2 \n"); 
-      for (unsigned long int g = 0; g < ngalaxies; g++)
+      for (unsigned int g = 0; g < ngalaxies; g++)
       {
         SNR_vis[g] /= sigma;
         SNR_vis[g] = sqrt(SNR_vis[g]);

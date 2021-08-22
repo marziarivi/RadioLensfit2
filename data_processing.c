@@ -47,7 +47,7 @@ extern "C" {
 #endif
 
 
-void data_processing(bool re_fitting, unsigned long int *bad_list, int nprocs, int rank, int nsources, double len, unsigned long int num_coords, 
+void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int rank, int nsources, double len, unsigned int num_coords, 
                      FILE *pFile, likelihood_params *par, double *l, double *m, double *gflux, double *gscale, double *ge1, double *ge2, double *SNR_vis, 
                      unsigned long int *count, complexd *visGal, complexd *visSkyMod, complexd *visData, 
                      double *sigma2_vis, bool *flag, double *uu_metres, double *vv_metres, double *ww_metres, complexd *temp_facet_visData, 
@@ -56,14 +56,14 @@ void data_processing(bool re_fitting, unsigned long int *bad_list, int nprocs, i
 #ifdef USE_MPI
     MPI_Status stat;
 #endif
-    unsigned long int gal;
+    unsigned int gal;
     double l0,m0;
     int k, nbad;
     long int my_g, ind; 
     double flux, mu, R_mu[nprocs];
 
     nbad = 0;
-    unsigned long int g = 0; // source global index
+    unsigned int g = 0; // source global index
     while (g < nsources)
     { 
       k = 0; // source local index
@@ -81,8 +81,8 @@ void data_processing(bool re_fitting, unsigned long int *bad_list, int nprocs, i
         R_mu[src] = exp(mu);
         //R_mu[src] = gscale[gal];
 #ifdef FACET
-        int facet = facet_size(R_mu[src],len);
-        unsigned long int size = facet*facet;
+        unsigned int facet = facet_size(R_mu[src],len);
+        unsigned long int size = (unsigned long int) facet*facet;
 #endif
         if (rank == src)  // proc src will fit the current source:
         {
@@ -206,13 +206,13 @@ void data_processing(bool re_fitting, unsigned long int *bad_list, int nprocs, i
 #endif
             for (unsigned int ch = 0; ch < par->nchannels; ch++)
             {
-               unsigned long int ch_vis = ch*num_coords;
+               unsigned long int ch_vis = (unsigned long int) ch*num_coords;
          
                // remove current round source model from the sky model
                data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, 0., 0., R_mu[k],
                                            flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                   
-               for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
+               for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
                {
                   visSkyMod[i].real -= visGal[i].real;
                   visSkyMod[i].imag -= visGal[i].imag;
@@ -222,7 +222,7 @@ void data_processing(bool re_fitting, unsigned long int *bad_list, int nprocs, i
                data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, res[0], res[1], R_mu[k],
                                            flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                   
-               for (unsigned int i = ch_vis; i<ch_vis+num_coords; i++)
+               for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
                {
                   visData[i].real -= visGal[i].real;
                   visData[i].imag -= visGal[i].imag;

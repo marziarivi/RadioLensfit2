@@ -48,7 +48,7 @@ typedef struct RL_MeasurementSet RL_MeasurementSet;
 RL_MeasurementSet* ms_open(const char* filename);
 void ms_close(RL_MeasurementSet* p);
 
-void ms_ensure_num_rows(RL_MeasurementSet* p, unsigned int num);
+void ms_ensure_num_rows(RL_MeasurementSet* p, unsigned long int num);
 double ms_freq_inc_hz(const RL_MeasurementSet* p);
 double ms_freq_start_hz(const RL_MeasurementSet* p);
 unsigned int ms_num_channels(const RL_MeasurementSet* p);

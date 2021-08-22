@@ -31,17 +31,17 @@ extern "C" {
 double gaussian_shape(double k1, double k2, double scale_factor, double wave_factor);
 double sersic_shape(double k1, double k2, double scale_factor, double wave_factor);    
 
-void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsigned long int num_coords, 
+void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsigned int num_coords, 
                                        double* grid_u, double* grid_v,const double* sigma2, double* Modvis);
 
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scale, double l,
-                               double m, unsigned long int num_coords, double* uu_metres,
+                               double m, unsigned int num_coords, double* uu_metres,
                                double* vv_metres, double* ww_metres, const double* sigma2, complexd* Modvis);
     
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
                               double e1, double e2, double scale, double flux, double l, double m,
-                              unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres,
+                              unsigned int num_coords, double* uu_metres, double* vv_metres, double* ww_metres,
                               complexd* vis);
 
 double fq_smear(double band_factor, double phase);
@@ -49,7 +49,7 @@ double fq_smear(double band_factor, double phase);
 void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, double* sigma);
 
     
-void data_visibilities_phase_shift(double wavenumber, double l, double m, unsigned long int num_coords,
+void data_visibilities_phase_shift(double wavenumber, double l, double m, unsigned int num_coords,
                                        double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis);
    
 #ifdef __cplusplus

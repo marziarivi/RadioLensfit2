@@ -66,7 +66,7 @@ typedef struct{
 #ifdef FACET
     double* mod;
     double* weights;
-    int facet;
+    unsigned int facet;
 #else
     complexd* mod;
     double* ww;

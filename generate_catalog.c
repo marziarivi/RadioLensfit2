@@ -34,7 +34,7 @@
 // Generate galaxy catalog ordered by source flux
 // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
 
-unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m)
+unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m)
 {
     //setup random number generator
     const gsl_rng_type * G;
@@ -45,8 +45,8 @@ unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, 
     unsigned long int seed = random_seed();
     gsl_rng_set(gen,seed);
     
-    unsigned long int my_gal = nge;
-    unsigned long int diffgal = my_gal/(2*NP);
+    unsigned int my_gal = nge;
+    unsigned int diffgal = my_gal/(2*NP);
     my_gal = diffgal*2*NP;
     
     // generate flux values
@@ -55,8 +55,8 @@ unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, 
     
     // sort flux values, so that to generate a population ordered by flux and therefore fitting sources by decreasing flux order
     gsl_sort(gflux2,1,diffgal); // sorting ascending order
-    unsigned long int gal = 0;
-    for (unsigned long int i=0; i<diffgal; i++)
+    unsigned int gal = 0;
+    for (unsigned int i=0; i<diffgal; i++)
         for (int k = 0; k < 2*NP; k++)
         {
             gflux[gal] = gflux2[diffgal-i-1];
@@ -66,7 +66,7 @@ unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, 
     
     // generate scalelength
     double mu, scalelength;
-    for (unsigned long int g = 0; g < my_gal; g++)
+    for (unsigned int g = 0; g < my_gal; g++)
     {
         if (g%(2*NP) == 0)
         {
@@ -84,7 +84,7 @@ unsigned long int galaxy_catalog(unsigned long int nge, int NP, double fov_eff, 
     // http://mathworld.wolfram.com/DiskPointPicking.html
     double radius,orient;
     
-    for (unsigned long int gal=0; gal<my_gal; gal++)
+    for (unsigned int gal=0; gal<my_gal; gal++)
     {
         radius = sqrt(gsl_rng_uniform(gen))*0.5*fov_eff;
         orient = gsl_rng_uniform(gen)*2*PI;

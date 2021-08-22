@@ -328,8 +328,8 @@ unsigned long int ms_read_Flag(RL_MeasurementSet* p,
     {
        for (unsigned int b = 0; b < num_coords; ++b)
        {
-         unsigned int i = num_pols*(b * num_channels + c);
-         unsigned int j = (c * num_coords + b);
+         unsigned long int i = num_pols*(b * num_channels + c);
+         unsigned long int j = (c * num_coords + b);
          flag[j] = in[i];
 
          if (num_pols == 4)
@@ -396,8 +396,8 @@ void ms_read_vis(RL_MeasurementSet* p,
         for (unsigned int b = 0; b < num_coords; ++b)
         {
             // read first polarization p = 0  
-            unsigned int i = (num_pols*(b * num_channels + c)) << 1;
-            unsigned int j = (c * num_coords + b);
+            unsigned long int i = (num_pols*(b * num_channels + c)) << 1;
+            unsigned long int j = (c * num_coords + b);
             vis[j].real = in[i];
             vis[j].imag = in[i + 1];
 
@@ -445,8 +445,8 @@ void ms_write_vis(RL_MeasurementSet* p,
     {
         for (unsigned int b = 0; b < num_coords; ++b)
         {
-                unsigned int i = (c * num_coords + b);
-                unsigned int j = (b * num_channels + c) << 1;
+                unsigned long int i = (c * num_coords + b);
+                unsigned long int j = (b * num_channels + c) << 1;
                 // write in Jy 
                 out[j]     = vis[i].real*1e-6;
                 out[j + 1] = vis[i].imag*1e-6;

@@ -56,7 +56,7 @@ double sersic_shape(double k1, double k2, double scale_factor, double wave_facto
 // Compute flux independent facet model galaxy visibilities for likelihood computation
 // model a galaxy at the phase centre: visibilities are real numbers 
 // facet uv points are in wavelength units
-void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsigned long int num_coords, 
+void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsigned int num_coords, 
                                        double* grid_u, double* grid_v, const double *sigma2, double* Modvis)
 {
     double uu,vv,k1,k2;
@@ -65,10 +65,10 @@ void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsig
     double scale_factor = (scale*scale)/(detA*detA);
     
     double sum = 0.;
-    unsigned long int nv = 0;
+    unsigned int nv = 0;
     double cc2 = 4*PI*PI;   
  
-    for (unsigned long int i = 0; i < num_coords; ++i)
+    for (unsigned int i = 0; i < num_coords; ++i)
     {
        uu = grid_u[i];
        vv = grid_v[i];
@@ -87,7 +87,7 @@ void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsig
     
     // normalise
     sum = sqrt(sum);
-    for (unsigned long int k=0; k<nv; k++) Modvis[k] /= sum;
+    for (unsigned int k=0; k<nv; k++) Modvis[k] /= sum;
 }
     
     
@@ -95,7 +95,7 @@ void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsig
 // original uvw ponts in metres
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scale, double l,
-                               double m, unsigned long int num_coords, double* uu_metres,
+                               double m, unsigned int num_coords, double* uu_metres,
                                double* vv_metres, double* ww_metres,
                                const double* sigma2, complexd* Modvis)
 {
@@ -116,7 +116,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
         //beam_profile = primary_beam_profile(source_pos,...);
         wavenumber2 = wavenumber*wavenumber;
         
-        for (unsigned long int i = 0; i < num_coords; ++i)
+        for (unsigned int i = 0; i < num_coords; ++i)
         {
           uu = uu_metres[i];
           vv = vv_metres[i];
@@ -153,7 +153,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
 // original uvw points in metres
 void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
                               double e1, double e2, double scale, double flux, double l, double m,
-                              unsigned long int num_coords, double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis)
+                              unsigned int num_coords, double* uu_metres, double* vv_metres, double* ww_metres, complexd* vis)
 {
         double u,v,w,k1,k2,phase,shape;//ch_freq,beam_profile;
         double detA = 1.-e1*e1-e2*e2;
@@ -164,7 +164,7 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
         //ch_freq = wavenumber*C0/(2.0*PI);
         //beam_profile = primary_beam_profile(source_pos,...);
     
-        for (unsigned long int i = 0; i < num_coords; ++i)
+        for (unsigned int i = 0; i < num_coords; ++i)
         {
             u = uu_metres[i];
             v = vv_metres[i];
@@ -221,10 +221,9 @@ double primary_beam_profile(double ch_freq, double source_pos)
 // Add a random Gaussian noise component to the visibilities.
 void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, double* sigma)
 {
-    double r1, r2, s1, s2, std, vis_freq, mean = 0.0;
-    unsigned int i=0,t,b;
+    double r1, r2, s1, s2, std, mean = 0.0;
     
-    for (i=0; i < num_coords; i++)
+    for (unsigned long int i=0; i < num_coords; i++)
     {
         /* Combine antenna std.devs. to evaluate the baseline std.dev.
         * See Wrobel & Walker (1999) */
@@ -241,10 +240,9 @@ void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, dou
     
 
 // Shift galaxy visibilities phase to the origin
-// there only the real part contains galaxy signal, the imaginary part contains only noise
+// only the real part contains galaxy signal, the imaginary part contains only noise
 // so take only the real part for shape fitting
-void data_visibilities_phase_shift(double wavenumber, double l, double m,
-                                   unsigned long int num_coords, 
+void data_visibilities_phase_shift(double wavenumber, double l, double m, unsigned int num_coords, 
                                    double* uu_metres, double* vv_metres, double* ww_metres,
                                    complexd* vis)
 {
@@ -253,7 +251,7 @@ void data_visibilities_phase_shift(double wavenumber, double l, double m,
     complexd temp;
     double n = sqrt(1.-l*l-m*m) - 1.;    
 
-    for (unsigned long int i = 0; i < num_coords; ++i)
+    for (unsigned int i = 0; i < num_coords; ++i)
     {
         u = uu_metres[i];
         v = vv_metres[i];

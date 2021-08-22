@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     double sizeGbytes, totGbytes = 0.;
     
     // Allocate and read uv coordinates ------------------------------------------------------------------------------
-    unsigned long int num_coords = ms_num_rows(ms);
+    unsigned int num_coords = ms_num_rows(ms);
     double* uu_metres = new double[num_coords];
     double* vv_metres = new double[num_coords];
     double* ww_metres = new double[num_coords];
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 
 
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
-    unsigned long int my_gal = atof(argv[3]);
+    unsigned int my_gal = atof(argv[3]);
 
     double *gflux = new double[my_gal];
     double *l = new double[my_gal];
@@ -232,18 +232,18 @@ int main(int argc, char *argv[])
     // Faceting uv coordinates ----------------------------------------------------------------------------------------
 #ifdef FACET
     len = len*wavenumbers[num_channels-1]/(2*PI);
-    int facet = facet_size(RMAX,len);
+    unsigned int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
     unsigned long int* count = new unsigned long int[ncells];
 
-    unsigned long int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
+    unsigned int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
    
-    unsigned long int facet_nvis = facet_ncoords;
+    unsigned int facet_nvis = facet_ncoords;
     complexd* facet_visData;
     double* facet_sigma2;
     try
@@ -268,14 +268,14 @@ int main(int argc, char *argv[])
     double* visMod;
     try
     {
-        unsigned long int model_ncoords = facet_ncoords;
+        unsigned int model_ncoords = facet_ncoords;
         visMod = new double[num_models*model_ncoords];
         sizeGbytes = num_models*model_ncoords*sizeof(complexd)/((double)(1024*1024*1024));
 #else
         complexd* visMod;
         try
         {
-            unsigned long int model_ncoords = num_coords;
+            unsigned int model_ncoords = num_coords;
             visMod = new complexd[num_models*model_ncoords*num_channels];
             sizeGbytes = num_models*model_ncoords*num_channels*sizeof(complexd)/((double)(1024*1024*1024));
 #endif
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
     double l0,m0,ee1,ee2,den;
     complexd z1,z2;
   
-    for (unsigned long int g=0; g<my_gal; g++)
+    for (unsigned int g=0; g<my_gal; g++)
     {
        // set log(prior) for scalelength
           double mu = scale_mean(gflux[g]);
@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
         for (unsigned int ch = 0; ch < num_channels; ch++)
         {
            // generate galaxy visibilities
-           unsigned long int ch_vis = ch*num_coords;
+           unsigned long int ch_vis = (unsigned long int) ch*num_coords;
            data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, ee1, ee2, gscale[g],
                                       gflux[g], l[g], m[g], num_coords, uu_metres, vv_metres, ww_metres, &(visData[ch_vis]));
  

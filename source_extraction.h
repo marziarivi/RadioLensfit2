@@ -28,13 +28,13 @@ extern "C" {
 #endif
 
 #ifdef FACET
-void source_extraction(int rank, int facet, likelihood_params *par, complexd *facet_vis, double *facet_sigma2, 
+void source_extraction(int rank, unsigned int facet, likelihood_params *par, complexd *facet_vis, double *facet_sigma2, 
                        unsigned long int *count, double l0, double m0, double flux, double mu, double e1, double e2,                        
                        complexd *visSkyMod, complexd *visData, complexd *visGal, double *sigma2_vis, bool *flag, unsigned int nchannels,
-                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len);
+                       unsigned int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len);
 #else
 void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, 
-                       complexd *visData, complexd *visGal,double *sigma2_vis,unsigned int nchannels, unsigned long int num_coords, 
+                       complexd *visData, complexd *visGal,double *sigma2_vis,unsigned int nchannels, unsigned int num_coords, 
                        double *uu_metres, double *vv_metres, double *ww_metres);
 #endif
 
