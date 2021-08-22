@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     //double Dec = ms_phase_centre_dec_rad(ms);   
     const unsigned int num_stations = ms_num_stations(ms);        // Number of stations
     const unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
-    const unsigned long int num_coords = ms_num_rows(ms);                // Number of rows 
+    const unsigned int num_coords = ms_num_rows(ms);                // Number of rows 
     const double freq_start_hz = ms_freq_start_hz(ms); //1280e+6;          // Start Frequency, in Hz
     const double channel_bandwidth_hz = ms_freq_inc_hz(ms); //240e+6      // Frequency channel bandwidth, in Hz
     const double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
@@ -171,34 +171,8 @@ int main(int argc, char *argv[])
 #endif
     }
     
-    // Allocate and read Data visibilities of the current MS 
-    unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
-    complexd *visData;
-    try
-    {
-        visData = new complexd[num_vis];
-        sizeGbytes = num_vis*sizeof(complexd)/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated original data visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
-        totGbytes += sizeGbytes;
-    }
-    catch (bad_alloc& ba)
-    {
-        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
-    }
-
-    ms_read_vis(ms, 0, 0, num_channels, num_coords, "DATA", visData, &status);
-    if (status) 
-    {
-        cout << "rank " << rank << ": ERROR reading MS - DATA column: " << status << endl;
-#ifdef USE_MPI
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#else
-        exit(EXIT_FAILURE);
-#endif
-    }
-  
     // allocate and read FLAG column
+    unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
     bool *flag;
     try
     {
@@ -226,13 +200,39 @@ int main(int argc, char *argv[])
     else
       cout << "rank " << rank << ": percentage of flagged visibilities: " << round(nF*100./num_vis) << "%" << endl;
 
+    // Allocate and read Data visibilities of the current MS 
+    complexd *visData;
+    try
+    {
+        visData = new complexd[num_vis];
+        sizeGbytes = num_vis*sizeof(complexd)/((double)(1024*1024*1024));
+        cout << "rank " << rank << ": allocated original data visibilities: " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
+
+    ms_read_vis(ms, 0, 0, num_channels, num_coords, "DATA", visData, &status);
+    if (status) 
+    {
+        cout << "rank " << rank << ": ERROR reading MS - DATA column: " << status << endl;
+#ifdef USE_MPI
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#else
+        exit(EXIT_FAILURE);
+#endif
+    }
+  
     // allocate and read SIGMA column
     double *sigma2_vis;
     try
     {
         sigma2_vis = new double[num_vis];
         sizeGbytes = num_vis*sizeof(double)/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated sigma2 visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated sigma2 visibilities: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -252,17 +252,17 @@ int main(int argc, char *argv[])
 #endif
     }
     double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
-    /*if (rank < 15) sigma2 = 16e+10;
-    else 
-     sigma2 = 1e+12; //eMERLIN noise
-  */  for (unsigned long int i = 0; i<num_vis; i++)
+    //if (rank < 15) sigma2 = 16e+10;
+    //else 
+    // sigma2 = 1e+12; //eMERLIN noise
+    for (unsigned long int i = 0; i<num_vis; i++)
         sigma2_vis[i] = sigma2; // visibility noise variance
  
-    cout << "rank " << rank << ": MS data GBytes: " << totGbytes << endl;
+    cout << "rank " << rank << ": MS data total GBytes: " << totGbytes << endl;
     ms_close(ms); 
 
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
-    unsigned long int nge = atof(argv[2]);
+    unsigned int nge = atof(argv[2]);
     
     double *gflux = new double[nge];
     double *l = new double[nge];
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
     totGbytes += sizeGbytes;
 
     bool readSNR = true;
-    unsigned long int ngalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis,readSNR);
+    unsigned int ngalaxies = read_catalog(nge, argv[1],gflux,gscale,ge1,ge2,l,m,SNR_vis,readSNR);
     if (rank == 0)  cout << "Read catalog. Number of sources: " << ngalaxies << endl;
 
 #ifdef USE_MPI
@@ -292,8 +292,8 @@ int main(int argc, char *argv[])
     try
     {
         visGal = new complexd[num_vis];
-        cout << "rank " << rank << ": allocated galaxy visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
         sizeGbytes = num_vis*sizeof(complexd)/((double)(1024*1024*1024));
+        cout << "rank " << rank << ": allocated galaxy visibilities: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
     try
     {
         visSkyMod = new complexd[num_vis];
-        cout << "rank " << rank << ": allocated sky model visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated sky model visibilities: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -408,9 +408,9 @@ int main(int argc, char *argv[])
     {
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
-    cout << "rank " << rank << ": allocated  array counter: " << sizeGbytes  << " GB" << endl;
+    cout << "rank " << rank << ": allocated  array counter: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
 
-    unsigned long int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag, count);
+    unsigned int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag, count);
 
     // allocate facet arrays
     double* facet_u;
@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
     {
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
-    cout << "rank " << rank << ": allocated facet coordinates: " << sizeGbytes  << " GB" << endl;
+    cout << "rank " << rank << ": allocated facet coordinates: " << facet_ncoords << ", size = " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
 
     double* visMod;
@@ -434,7 +434,7 @@ int main(int argc, char *argv[])
     {
       visMod = new double[num_models*facet_ncoords];
       sizeGbytes = num_models*facet_ncoords*sizeof(double)/((double)(1024*1024*1024));
-      cout << "rank " << rank << ": allocated facet model visibilities, size = " << sizeGbytes  << " GB" << endl;
+      cout << "rank " << rank << ": allocated facet model visibilities: " << sizeGbytes  << " GB" << endl;
       totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -450,7 +450,7 @@ int main(int argc, char *argv[])
         facet_visData = new complexd[ncells];
         facet_sigma2 = new double[ncells];
         sizeGbytes = (ncells*(sizeof(complexd)+sizeof(double)))/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated gridded visibilities and variances: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated gridded visibilities and variances: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
         temp_facet_visData = new complexd[ncells];
         temp_facet_sigma2 = new double[ncells];
         sizeGbytes = ncells*(sizeof(complexd)+sizeof(double)+sizeof(unsigned long int))/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated my facet visibilities, variances and count: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated my facet visibilities, variances and count: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -487,7 +487,7 @@ int main(int argc, char *argv[])
     complexd* visMod;
     try
     {
-        unsigned long int model_ncoords = num_coords;
+        unsigned int model_ncoords = num_coords;
         visMod = new complexd[num_models*model_ncoords*tot_nchannels];
         sizeGbytes = num_models*model_ncoords*tot_nchannels*sizeof(complexd)/((double)(1024*1024*1024));
         cout << "rank " << rank << ": allocated models: num_models= " << num_models << ", size = " << sizeGbytes  << " GB" << endl;
@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
 #endif
 
     // data_processing
-    unsigned long int bad_list[ngalaxies];  // all tasks update the bad_list to avoid communication
+    unsigned int bad_list[ngalaxies];  // all tasks update the bad_list to avoid communication
     int bad = 0;
     data_processing(false, bad_list, nprocs, rank, ngalaxies, len, num_coords, pFile, &par, l, m, gflux, gscale, ge1, ge2, SNR_vis, 
                     count, visGal, visSkyMod, visData, sigma2_vis, flag, uu_metres, vv_metres, ww_metres, temp_facet_visData, 
