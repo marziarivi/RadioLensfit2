@@ -36,7 +36,7 @@ double loglikelihood(void *params, double ee1, double ee2, int *error);
 double loglikelihood_r(double ee1, double ee2, double scale, unsigned long int n_uv_coords,
                        const double *variance, double* grid_u, double* grid_v,
                        double* weights, complexd* visData, double* visM);    
-int cross_correlation(unsigned long int n_uv_coords, const double* variance, double* grid_u, double* grid_v,
+int cross_correlation(unsigned long int n_uv_coords, double* grid_u, double* grid_v,
                       double* weights, complexd* visData, double* visMod, double* ho, double* det_sigma);
 #else
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,

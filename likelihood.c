@@ -170,7 +170,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
     // generate model and log(likelihood) dependend only on ellipticity and scale-length
 #ifdef FACET
     model_galaxy_visibilities_at_zero(ee1, ee2, scale, n_uv_coords, grid_u, grid_v, variance, visM);
-    error = cross_correlation(n_uv_coords, variance, grid_u, grid_v, weights, visData, visM, &ho, &det_sigma);
+    error = cross_correlation(n_uv_coords, grid_u, grid_v, weights, visData, visM, &ho, &det_sigma);
 #else
     model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, n_uv_coords, uu_metres, vv_metres, ww_metres, variance, visM);
     error = cross_correlation(nchannels, wavenumbers, n_uv_coords, variance, uu_metres, vv_metres, visData, visM, &ho, &det_sigma);
@@ -193,7 +193,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
  *  centered in its maximum ho = h(xo,yo) and det(covariance matrix) = 1/det(Hessian(xo,yo)).
  */
 #ifdef FACET
-int cross_correlation(unsigned long int n_uv_coords, const double* variance, double* grid_u, double* grid_v, 
+int cross_correlation(unsigned long int n_uv_coords, double* grid_u, double* grid_v, 
                       double* weights, complexd* visData, double* visMod, double* ho, double* det_sigma)
 #else
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
@@ -224,8 +224,9 @@ int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long
     double cc = 2*PI;
     for (i=0; i < n_uv_coords; i++)
     {
-         h_F[i].real = visData[i].real*visMod[i]/variance[i];
-         h_F[i].imag = - visData[i].imag*visMod[i]/variance[i];
+         // visData already divided by their variances
+         h_F[i].real = visData[i].real*visMod[i];
+         h_F[i].imag = - visData[i].imag*visMod[i]; 
 
          value += h_F[i].real;
 

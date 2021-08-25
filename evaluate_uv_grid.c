@@ -180,15 +180,15 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
     }
 
 // in the MPI version the average and removal of empty cells are performed after the collection of facet visibilities from the other spectral windows
-
+// visibilities are divided by their variance
 #ifndef USE_MPI
     n=0;
     for (p = 0; p < size; p++)
     {
         if (count[p])
         {
-            new_vis[n].real = temp_grid_vis[p].real/count[p];
-            new_vis[n].imag = temp_grid_vis[p].imag/count[p];
+            new_vis[n].real = temp_grid_vis[p].real*count[p]/temp_sigma2[p];
+            new_vis[n].imag = temp_grid_vis[p].imag*count[p]/temp_sigma2[p];
             new_sigma2[n] = temp_sigma2[p]/(count[p]*count[p]);
             n++;
         }
@@ -200,6 +200,7 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
 
 
 // average (already summed) facet visibilities and variances 
+// visibilities are also divided by their variance
 void average_facets(unsigned long int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
 {
    unsigned long int p;
@@ -208,8 +209,8 @@ void average_facets(unsigned long int size, complexd* facet_vis, double* facet_s
    {
       if (count[p])
       {
-         facet_vis[n].real = facet_vis[p].real/count[p];
-         facet_vis[n].imag = facet_vis[p].imag/count[p];
+         facet_vis[n].real = facet_vis[p].real*count[p]/facet_sigma2[p];
+         facet_vis[n].imag = facet_vis[p].imag*count[p]/facet_sigma2[p];
          facet_sigma2[n] = facet_sigma2[p]/(count[p]*count[p]);
          n++;
       }
