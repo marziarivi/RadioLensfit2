@@ -63,13 +63,13 @@ unsigned int read_catalog(unsigned int nge, char *filename, double *gflux, doubl
         l[g] = ll;
         m[g] = mm;
         gflux[g] = flux;
-#ifdef GAUSSIAN
-        gscale[g] = fwhm/GAUSS_SIGMA_FACTOR;      // Gaussian sigma 
+#ifdef GAUSSIAN // scale = FWHM
+        gscale[g] = scale/GAUSS_SIGMA_FACTOR;      // Gaussian sigma 
 #else
-#ifdef MATCH_EXP
-        gscale[g] = fwhm*EXP_MATCH_FACTOR;     // Galsim Exponential matched  scalelength
+#ifdef MATCH_EXP //scale = FWHM
+        gscale[g] = scale*EXP_MATCH_FACTOR;     // Galsim Exponential matched  scalelength
 #else
-        gscale[g] = scale;
+        gscale[g] = scale;   // FWHM*EXP_SCALE_FACTOR  scalelength
 #endif
 #endif
         ge1[g] = e1;
