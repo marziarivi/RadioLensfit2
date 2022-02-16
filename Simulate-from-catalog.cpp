@@ -268,7 +268,11 @@ int main(int argc, char *argv[])
         SNR_vis[g] = sqrt(SNR_vis[g]);
   
         fprintf(pf, "%f %f %f %f %f %f %f \n",SNR_vis[g],l[g],m[g],gflux[g],gscale[g],ge1[g],ge2[g]);
+#ifdef GAUSSIAN
+        cout << "n. " << g << " flux = " << gflux[g] << ", sigma = " << gscale[g] << ", SNR = " << SNR_vis[g] << endl;
+#else
         cout << "n. " << g << " flux = " << gflux[g] << ", scale-length = " << gscale[g] << ", SNR = " << SNR_vis[g] << endl;
+#endif
       }
       fclose(pf);
     }
