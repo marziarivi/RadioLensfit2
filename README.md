@@ -49,7 +49,7 @@ Edit the Makefile:
 
 - enable/disable OpenMP (default: enabled)
 - enable/disable MPI (default: enabled)
-- enable/disable GAUSSIAN (default: disabled, source shape is usually exponential)
+- default source shape model is exponential, other models allowed are GAUSSIAN or MATCH_EXP (Galsim Exponential matched Gaussian FWHM)   
 
 - update CASACORE include and library path
 - set the compiler and compilation flags you want to use (default: GNU)
