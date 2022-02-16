@@ -8,7 +8,7 @@ Three tools are provided:
 **Simulate**
 
 Simulation of a radio weak lensing observation with a given reduced cosmic shear and a given source catalog.
-The source catalog is text file containing for each source (row) l,m position (rad), flux (uJy), scalelength (arcsec), ellipticity components e1,e2.
+The source catalog is text file containing for each source (row) l,m position (rad), flux (uJy), fwhm (arcsec), ellipticity components e1,e2.
 Radio telescope configuration and observing time sampling must be provided in a Measurement Set.
 The effect of the input reduced cosmic shear is applied to galaxies ellipticity. 
 The corresponding simulated visibilities observed by the radio telescope are written in the DATA column of the same Measurement Set (I stokes component). 
@@ -49,6 +49,7 @@ Edit the Makefile:
 
 - enable/disable OpenMP (default: enabled)
 - enable/disable MPI (default: enabled)
+- enable/disable GAUSSIAN (default: disabled, source shape is usually exponential)
 
 - update CASACORE include and library path
 - set the compiler and compilation flags you want to use (default: GNU)
