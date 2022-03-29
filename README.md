@@ -62,8 +62,8 @@ Check/change default parameters in the *default_params.h* file
 
 If you use RadioLensfit2 and find it useful, please consider citing the related papers:
 
-Rivi M., Miller L., 2022, Astronomy & Computing - [arXiv:2203.14071](https://arxiv.org/abs/2203.14071)
+Rivi M., Miller L., *RadioLensfit: an HPC Tool for Accurate Galaxy Shape Measurement with SKA*, 2022, Astronomy & Computing - [arXiv:2203.14071](https://arxiv.org/abs/2203.14071)
 
-Rivi M., Miller L., 2018, MNRAS, 476, 2053 - [arXiv:1709.01827](https://arxiv.org/abs/1709.01827)
+Rivi M., Miller L., *Radio Weak Lensing Shear Measurement in the Visibility Domain - II. Source Extraction*, 2018, MNRAS, 476, 2053 - [arXiv:1709.01827](https://arxiv.org/abs/1709.01827)
 
-Rivi M., Miller L., Makhathini S., Abdalla F. B., 2016, MNRAS, 463, 1881 - [arXiv:1603.04784](https://arxiv.org/abs/1603.04784)
+Rivi M., Miller L., Makhathini S., Abdalla F. B., *Radio Weak Lensing Shear Measurement in the Visibility Domain - I. Methodology*, 2016, MNRAS, 463, 1881 - [arXiv:1603.04784](https://arxiv.org/abs/1603.04784)
