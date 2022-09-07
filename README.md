@@ -64,3 +64,7 @@ If you use RadioLensfit2 and find it useful, please consider citing the related 
 
 Rivi M., Miller L., *RadioLensfit: an HPC Tool for Accurate Galaxy Shape Measurement with SKA*, 2022, Astronomy & Computing,39,100574 - [arXiv:2203.14071](https://arxiv.org/abs/2203.14071)
 
+Astrophysics Source Code Library ID ascl:2208.019 (https://ascl.net/2208.019.)
+
+
+
