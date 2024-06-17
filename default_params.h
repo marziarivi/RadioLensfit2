@@ -54,11 +54,6 @@
 #define ADD -0.93
 #define ESP 0.33
 
-// Parameter for catalog simulation
-#define FMAX 200     // flux range maximum [micro-Jy]
-#define NUM_ORIENT 5 // 2*NUM_ORIENT is the number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
-#define N_POINTS 1000 // number of points of the cumulative distribution function for random data generation
-
 // Prior distributions parameters
 #define R_STD 0.3136  // scalelength prior - lognormal standard deviation
 
