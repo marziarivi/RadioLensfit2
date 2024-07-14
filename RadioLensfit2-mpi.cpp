@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
     // Compute facet number of coordinates
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
-    unsigned long int* count;
+    /*unsigned long int* count;
     try
     {
         count = new unsigned long int[ncells];
@@ -409,9 +409,23 @@ int main(int argc, char *argv[])
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
     cout << "rank " << rank << ": allocated  array counter: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
+    */
+    unsigned int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag);
 
-    unsigned int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag, count);
-
+    // allocate partial weights sum (per cell for weighted average)
+    double *sum_w;
+    try
+    {
+        sum_w = new double[ncells];
+        sizeGbytes = ncells*sizeof(double)/((double)(1024*1024*1024));
+        totGbytes += sizeGbytes;
+    }
+     catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
+    cout << "rank " << rank << ": allocated  array weights sum: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;    
+ 
     // allocate facet arrays
     double* facet_u;
     double* facet_v;
@@ -459,12 +473,12 @@ int main(int argc, char *argv[])
     } 
 #ifdef USE_MPI
     // these arrays are used to collect/send facet data (before averaging) from/to an other task 
-    unsigned long int* temp_count;
+    unsigned long int* temp_sum;
     complexd* temp_facet_visData;
     double* temp_facet_sigma2;
     try
     {
-        temp_count = new unsigned long int[ncells];
+        temp_sum = new unsigned long int[ncells];
         temp_facet_visData = new complexd[ncells];
         temp_facet_sigma2 = new double[ncells];
         sizeGbytes = ncells*(sizeof(complexd)+sizeof(double)+sizeof(unsigned long int))/((double)(1024*1024*1024));
@@ -528,15 +542,15 @@ int main(int argc, char *argv[])
     unsigned int bad_list[ngalaxies];  // all tasks update the bad_list to avoid communication
     int bad = 0;
     data_processing(false, bad_list, nprocs, rank, ngalaxies, len, num_coords, pFile, &par, l, m, gflux, gscale, ge1, ge2, SNR_vis, 
-                    count, visGal, visSkyMod, visData, sigma2_vis, flag, uu_metres, vv_metres, ww_metres, temp_facet_visData, 
-                    temp_facet_sigma2, temp_count, &com_time, &fitting_time, &bad);
+                    sum_w, visGal, visSkyMod, visData, sigma2_vis, flag, uu_metres, vv_metres, ww_metres, temp_facet_visData, 
+                    temp_facet_sigma2, temp_sum, &com_time, &fitting_time, &bad);
 
     // Re-fitting bad sources 
     if (rank == 0) cout << "Re-fitting " << bad << " bad sources" << endl;
     
     data_processing(true, bad_list, nprocs, rank, bad, len, num_coords, pFile, &par, l, m, gflux, gscale, ge1, ge2, SNR_vis, 
-                    count, visGal, visSkyMod, visData, sigma2_vis, flag, uu_metres, vv_metres, ww_metres, temp_facet_visData,                                        
-                    temp_facet_sigma2, temp_count, &com_time, &fitting_time, &bad);
+                    sum_w, visGal, visSkyMod, visData, sigma2_vis, flag, uu_metres, vv_metres, ww_metres, temp_facet_visData,                                        
+                    temp_facet_sigma2, temp_sum, &com_time, &fitting_time, &bad);
     
 #ifdef USE_MPI
     end_extraction = MPI_Wtime();
@@ -593,13 +607,13 @@ int main(int argc, char *argv[])
     delete[] wavenumbers;
     delete[] spec;
 #ifdef FACET
-    delete[] count;
+    delete[] sum_w;
     delete[] facet_u;
     delete[] facet_v;
     delete[] facet_visData;
     delete[] facet_sigma2;
 #ifdef USE_MPI
-    delete[] temp_count;
+    delete[] temp_sum;
     delete[] temp_facet_visData;
     delete[] temp_facet_sigma2;
 #endif
