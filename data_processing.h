@@ -30,7 +30,7 @@ extern "C" {
 
 void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int rank, int nsources, double len, unsigned int num_coords,
                      FILE *pFile, likelihood_params *par, double *l, double *m, double *gflux, double *gscale, double *ge1, double *ge2, double *SNR_vis, 
-                     unsigned long int *count, complexd *visGal, complexd *visSkyMod, complexd *visData,
+                     double *sum_w, complexd *visGal, complexd *visSkyMod, complexd *visData,
                      double *sigma2_vis, bool *flag, double *uu_metres, double *vv_metres, double *ww_metres, complexd *temp_facet_visData,
                      double *temp_facet_sigma2, unsigned long int *temp_count, double *com_time, double *fitting_time, int *bad);
 
