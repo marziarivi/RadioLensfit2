@@ -473,12 +473,12 @@ int main(int argc, char *argv[])
     } 
 #ifdef USE_MPI
     // these arrays are used to collect/send facet data (before averaging) from/to an other task 
-    unsigned long int* temp_sum;
+    double* temp_sum;
     complexd* temp_facet_visData;
     double* temp_facet_sigma2;
     try
     {
-        temp_sum = new unsigned long int[ncells];
+        temp_sum = new double[ncells];
         temp_facet_visData = new complexd[ncells];
         temp_facet_sigma2 = new double[ncells];
         sizeGbytes = ncells*(sizeof(complexd)+sizeof(double)+sizeof(unsigned long int))/((double)(1024*1024*1024));
