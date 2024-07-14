@@ -53,11 +53,11 @@ unsigned int facet_size(double theta_med, double len)
 }
 
 // Compute max number of uv grid coordinates (coordinates are put in the center of the cell, only non-empty cells are considered)
-unsigned int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double* u, double* v, unsigned int sizeg, bool *flag, unsigned long int* count)
+unsigned int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double* u, double* v, unsigned int sizeg, bool *flag)
 {
     unsigned long int p,n;
     unsigned long int size = sizeg*sizeg;
-    memset(count, 0, size*sizeof(unsigned long int));
+    unsigned long int* count = (unsigned long int *) calloc(size, sizeof(unsigned long int));
     
     double inc = 2*len/sizeg;
 
@@ -102,12 +102,13 @@ unsigned int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wav
     MPI_Bcast(&n,1,MPI_UNSIGNED_LONG,0,MPI_COMM_WORLD);
 #endif
 
+    free(count);
     return (unsigned int) n;
 }
 
 
 // Compute uv facet coordinates in wavelength units and their number
-unsigned int evaluate_facet_coords(double* grid_u, double* grid_v, double len, unsigned int sizeg, unsigned long int *count)
+unsigned int evaluate_facet_coords(double* grid_u, double* grid_v, double len, unsigned int sizeg, double *count_w)
 {
     unsigned int i,j;
     unsigned long int p,n;
@@ -117,7 +118,7 @@ unsigned int evaluate_facet_coords(double* grid_u, double* grid_v, double len, u
     n=0;
     for (p = 0; p < size; p++)
     {
-        if (count[p])
+        if (count_w[p])
         {
             j = p/sizeg;
             i = p%sizeg;
@@ -137,13 +138,15 @@ unsigned int evaluate_facet_coords(double* grid_u, double* grid_v, double len, u
  This is a gridding by convolution with the pillbox function
  (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
  */
-void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, unsigned int sizeg, complexd *new_vis, double *new_sigma2, bool *flag, unsigned long int *count)
+void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, unsigned int sizeg, complexd *new_vis, double *new_sigma2, bool *flag, double *sum_w)
 {
     unsigned int i,j;
+    double uu,vv,uv_dist,weight;
     unsigned long int p,n;
     double  inc = 2*len/sizeg;
     unsigned long int size = (unsigned long int) sizeg*sizeg;
-    memset(count, 0, size*sizeof(unsigned long int));
+    //memset(count, 0, size*sizeof(unsigned long int));
+    for (unsigned long int i = 0; i<size; i++) sum_w[i] = 0.;
 
 #ifdef USE_MPI
     memset(new_vis, 0, size*sizeof(complexd));
@@ -161,20 +164,29 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
       {
          if (!flag[n])
          {
-            unsigned int pu = (unsigned int) ((u[k]*inv_lambda + len) / inc);
-            unsigned int pv = (unsigned int) ((v[k]*inv_lambda + len) / inc);
-            unsigned long int pc = (unsigned long int) pv * sizeg + pu;
+            uu = u[k]*inv_lambda;
+            vv = v[k]*inv_lambda;
+            uv_dist = sqrt(uu*uu + vv*vv);
+                         // PSF weighting scheme  
+            weight = 1.; //tukey_tapering(uv_dist,0.,419000, 15200, 211000);
+            if (weight)
+            {
+               unsigned int pu = (unsigned int) ((uu + len) / inc);
+               unsigned int pv = (unsigned int) ((vv + len) / inc);
+               unsigned long int pc = (unsigned long int) pv * sizeg + pu;
 #ifdef USE_MPI
-            new_vis[pc].real += vis[n].real;
-            new_vis[pc].imag += vis[n].imag;
-            new_sigma2[pc] += sigma2[n];
+               new_vis[pc].real += vis[n].real;
+               new_vis[pc].imag += vis[n].imag;
+               new_sigma2[pc] += weight*weight*sigma2[n];
 #else
-            temp_grid_vis[pc].real += vis[n].real;
-            temp_grid_vis[pc].imag += vis[n].imag;
-            temp_sigma2[pc] += sigma2[n];
+               temp_grid_vis[pc].real += vis[n].real;
+               temp_grid_vis[pc].imag += vis[n].imag;
+               temp_sigma2[pc] += weight*weight*sigma2[n];
 #endif
-            count[pc]++;
-         }
+               sum_w[pc] += weight;
+               //count[pc]++;
+            }
+         }    
          n++;
       }
     }
@@ -185,11 +197,11 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
     n=0;
     for (p = 0; p < size; p++)
     {
-        if (count[p])
+        if (sum_w[p])
         {
-            new_vis[n].real = temp_grid_vis[p].real*count[p]/temp_sigma2[p];
-            new_vis[n].imag = temp_grid_vis[p].imag*count[p]/temp_sigma2[p];
-            new_sigma2[n] = temp_sigma2[p]/(count[p]*count[p]);
+            new_vis[n].real = temp_grid_vis[p].real*sum_w[p]/temp_sigma2[p];
+            new_vis[n].imag = temp_grid_vis[p].imag*sum_w[p]/temp_sigma2[p];
+            new_sigma2[n] = temp_sigma2[p]/(sum_w[p]*sum_w[p]);
             n++;
         }
     }
@@ -201,17 +213,17 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
 
 // average (already summed) facet visibilities and variances 
 // visibilities are also divided by their variance
-void average_facets(unsigned long int size, complexd* facet_vis, double* facet_sigma2 ,unsigned long int *count)
+void average_facets(unsigned long int size, complexd* facet_vis, double* facet_sigma2 ,double *sum_w)
 {
    unsigned long int p;
    unsigned long int n = 0;
    for (p = 0; p < size; p++)
    {
-      if (count[p])
+      if (sum_w[p])
       {
-         facet_vis[n].real = facet_vis[p].real*count[p]/facet_sigma2[p];
-         facet_vis[n].imag = facet_vis[p].imag*count[p]/facet_sigma2[p];
-         facet_sigma2[n] = facet_sigma2[p]/(count[p]*count[p]);
+         facet_vis[n].real = facet_vis[p].real*sum_w[p]/facet_sigma2[p];
+         facet_vis[n].imag = facet_vis[p].imag*sum_w[p]/facet_sigma2[p];
+         facet_sigma2[n] = facet_sigma2[p]/(sum_w[p]*sum_w[p]);
          n++;
       }
    }
