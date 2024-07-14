@@ -409,7 +409,7 @@ int main(int argc, char *argv[])
 #endif
           {
              SNR_vis[g] += SNR_ch;
-             add_system_noise(gen, num_coords, &(visData[ch_vis]), sigmab);
+             add_system_noise(gen, num_coords, &(visData[ch_vis]), &sigma2);
           }
             
 #ifdef FACET
@@ -523,7 +523,6 @@ int main(int argc, char *argv[])
     delete[] visData;
     delete[] Ro;
     delete[] rprior;
-    delete[] sigmab;
     delete[] ge1;
     delete[] ge2;
     delete[] gflux;
