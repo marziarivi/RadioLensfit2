@@ -49,9 +49,9 @@ extern "C" {
 
 void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int rank, int nsources, double len, unsigned int num_coords, 
                      FILE *pFile, likelihood_params *par, double *l, double *m, double *gflux, double *gscale, double *ge1, double *ge2, double *SNR_vis, 
-                     unsigned long int *count, complexd *visGal, complexd *visSkyMod, complexd *visData, 
+                     double *sum_w, complexd *visGal, complexd *visSkyMod, complexd *visData, 
                      double *sigma2_vis, bool *flag, double *uu_metres, double *vv_metres, double *ww_metres, complexd *temp_facet_visData, 
-                     double *temp_facet_sigma2, unsigned long int *temp_count, double *com_time, double *fitting_time, int *bad)
+                     double *temp_facet_sigma2, double *temp_sum, double *com_time, double *fitting_time, int *bad)
 {
 #ifdef USE_MPI
     MPI_Status stat;
@@ -99,12 +99,12 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
            {
              // collect and reduce facet vis, sigma2 and count of the current source from the other procs (for their MS contribution)
              *com_time -= MPI_Wtime();
-             MPI_Recv(temp_count,size,MPI_UNSIGNED_LONG,MPI_ANY_SOURCE,src,MPI_COMM_WORLD,&stat);
+             MPI_Recv(temp_sum,size,MPI_DOUBLE,MPI_ANY_SOURCE,src,MPI_COMM_WORLD,&stat);
              MPI_Recv(temp_facet_sigma2,size,MPI_DOUBLE,MPI_ANY_SOURCE,nprocs+src,MPI_COMM_WORLD,&stat);
              MPI_Recv(temp_facet_visData,2*size,MPI_DOUBLE,MPI_ANY_SOURCE,2*nprocs+src,MPI_COMM_WORLD,&stat);
              *com_time += MPI_Wtime();
 
-             for (unsigned long int i = 0; i<size; i++) count[i] += temp_count[i];
+             for (unsigned long int i = 0; i<size; i++) sum_w[i] += temp_sum[i];
              for (unsigned long int i = 0; i<size; i++) (par->sigma2)[i] += temp_facet_sigma2[i];
              for (unsigned long int i = 0; i<size; i++) 
              {
@@ -120,7 +120,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
            source_extraction(rank,facet,par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, par->nchannels, num_coords, uu_metres, vv_metres, ww_metres, len);
 
            *com_time -= MPI_Wtime();
-           MPI_Send(temp_count,size,MPI_UNSIGNED_LONG,src,src,MPI_COMM_WORLD);
+           MPI_Send(temp_sum,size,MPI_DOUBLE,src,src,MPI_COMM_WORLD);
            MPI_Send(temp_facet_sigma2,size,MPI_DOUBLE,src,nprocs+src,MPI_COMM_WORLD);
            MPI_Send(temp_facet_visData,2*size,MPI_DOUBLE,src,2*nprocs+src,MPI_COMM_WORLD);
            *com_time += MPI_Wtime();
@@ -139,10 +139,10 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
       {
 #ifdef USE_MPI
          // average facet visibilities (already summed within the cell)
-         average_facets(par->facet*par->facet, par->data, par->sigma2, count);
+         average_facets(par->facet*par->facet, par->data, par->sigma2, sum_w);
 #endif
          // compute facet coordinates their number
-         par->ncoords = evaluate_facet_coords(par->uu, par->vv, len, par->facet, count);
+         par->ncoords = evaluate_facet_coords(par->uu, par->vv, len, par->facet, sum_w);
       }
 #endif
 
