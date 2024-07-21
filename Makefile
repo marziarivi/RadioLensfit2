@@ -9,6 +9,12 @@ OMP = -fopenmp
 OPT += -DUSE_MPI
 OPT += -DFACET
 
+#default: Sersic profile, read scalelength
+#OPT += GAUSSIAN            # Gaussian profile, read FWHM
+#OPT += MATCH_EXP           # Sersic profile, Galsim Exponential matched scalelength, read FWHM 
+
+#OPT += -DSCALELENGTH_ON    # use size provided by the catalog
+
 #------------------------------------------------------------------------- 
 
 # HOTCAT
@@ -62,15 +68,11 @@ endif
 
 #EXEC2 = Simulate
 #OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_values.o galaxy_visibilities.o measurement_set.o data_simulation.o
- 
-EXEC2 = Simulate
 OBJS2 = Simulate-from-catalog.o read_catalog.o distributions.o utils.o galaxy_visibilities.o measurement_set.o data_simulation.o
 
 OBJS = RadioLensfit2-MS.o RadioLensfit-mpi.o data_procesiing.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
 
-
-EXEC3 = RadioLensfit2-single   
- 
+EXEC3 = RadioLensfit2-single    
 OBJS3  = RadioLensfit2-single.o utils.o read_catalog.o measurement_set.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o marginalise_r.o  
  
 INCL   = *.h Makefile
