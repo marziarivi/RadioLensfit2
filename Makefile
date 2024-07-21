@@ -24,14 +24,6 @@ CASACORE_LIB =  -L/u/mrivi/casacore-3.3.0/lib -lcasa_casa -lcasa_measures -lcasa
 GSL_INC = -I/opt/cluster/gsl/2.5/gnu/9.3.0/include
 GSL_LIB = -L/opt/cluster/gsl/2.5/gnu/9.3.0/lib
 
-
-# SPLINTER
-#CASACORE_INC =  -I/share/splinter/cosmos/modules/sep_2019/install_dir/casacore-5.4.0/include -I/share/splinter/cosmos/modules/sep_2019/install_dir/casacore-5.4.0/include/casacore
-#CASACORE_LIB =  -L/share/splinter/cosmos/modules/sep_2019/install_dir/casacore-5.4.0/lib -lcasa_casa -lcasa_measures -lcasa_tables -lcasa_ms -std=c++11
-
-#GSL_INC = -I/share/splinter/cosmos/modules/sep_2019/install_dir/gsl-2.6/include
-#GSL_LIB = -L/share/splinter/cosmos/modules/sep_2019/install_dir/gsl-2.6/lib
-
 SUP_INCL = -I. $(CASACORE_INC) $(GSL_INC)  
 
 
@@ -63,17 +55,21 @@ EXEC1 = RadioLensfit2-mpi
 OBJS1  = RadioLensfit2-mpi.o data_processing.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o 
 else
 EXEC1 = RadioLensfit2
-OBJS1  = RadioLensfit2-MS.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o
+OBJS1  = RadioLensfit2.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o
 endif 
 
-#EXEC2 = Simulate
-#OBJS2 = Simulate.o generate_catalog.o distributions.o utils.o generate_random_values.o galaxy_visibilities.o measurement_set.o data_simulation.o
-OBJS2 = Simulate-from-catalog.o read_catalog.o distributions.o utils.o galaxy_visibilities.o measurement_set.o data_simulation.o
+EXEC2 = Catalog
+OBJS2 = Generate_catalog.o distributions.o utils.o generate_random_values.o
 
-OBJS = RadioLensfit2-MS.o RadioLensfit-mpi.o data_procesiing.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
+#EXEC3 = Simulate
+#OBJS3 = Simulate.o Generate_catalog.o distributions.o utils.o generate_random_values.o galaxy_visibilities.o measurement_set.o data_simulation.o
+OBJS3 = Simulate-from-catalog.o read_catalog.o distributions.o utils.o galaxy_visibilities.o measurement_set.o data_simulation.o
 
-EXEC3 = RadioLensfit2-single    
-OBJS3  = RadioLensfit2-single.o utils.o read_catalog.o measurement_set.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o marginalise_r.o  
+OBJS = RadioLensfit-mpi.o data_procesiing.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o
+
+#Generate galaxy catalog, simulate visibilities one at a time, and measure its ellipticity
+EXEC4 = RadioLensfit2-single    
+OBJS4  = RadioLensfit2-single.o utils.o read_catalog.o measurement_set.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o marginalise_r.o  
  
 INCL   = *.h Makefile
 LIB_OPT =  -lgsl -lgslcblas -lm $(CASACORE_LIB) $(GSL_LIB)
@@ -99,23 +95,29 @@ RadioLensfit: $(OBJS1)
 
 $(OBJS1): $(INCL)
 
-Simulate: $(OBJS2)
+Catalog: $(OBJS2)
 	$(CC)  $(OBJS2)  $(OPTIONS) $(LIBS) -o $(EXEC2)
 
 $(OBJS2): $(INCL)
 
+Simulate: $(OBJS3)
+	$(CC)  $(OBJS3)  $(OPTIONS) $(LIBS) -o $(EXEC3)
+
+$(OBJS3): $(INCL)
+
 all: $(OBJS)
 	$(CC)  $(OBJS1)  $(OPTIONS) $(LIBS) -o $(EXEC1)
 	$(CC)  $(OBJS2)  $(OPTIONS) $(LIBS) -o $(EXEC2)
+        $(CC)  $(OBJS3)  $(OPTIONS) $(LIBS) -o $(EXEC3)
 
 $(OBJS): $(INCL)
 
 
 
-RadioLensfit2-single: $(OBJS3)
-	$(CC)  $(OBJS3)  $(OPTIONS) $(LIBS) -o $(EXEC3)
+RadioLensfit2-single: $(OBJS4)
+	$(CC)  $(OBJS4)  $(OPTIONS) $(LIBS) -o $(EXEC4)
 
-$(OBJS3): $(INCL)
+$(OBJS4): $(INCL)
 
 clean:
 	rm -f $(OBJS)
