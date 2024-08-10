@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -113,10 +113,7 @@ int main(int argc, char *argv[])
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     char filename[100];
-    //if (rank < 15)
-       sprintf(filename,"%s%d.MS",argv[3],rank);   // JVLA MS
-    //else
-    //   sprintf(filename,"%s%d.MS",argv[4],rank%15);  // eMERLIN MS
+    sprintf(filename,"%s%d.MS",argv[3],rank);   // SKA MS
     RL_MeasurementSet* ms = ms_open(filename);
     cout << "rank " << rank << ": reading " << filename << "... " << endl;
 
@@ -142,7 +139,7 @@ int main(int argc, char *argv[])
       cout << "Accumulation time (sec): " << time_acc << endl;
       cout << "Number of channels per IF: " << num_channels << endl;
       cout << "Channels bandwidth (Hz): " << channel_bandwidth_hz << endl;
-      cout << "Inital frequency (Hz): " << freq_start_hz << endl;
+      cout << "Initial frequency (Hz): " << freq_start_hz << endl;
       cout << "Reference frequency (Hz): " << ref_frequency_hz << endl;
       cout << "Number of polarizations: " << ms_num_pols(ms) << endl;
     }
@@ -200,7 +197,7 @@ int main(int argc, char *argv[])
     else
       cout << "rank " << rank << ": percentage of flagged visibilities: " << round(nF*100./num_vis) << "%" << endl;
 
-    // Allocate and read Data visibilities of the current MS 
+    // Allocate and read data visibilities of the current MS 
     complexd *visData;
     try
     {
@@ -240,7 +237,7 @@ int main(int argc, char *argv[])
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
 
-    //ms_read_sigma(ms, 0, num_coords, sigma2_vis, &status);
+    ms_read_sigma(ms, 0, num_coords, sigma2_vis, &status);
     if (status)
     {
         cout << "rank " << rank << ": ERROR reading MS - sigma: " << status << endl;
@@ -251,13 +248,14 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
 #endif
     }
-    double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
-    //if (rank < 15) sigma2 = 16e+10;
-    //else 
-    // sigma2 = 1e+12; //eMERLIN noise
-    for (unsigned long int i = 0; i<num_vis; i++)
-        sigma2_vis[i] = sigma2; // visibility noise variance
- 
+    else
+    {    
+      double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
+      for (unsigned long int i = 0; i<num_vis; i++)
+         sigma2_vis[i] = sigma2; // visibility noise variance
+      cout << "rank " << rank << ": use theoretical noise rms:  " << sqrt(sigma2) << endl;
+    }
+    
     cout << "rank " << rank << ": MS data total GBytes: " << totGbytes << endl;
     ms_close(ms); 
 
@@ -325,7 +323,7 @@ int main(int argc, char *argv[])
        wavenumbers[i] = 2.0 * PI * ch_freq / C0;
        spec[i] = pow(ch_freq/ref_frequency_hz,-0.7);
        ch_freq += channel_bandwidth_hz;
-      }
+    }
     
 #ifdef USE_MPI
     double start_model = MPI_Wtime();
@@ -397,7 +395,7 @@ int main(int argc, char *argv[])
     // Compute facet number of coordinates
     int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
-    /*unsigned long int* count;
+    /*unsigned long int* count; // case of weight = 1 for all uvw points
     try
     {
         count = new unsigned long int[ncells];
@@ -420,7 +418,7 @@ int main(int argc, char *argv[])
         sizeGbytes = ncells*sizeof(double)/((double)(1024*1024*1024));
         totGbytes += sizeGbytes;
     }
-     catch (bad_alloc& ba)
+    catch (bad_alloc& ba)
     {
         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
@@ -443,6 +441,7 @@ int main(int argc, char *argv[])
     cout << "rank " << rank << ": allocated facet coordinates: " << facet_ncoords << ", size = " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
 
+    // allocate (facet) galaxy model visibilities
     double* visMod;
     try
     {
@@ -456,7 +455,7 @@ int main(int argc, char *argv[])
       cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
     }
  
-    // these arrays are used also for visibilities averaging and counting (therefore their size is ncells)
+    // these arrays are used also for visibilities counting and averaging (therefore their size is ncells)
     complexd* facet_visData;
     double* facet_sigma2;
     try
@@ -464,7 +463,7 @@ int main(int argc, char *argv[])
         facet_visData = new complexd[ncells];
         facet_sigma2 = new double[ncells];
         sizeGbytes = (ncells*(sizeof(complexd)+sizeof(double)))/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated gridded visibilities and variances: " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated data gridded visibilities and variances: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -482,7 +481,7 @@ int main(int argc, char *argv[])
         temp_facet_visData = new complexd[ncells];
         temp_facet_sigma2 = new double[ncells];
         sizeGbytes = ncells*(sizeof(complexd)+sizeof(double)+sizeof(unsigned long int))/((double)(1024*1024*1024));
-        cout << "rank " << rank << ": allocated my facet visibilities, variances and count: " << sizeGbytes  << " GB" << endl;
+        cout << "rank " << rank << ": allocated my facet visibilities, variances and weights: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
     catch (bad_alloc& ba)
@@ -494,7 +493,6 @@ int main(int argc, char *argv[])
     par.mod = visMod;
     par.uu = facet_u;
     par.vv = facet_v;
-    //par.weights = weights;
     par.data = facet_visData;
     par.sigma2 = facet_sigma2;   
 #else
