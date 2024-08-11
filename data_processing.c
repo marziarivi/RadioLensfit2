@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -46,12 +46,18 @@
 extern "C" {
 #endif
 
-
-void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int rank, int nsources, double len, unsigned int num_coords, 
-                     FILE *pFile, likelihood_params *par, double *l, double *m, double *gflux, double *gscale, double *ge1, double *ge2, double *SNR_vis, 
-                     double *sum_w, complexd *visGal, complexd *visSkyMod, complexd *visData, 
-                     double *sigma2_vis, bool *flag, double *uu_metres, double *vv_metres, double *ww_metres, complexd *temp_facet_visData, 
+#ifdef USE_MPI
+void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int rank, int nsources, double len, unsigned int num_coords,
+                     FILE *pFile, likelihood_params *par, double *l, double *m, double *gflux, double *gscale, double *ge1, double *ge2, double *SNR_vis,
+                     double *sum_w, complexd *visGal, complexd *visSkyMod, complexd *visData,
+                     float *sigma2_vis, bool *flag, double *uu_metres, double *vv_metres, double *ww_metres, complexd *temp_facet_visData,
                      double *temp_facet_sigma2, double *temp_sum, double *com_time, double *fitting_time, int *bad)
+#else
+void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int rank, int nsources, double len, unsigned int num_coords,
+                     FILE *pFile, likelihood_params *par, double *l, double *m, double *gflux, double *gscale, double *ge1, double *ge2, double *SNR_vis,
+                     double *sum_w, complexd *visGal, complexd *visSkyMod, complexd *visData,
+                     float *sigma2_vis, bool *flag, double *uu_metres, double *vv_metres, double *ww_metres, double *fitting_time, int *bad)
+#endif
 {
 #ifdef USE_MPI
     MPI_Status stat;
@@ -78,8 +84,11 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
         l0 = l[gal];  m0 = m[gal];
         flux = gflux[gal];
         mu = scale_mean(flux);
+#ifndef SCALELENGTH_ON 
         R_mu[src] = exp(mu);
-        //R_mu[src] = gscale[gal];
+#else
+        R_mu[src] = gscale[gal];
+#endif
 #ifdef FACET
         unsigned int facet = facet_size(R_mu[src],len);
         unsigned long int size = (unsigned long int) facet*facet;
@@ -90,14 +99,14 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
           for (int nRo=1; nRo<par->numr; nRo++)   
             (par->rprior)[nRo] = rfunc(mu,R_STD,par->ro[nRo]);  // set log(prior) for scalelength of source gal
 #ifdef FACET
-           // extract visibilities, sigma2 and count from my MS (already summed in the facet) for source gal  
+           // extract visibilities, sigma2 and weights from my MS (already summed in the facet) for source gal  
            par->facet = facet;
-           source_extraction(rank,facet,par,par->data,par->sigma2,count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, par->nchannels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           source_extraction(rank,facet,par,par->data,par->sigma2,sum_w,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, par->nchannels, num_coords, uu_metres, vv_metres, ww_metres, len);
 #ifdef USE_MPI
            int n = 1;
            while (n<nprocs)
            {
-             // collect and reduce facet vis, sigma2 and count of the current source from the other procs (for their MS contribution)
+             // collect and reduce facet vis, sigma2 and sum_w of the current source from the other procs (for their MS contribution)
              *com_time -= MPI_Wtime();
              MPI_Recv(temp_sum,size,MPI_DOUBLE,MPI_ANY_SOURCE,src,MPI_COMM_WORLD,&stat);
              MPI_Recv(temp_facet_sigma2,size,MPI_DOUBLE,MPI_ANY_SOURCE,nprocs+src,MPI_COMM_WORLD,&stat);
@@ -116,7 +125,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
         }
         else 
         {
-           // extract visibilities, sigma2 and count from my MS (already summed in the facet) for source gal and send them to proc src
+           // extract visibilities, sigma2 and sum_w from my MS (already summed in the facet) for source gal and send them to proc src
            source_extraction(rank,facet,par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, par->nchannels, num_coords, uu_metres, vv_metres, ww_metres, len);
 
            *com_time -= MPI_Wtime();
