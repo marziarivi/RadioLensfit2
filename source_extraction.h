@@ -29,7 +29,7 @@ extern "C" {
 
 #ifdef FACET
 void source_extraction(int rank, unsigned int facet, likelihood_params *par, complexd *facet_vis, double *facet_sigma2, 
-                       unsigned long int *sum_w, double l0, double m0, double flux, double mu, double e1, double e2,                        
+                       double *sum_w, double l0, double m0, double flux, double mu, double e1, double e2,                        
                        complexd *visSkyMod, complexd *visData, complexd *visGal, float *sigma2_vis, bool *flag,  
                        unsigned int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len);
 #else
