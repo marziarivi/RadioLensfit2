@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
