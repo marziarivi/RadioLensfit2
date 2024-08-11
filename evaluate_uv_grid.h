@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -26,16 +26,11 @@ extern "C" {
     
 #include "datatype.h"
     
-//double weight_func(double u, double v);
 unsigned int facet_size(double theta_med, double len);
 unsigned int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wavenumbers, unsigned int num_channels, unsigned  int ncoords, double* u, double* v, unsigned int sizeg, bool* flag);
 unsigned int evaluate_facet_coords(double* grid_u, double* grid_v, double len, unsigned int sizeg, double *count_w);
-void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, unsigned int sizeg, complexd *new_vis, double *new_sigma2, bool* flag, double* sum_w);
-void average_facets(unsigned long int size, complexd* grid_vis, double* grid_sigma2 , double *sum_w);
-    
-//void gridding_visibilities_sinc(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, double *count);
-//void convolve_with_sinc(unsigned long int ncoords, double *u, double *v, complexd *vis, double fov, double wavelength, complexd *new_vis);
-
+void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double *u, double *v, complexd *vis, float *sigma2, double len, unsigned int sizeg, complexd *new_vis, double *new_sigma2, bool* flag, double* sum_w);
+void average_facets(unsigned long int size, complexd* grid_vis, double* grid_sigma2, double *sum_w);
     
 #ifdef __cplusplus
 }
