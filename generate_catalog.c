@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit2.
  *
@@ -29,13 +29,22 @@
 #include "default_params.h"
 #include "distributions.h"
 #include "generate_random_values.h"
-#include "generate_catalog.h"
 
 // Generate galaxy catalog ordered by source flux
 // 2NP = number of sampled orientations (points on the circle of radius |e|) for each ellipticity module
 
-unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m)
+//    Command line input parameters:
+//    argv[1]  number of sources 
+//    argv[2]  FoV eff
+//    argv[3]  Fmin (uJy)
+
+using namespace std;
+
+int main(int argc, char *argv[])
+//unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m)
 {
+    unsigned int nge = atoi(argv[1]);
+    double fov_eff = atof(argv[2]);
     //setup random number generator
     const gsl_rng_type * G;
     gsl_rng * gen;
@@ -44,14 +53,17 @@ unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmi
     
     unsigned long int seed = random_seed();
     gsl_rng_set(gen,seed);
-    
+
+    int NP = NUM_ORIENT;
     unsigned int my_gal = nge;
     unsigned int diffgal = my_gal/(2*NP);
     my_gal = diffgal*2*NP;
     
     // generate flux values
+    double *gflux = new double[nge];
     double *gflux2 = new double[diffgal];
-    generate_random_data(gen,diffgal,gflux2,Fmin,Fmax,flux_CDF,M_EXP);
+    double Fmin = atof(argv[3]);
+    generate_random_data(gen,diffgal,gflux2,FMIN,FMAX,flux_CDF,M_EXP);
     
     // sort flux values, so that to generate a population ordered by flux and therefore fitting sources by decreasing flux order
     gsl_sort(gflux2,1,diffgal); // sorting ascending order
@@ -71,19 +83,26 @@ unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmi
         if (g%(2*NP) == 0)
         {
             mu = scale_mean(gflux[g]); //power law relation between flux and scalelength
-            generate_random_data(gen,1,&scalelength,Rmin,Rmax,r_CDF,mu);
+            generate_random_data(gen,1,&scalelength,RMIN,RMAX,r_CDF,mu);
         }
         gscale[g] = scalelength;
     }
     
     // generate ellipticities
+    double *ge1 = new double[nge];
+    double *ge2 = new double[nge];
     generate_ellipticity(gen,diffgal,NP,ge1,ge2);
+
+    FILE *pFile = 0;
+    char output[100];
+    sprintf(output,"Catalog_%d.txt",nge);
+    pFile = fopen(output,"w");
+    fprintf(pFile, "l | m | flux | scale | e1 |  e2  \n");
     
     // generate positions
     // uniformly random positions in RAD in a disk area
     // http://mathworld.wolfram.com/DiskPointPicking.html
-    double radius,orient;
-    
+    double radius,orient,l,m;
     for (unsigned int gal=0; gal<my_gal; gal++)
     {
         radius = sqrt(gsl_rng_uniform(gen))*0.5*fov_eff;
@@ -91,8 +110,16 @@ unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmi
         
         l[gal] = radius*cos(orient);
         m[gal] = radius*sin(orient);
+        fprintf(pFile, "%f | %f | %f  | %f | %f | %e | %e | %f | %f | %f \n",l,m,gflux[gal],gscale[gal],ge1[gal],ge2[gal]);
     }
-    
+
+    fclose(pFile);
     gsl_rng_free(gen);
-    return my_gal;
+
+    delete[] gflux;
+    delete[] gscale;
+    delete[] ge1;
+    delete[] ge2;
+    
+    return nge;
 }
