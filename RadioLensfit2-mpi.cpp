@@ -224,11 +224,11 @@ int main(int argc, char *argv[])
     }
   
     // allocate and read SIGMA column
-    double *sigma2_vis;
+    float *sigma2_vis;
     try
     {
         sigma2_vis = new double[num_vis];
-        sizeGbytes = num_vis*sizeof(double)/((double)(1024*1024*1024));
+        sizeGbytes = num_vis*sizeof(float)/((float)(1024*1024*1024));
         cout << "rank " << rank << ": allocated sigma2 visibilities: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
     }
     else
     {    
-      double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
+      float sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
       for (unsigned long int i = 0; i<num_vis; i++)
          sigma2_vis[i] = sigma2; // visibility noise variance
       cout << "rank " << rank << ": use theoretical noise rms:  " << sqrt(sigma2) << endl;
