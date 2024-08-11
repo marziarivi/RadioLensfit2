@@ -101,7 +101,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
 #ifdef FACET
            // extract visibilities, sigma2 and weights from my MS (already summed in the facet) for source gal  
            par->facet = facet;
-           source_extraction(rank,facet,par,par->data,par->sigma2,sum_w,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, par->nchannels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           source_extraction(rank,facet,par,par->data,par->sigma2,sum_w,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_coords, uu_metres, vv_metres, ww_metres, len);
 #ifdef USE_MPI
            int n = 1;
            while (n<nprocs)
@@ -126,7 +126,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
         else 
         {
            // extract visibilities, sigma2 and sum_w from my MS (already summed in the facet) for source gal and send them to proc src
-           source_extraction(rank,facet,par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, par->nchannels, num_coords, uu_metres, vv_metres, ww_metres, len);
+           source_extraction(rank,facet,par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_coords, uu_metres, vv_metres, ww_metres, len);
 
            *com_time -= MPI_Wtime();
            MPI_Send(temp_sum,size,MPI_DOUBLE,src,src,MPI_COMM_WORLD);
@@ -136,7 +136,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
 #endif
 #else
            // extract source visibilities without faceting
-           source_extraction(l0, m0, flux, R_mu[k], 0., 0., par, visSkyMod, visData, visGal, sigma2_vis, par->nchannels, num_coords, uu_metres, vv_metres, ww_metres);
+           source_extraction(l0, m0, flux, R_mu[k], 0., 0., par, visSkyMod, visData, visGal, sigma2_vis, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
         }
         g++;
