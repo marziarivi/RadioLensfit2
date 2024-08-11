@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -26,6 +26,7 @@
 #include <math.h>
 #include "evaluate_uv_grid.h"
 #include "default_params.h"
+#include "tukey_tapering.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +41,7 @@ double weight_func(double u, double v)
     double w = exp(-u*u/(2*sigma1) - v*v/(2*sigma2));
     return w;
 }
+
 */
 // Compute facet size dependent on source flux
 // use scalelength-flux relation: mu=log(theta_med[arcsec]) = ADD + ESP*log(flux[uJy]) to estimate galaxy scalelength
@@ -82,7 +84,7 @@ unsigned int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wav
     {
 #ifdef USE_MPI
       MPI_Status stat;
-      unsigned long int *temp_count = new unsigned long int[size];
+      unsigned long int *temp_count = (unsigned long int *) malloc(size*sizeof(unsigned long int));
       int k = 1;
       while (k<nprocs)
       {
@@ -90,7 +92,7 @@ unsigned int evaluate_uv_grid_size(int rank, int nprocs, double len, double *wav
          for (unsigned long int i = 0; i<size; i++) count[i] += temp_count[i];
          k++;
       } 
-      delete[] temp_count;
+      free(temp_count);
 #endif
       n = 0;
       for (p = 0; p < size; p++)  if (count[p]) n++;
@@ -138,14 +140,13 @@ unsigned int evaluate_facet_coords(double* grid_u, double* grid_v, double len, u
  This is a gridding by convolution with the pillbox function
  (Synthesis Imaging in Radio Astronomy II, p.143) with uniform weighting.
  */
-void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double *u, double *v, complexd *vis, double *sigma2, double len, unsigned int sizeg, complexd *new_vis, double *new_sigma2, bool *flag, double *sum_w)
+void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsigned int ncoords, double *u, double *v, complexd *vis, float *sigma2, double len, unsigned int sizeg, complexd *new_vis, double *new_sigma2, bool *flag, double *sum_w)
 {
     unsigned int i,j;
     double uu,vv,uv_dist,weight;
     unsigned long int p,n;
     double  inc = 2*len/sizeg;
     unsigned long int size = (unsigned long int) sizeg*sizeg;
-    //memset(count, 0, size*sizeof(unsigned long int));
     for (unsigned long int i = 0; i<size; i++) sum_w[i] = 0.;
 
 #ifdef USE_MPI
@@ -168,23 +169,22 @@ void gridding_visibilities(double *wavenumbers, unsigned int num_channels, unsig
             vv = v[k]*inv_lambda;
             uv_dist = sqrt(uu*uu + vv*vv);
                          // PSF weighting scheme  
-            weight = 1.; //tukey_tapering(uv_dist,0.,419000, 15200, 211000);
+            weight = 1.; // = tukey_tapering(uv_dist,0.,419000, 15200, 211000);
             if (weight)
             {
                unsigned int pu = (unsigned int) ((uu + len) / inc);
                unsigned int pv = (unsigned int) ((vv + len) / inc);
                unsigned long int pc = (unsigned long int) pv * sizeg + pu;
 #ifdef USE_MPI
-               new_vis[pc].real += vis[n].real;
-               new_vis[pc].imag += vis[n].imag;
+               new_vis[pc].real += weight*vis[n].real;
+               new_vis[pc].imag += weight*vis[n].imag;
                new_sigma2[pc] += weight*weight*sigma2[n];
 #else
-               temp_grid_vis[pc].real += vis[n].real;
-               temp_grid_vis[pc].imag += vis[n].imag;
+               temp_grid_vis[pc].real += weight*vis[n].real;
+               temp_grid_vis[pc].imag += weight*vis[n].imag;
                temp_sigma2[pc] += weight*weight*sigma2[n];
 #endif
                sum_w[pc] += weight;
-               //count[pc]++;
             }
          }    
          n++;
