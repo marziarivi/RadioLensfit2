@@ -176,11 +176,11 @@ int main(int argc, char *argv[])
       cout << "Number of flagged visibilities: " << nF << endl;
 
     // Allocate and read SIGMA column
-    double *sigma2_vis;
+    float *sigma2_vis;
     try
     {
         sigma2_vis = new double[num_vis];
-        sizeGbytes = num_vis*sizeof(double)/((double)(1024*1024*1024));
+        sizeGbytes = num_vis*sizeof(float)/((float)(1024*1024*1024));
         cout << "allocated sigma2 visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
+        float sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
         for (unsigned long int i = 0; i<num_vis; i++)
              sigma2_vis[i] = sigma2; // visibility noise variance
         cout << "Use theoretical rms: " << sqrt(sigma2) << endl;
