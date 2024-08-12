@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -30,12 +30,12 @@
 extern "C" {
 #endif
 
-// Parameter scale:
-// Gaussian sources size is defined by sigma
-// Sersic sources size is defined by scalelength
+// Galaxy shape models:
+// Gaussian - size is defined by sigma
+// Sersic - size is defined by scalelength
 
 
-// Galaxy Gaussian shape
+// Gaussian shape
 // scale factor is sigma^2 in radians
 double gaussian_shape(double k1, double k2, double scale_factor, double wave_factor)
 {
@@ -43,7 +43,7 @@ double gaussian_shape(double k1, double k2, double scale_factor, double wave_fac
     return vis;
 }
 
-// Galaxy Sersic shape
+// Sersic shape
 // scale factor is the exponential scalelength squared in radians
 double sersic_shape(double k1, double k2, double scale_factor, double wave_factor)
 {
@@ -91,8 +91,8 @@ void model_galaxy_visibilities_at_zero(double e1, double e2, double scale, unsig
 }
     
     
-// model galaxy at the galaxy position for likelihood computation
-// original uvw ponts in metres
+// galaxy model at the galaxy position for likelihood computation
+// original uvw points in metres
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scale, double l,
                                double m, unsigned int num_coords, double* uu_metres,
@@ -123,7 +123,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
           ww = ww_metres[i];
             
           phase = uu*l+vv*m+ww*n;
-          // smear = fq_smear(band_factor,phase)*t_smear(acc_time,phase);
+          // smear = fq_smear(band_factor,phase)*t_smear(acc_time,phase);  // frequency and time smearing effects
           phase = wavenumber*phase;
  
           k1 = (1.+e1)*uu + e2*vv;
@@ -235,7 +235,6 @@ void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, dou
         vis[i].real += r1 * std + mean;
         vis[i].imag += r2 * std + mean;
     }
-    
 }
     
 
