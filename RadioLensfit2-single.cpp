@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -132,10 +132,37 @@ int main(int argc, char *argv[])
     
     int status = 0;
     double len = ms_read_coords(ms,0,num_coords,uu_metres,vv_metres,ww_metres,&status);
+
+    //allocate and read FLAG column
+    unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
+    bool *flag;
+    try
+    {
+        flag = new bool[num_vis];
+        sizeGbytes = num_vis*sizeof(bool)/((double)(1024*1024*1024));
+        cout << "rank " << rank << ": allocated flag column: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
+        totGbytes += sizeGbytes;
+    }
+    catch (bad_alloc& ba)
+    {
+        cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+    }
+    unsigned long int nF = ms_read_Flag(ms, 0, 0, num_channels, num_coords, "FLAG",flag, &status);
+    if (status)
+    {
+      cout << "rank " << rank << ": ERROR reading MS - flag: " << status << endl;
+#ifdef USE_MPI
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
+    exit(EXIT_FAILURE);
+#endif
+    }
+    else
+     cout << "rank " << rank << ": percentage of flagged visibilities: " << round(nF*100./num_vis) << "%" << endl;
     ms_close(ms);
     
-    // Allocate and read Data visibilities
-    unsigned long int num_vis  = (unsigned long int) num_channels * num_coords;
+    // Allocate Data visibilities
     complexd *visData;
     try
     {
@@ -150,11 +177,11 @@ int main(int argc, char *argv[])
     }
     memset(visData, 0, num_vis*sizeof(complexd));
 
-    double *sigma2_vis;
+    float *sigma2_vis;
     try
     {
-        sigma2_vis = new double[num_vis];
-        sizeGbytes = num_vis*sizeof(double)/((double)(1024*1024*1024));
+        sigma2_vis = new float[num_vis];
+        sizeGbytes = num_vis*sizeof(float)/((double)(1024*1024*1024));
         cout << "allocated sigma2 visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
@@ -162,7 +189,7 @@ int main(int argc, char *argv[])
     {
         cerr << " bad_alloc caught: " << ba.what() << '\n';
     }
-    double sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
+    float sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
     for (unsigned long int i = 0; i<num_vis; i++)
         sigma2_vis[i] = sigma2; // visibility noise variance
 
@@ -218,7 +245,8 @@ int main(int argc, char *argv[])
     double *gscale = new double[my_gal];
     double *SNR_vis = new double[my_gal];
 
-    read_catalog(my_gal, argv[2],gflux,gscale,ge1,ge2,l,m,SNR_vis);
+    bool readSNR = false;
+    read_catalog(my_gal, argv[2],gflux,gscale,ge1,ge2,l,m,SNR_vis,readSNR);
 
     //setup random number generator
     const gsl_rng_type * G;
@@ -234,9 +262,23 @@ int main(int argc, char *argv[])
     len = len*wavenumbers[num_channels-1]/(2*PI);
     unsigned int facet = facet_size(RMAX,len);
     unsigned long int ncells = facet*facet;
-    unsigned long int* count = new unsigned long int[ncells];
 
-    unsigned int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, count);
+    //allocate partial weights sum (per cell for weighted average)   
+    double *sum_w;
+    try
+     {
+         sum_w = new double[ncells];
+         sizeGbytes = ncells*sizeof(double)/((double)(1024*1024*1024));
+         totGbytes += sizeGbytes;
+     }
+     catch (bad_alloc& ba)
+     {
+         cerr << "rank " << rank << ": bad_alloc caught: " << ba.what() << '\n';
+     }
+     cout << "rank " << rank << ": allocated  array weights sum: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
+
+    // allocate facet uv coordinates
+    unsigned int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet);
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
@@ -272,12 +314,12 @@ int main(int argc, char *argv[])
         visMod = new double[num_models*model_ncoords];
         sizeGbytes = num_models*model_ncoords*sizeof(complexd)/((double)(1024*1024*1024));
 #else
-        complexd* visMod;
-        try
-        {
-            unsigned int model_ncoords = num_coords;
-            visMod = new complexd[num_models*model_ncoords*num_channels];
-            sizeGbytes = num_models*model_ncoords*num_channels*sizeof(complexd)/((double)(1024*1024*1024));
+    complexd* visMod;
+    try
+    {
+        unsigned int model_ncoords = num_coords;
+        visMod = new complexd[num_models*model_ncoords*num_channels];
+        sizeGbytes = num_models*model_ncoords*num_channels*sizeof(complexd)/((double)(1024*1024*1024));
 #endif
         cout << "rank " << rank << ": allocated models: num_models= " << num_models << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
@@ -292,7 +334,6 @@ int main(int argc, char *argv[])
     // shear to be applied
     double g1 = atof(argv[4]);
     double g2 = atof(argv[5]);
-    double* sigmab = new double[num_baselines];
     
     // Set function to be minimized
     likelihood_params par;
@@ -359,11 +400,11 @@ int main(int argc, char *argv[])
   
     for (unsigned int g=0; g<my_gal; g++)
     {
-       // set log(prior) for scalelength
-          double mu = scale_mean(gflux[g]);
-          for (int nRo=1; nRo<numR; nRo++)
+        // set log(prior) for scalelength
+        double mu = scale_mean(gflux[g]);
+        for (int nRo=1; nRo<numR; nRo++)
               rprior[nRo] = rfunc(mu,R_STD,Ro[nRo]);
-          double R_mu = exp(mu);
+        double R_mu = exp(mu);
  
         l0 = l[g];
         m0 = m[g];
@@ -409,7 +450,8 @@ int main(int argc, char *argv[])
 #endif
           {
              SNR_vis[g] += SNR_ch;
-             add_system_noise(gen, num_coords, &(visData[ch_vis]), &sigma2);
+             double sigma = (double) sigma2;
+             add_system_noise(gen, num_coords, &(visData[ch_vis]), &sigma);
           }
             
 #ifdef FACET
@@ -418,8 +460,8 @@ int main(int argc, char *argv[])
         }
         // gridding visibilities
         facet = facet_size(R_mu,len);
-        gridding_visibilities(wavenumbers,num_channels,num_coords,uu_metres,vv_metres,visData,sigma2_vis,len,facet,facet_visData,facet_sigma2,count);
-        par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, facet, count);
+        gridding_visibilities(wavenumbers,num_channels,num_coords,uu_metres,vv_metres,visData,sigma2_vis,len,facet,facet_visData,facet_sigma2,sum_w);
+        par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, facet, sum_w);
 #else
         }
         par.l0 = l0;
@@ -485,7 +527,7 @@ int main(int argc, char *argv[])
 #endif
 
         fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",gflux[g],ge1[g],mes_e1,sqrt(var_e1), ge2[g],mes_e2,sqrt(var_e2),oneDimvar,sqrt(SNR_vis[g]),l0/(ARCS2RAD),m0/(ARCS2RAD));
-        if (var_e1 < 1e-4 || var_e2 < 1e-4 || oneDimvar < 1e-4)
+        if (var_e1 < VAR || var_e2 < VAR || oneDimvar < VAR)
         {
               cout << "ERROR likelihood sampling!" << endl;
               bad++;
@@ -517,7 +559,6 @@ int main(int argc, char *argv[])
         
     if (pFile != 0) fclose(pFile);
 
-    
     // free memory ----------------------------------------------------------------------------------------------------------------
     delete[] visMod;
     delete[] visData;
@@ -540,7 +581,7 @@ int main(int argc, char *argv[])
     delete[] facet_v;
     delete[] facet_visData;
     delete[] facet_sigma2;
-    delete[] count;
+    delete[] sum_w;
 #endif
 
 #ifdef USE_MPI
