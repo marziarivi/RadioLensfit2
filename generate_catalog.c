@@ -35,7 +35,7 @@
 
 //    Command line input parameters:
 //    argv[1]  number of sources 
-//    argv[2]  FoV eff
+//    argv[2]  FoV eff (arcmin)
 //    argv[3]  Fmin (uJy)
 
 using namespace std;
@@ -43,6 +43,8 @@ using namespace std;
 int main(int argc, char *argv[])
 //unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m)
 {
+    double fov_eff = atof(argv[2])*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // field of view in RAD
+    //unsigned long int nge = ceil((flux_CDF(M_EXP, FMAX) - flux_CDF(M_EXP, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
     unsigned int nge = atoi(argv[1]);
     double fov_eff = atof(argv[2]);
     //setup random number generator
