@@ -179,8 +179,8 @@ int main(int argc, char *argv[])
     float *sigma2_vis;
     try
     {
-        sigma2_vis = new double[num_vis];
-        sizeGbytes = num_vis*sizeof(float)/((float)(1024*1024*1024));
+        sigma2_vis = new float[num_vis];
+        sizeGbytes = num_vis*sizeof(float)/((double)(1024*1024*1024));
         cout << "allocated sigma2 visibilities: " << num_vis << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
