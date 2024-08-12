@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 #else
     long long start_sim = current_timestamp();
 #endif
-    double sigma = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
+    float sigma = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency); // visibility noise variance
     if (rank == 0) cout << "sigma_vis  = " << sqrt(sigma) << " muJy" << endl;
     
     // Pre-compute wavenumber and spectral factor for each channel 
