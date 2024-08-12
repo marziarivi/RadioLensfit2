@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -44,7 +44,9 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double band_fac
                               unsigned int num_coords, double* uu_metres, double* vv_metres, double* ww_metres,
                               complexd* vis);
 
-double fq_smear(double band_factor, double phase);
+//double fq_smear(double band_factor, double phase);
+//double t_smear(double acc_time, double phase);
+//double primary_beam_profile(double ch_freq, double source_pos);
 
 void add_system_noise(gsl_rng * gen, unsigned int num_coords, complexd* vis, double* sigma);
 
