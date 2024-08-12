@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -39,7 +39,7 @@ extern "C" {
 
 // Simulate data visibilities
 void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth_hz, 
-                     int time_acc, unsigned int num_channels, unsigned int num_baselines, double sigma,
+                     int time_acc, unsigned int num_channels, unsigned int num_baselines, float sigma,
                      unsigned int n_gal, double g1, double g2, double *ge1, double *ge2, double *gflux, double *gscale,
                      double *l, double *m, double *SNR_vis, unsigned int num_coords, double *uu_metres, double *vv_metres,
                      double *ww_metres, complexd *visGal, complexd* visData)
@@ -137,9 +137,11 @@ void sky_model(double *wavenumbers, double *spec, double channel_bandwidth_hz, i
 
     for (unsigned int g=0; g<n_gal; g++)
     {
-
+#ifndef SCALELENGTH_ON
         R_mu = exp(scale_mean(gflux[g]));
-        //R_mu = gscale[g]; 
+#else
+        R_mu = gscale[g];
+#endif
         l0 = l[g];
         m0 = m[g];
 
