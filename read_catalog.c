@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit2.
  *
@@ -68,7 +68,7 @@ unsigned int read_catalog(unsigned int nge, char *filename, double *gflux, doubl
 #else
 #ifdef MATCH_EXP //scale = FWHM
         gscale[g] = scale*EXP_MATCH_FACTOR;     // Galsim Exponential matched  scalelength
-#else
+#else // scale = scalelength
         gscale[g] = scale;   // FWHM*EXP_SCALE_FACTOR  scalelength
 #endif
 #endif
