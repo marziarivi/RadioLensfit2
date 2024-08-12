@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi, Lance Miller
+ * Copyright (c) 2024 Marzia Rivi, Lance Miller
  *
  * This file is part of RadioLensfit.
  *
@@ -47,7 +47,6 @@ long long current_timestamp()
 */
 unsigned long int random_seed()
 {
-
     unsigned int seed = 1;
     struct timeval tv;
     FILE *devrandom;
