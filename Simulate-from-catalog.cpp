@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     unsigned int num_pols = ms_num_pols(ms);                          // number of polarizations
 
     double efficiency = EFFICIENCY;     // system efficiency
-    double SEFD = SEFD_JVLA;    // System Equivalent Flux Density (in micro-Jy) of each VLA antenna
+    double SEFD = SEFD_JKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA antenna
     
 
     double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
@@ -164,12 +164,8 @@ int main(int argc, char *argv[])
     }
 
     // Read galaxy catalogue --------------------------------------------------------------------------------------------------------------------------
-    /* For catalog generation use function galaxy_catalog() and set the followings
-       double fov_eff_arcmin = atof(argv[2]);
-       double fov_eff = fov_eff_arcmin*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // field of view in RAD
-       double Fmin = atof(argv[3]);
-       unsigned long int nge = ceil((flux_CDF(M_EXP, FMAX) - flux_CDF(M_EXP, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
-    */
+    // For catalog generation use the code generate_catalog.c  
+
     unsigned int nge = atoi(argv[3]);
 
     double *gflux = new double[nge];
