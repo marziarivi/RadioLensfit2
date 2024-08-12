@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit2.
  *
@@ -65,7 +65,6 @@ typedef struct{
     complexd* data;
 #ifdef FACET
     double* mod;
-    double* weights;
     unsigned int facet;
 #else
     complexd* mod;
