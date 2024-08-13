@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -35,9 +35,9 @@ double loglikelihood(void *params, double ee1, double ee2, int *error);
 #ifdef FACET
 double loglikelihood_r(double ee1, double ee2, double scale, unsigned long int n_uv_coords,
                        const double *variance, double* grid_u, double* grid_v,
-                       double* weights, complexd* visData, double* visM);    
+                       complexd* visData, double* visM);    
 int cross_correlation(unsigned long int n_uv_coords, double* grid_u, double* grid_v,
-                      double* weights, complexd* visData, double* visMod, double* ho, double* det_sigma);
+                      complexd* visData, double* visMod, double* ho, double* det_sigma);
 #else
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                 double* wavenumbers, double ee1, double ee2, double l, double m, double scale,
