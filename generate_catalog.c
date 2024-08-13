@@ -43,10 +43,10 @@ using namespace std;
 int main(int argc, char *argv[])
 //unsigned int galaxy_catalog(unsigned int nge, int NP, double fov_eff, double Rmin, double Rmax, double Fmin, double Fmax, double* gflux, double* gscale, double* ge1, double *ge2, double *l, double *m)
 {
+    unsigned int nge = atoi(argv[1]);
     double fov_eff = atof(argv[2])*60.*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // field of view in RAD
     //unsigned long int nge = ceil((flux_CDF(M_EXP, FMAX) - flux_CDF(M_EXP, Fmin))*fov_eff_arcmin*fov_eff_arcmin);
-    unsigned int nge = atoi(argv[1]);
-    double fov_eff = atof(argv[2]);
+   
     //setup random number generator
     const gsl_rng_type * G;
     gsl_rng * gen;
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     double *gflux = new double[nge];
     double *gflux2 = new double[diffgal];
     double Fmin = atof(argv[3]);
-    generate_random_data(gen,diffgal,gflux2,FMIN,FMAX,flux_CDF,M_EXP);
+    generate_random_data(gen,diffgal,gflux2,Fmin,FMAX,flux_CDF,M_EXP);
     
     // sort flux values, so that to generate a population ordered by flux and therefore fitting sources by decreasing flux order
     gsl_sort(gflux2,1,diffgal); // sorting ascending order
@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
     delete[] gflux2;
     
     // generate scalelength
+    double *gscale = new double[nge];
     double mu, scalelength;
     for (unsigned int g = 0; g < my_gal; g++)
     {
@@ -110,8 +111,8 @@ int main(int argc, char *argv[])
         radius = sqrt(gsl_rng_uniform(gen))*0.5*fov_eff;
         orient = gsl_rng_uniform(gen)*2*PI;
         
-        l[gal] = radius*cos(orient);
-        m[gal] = radius*sin(orient);
+        l = radius*cos(orient);
+        m = radius*sin(orient);
         fprintf(pFile, "%f | %f | %f  | %f | %f | %e | %e | %f | %f | %f \n",l,m,gflux[gal],gscale[gal],ge1[gal],ge2[gal]);
     }
 
