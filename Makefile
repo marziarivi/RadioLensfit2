@@ -10,10 +10,10 @@ OPT += -DUSE_MPI
 OPT += -DFACET
 
 #default: Sersic profile, read scalelength
-#OPT += GAUSSIAN            # Gaussian profile, read FWHM
-#OPT += MATCH_EXP           # Sersic profile, Galsim Exponential matched scalelength, read FWHM 
+#OPT += -DGAUSSIAN            # Gaussian profile, read FWHM
+#OPT += -DMATCH_EXP           # Sersic profile, Galsim Exponential matched scalelength, read FWHM 
 
-#OPT += -DSCALELENGTH_ON    # use size provided by the catalog
+#OPT += -DSCALELENGTH_ON      # use size provided by the catalog
 
 #------------------------------------------------------------------------- 
 
