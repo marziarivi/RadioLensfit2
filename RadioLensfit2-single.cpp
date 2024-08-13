@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
      cout << "rank " << rank << ": allocated  array weights sum: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
 
     // allocate facet uv coordinates
-    unsigned int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, flag);
+    unsigned int facet_ncoords = evaluate_uv_grid_size(rank,nprocs,len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, flag);
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
