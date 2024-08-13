@@ -64,8 +64,7 @@ OBJS2 = Generate_catalog.o distributions.o utils.o generate_random_values.o
 EXEC3 = Simulate
 OBJS3 = Simulate-from-catalog.o read_catalog.o distributions.o utils.o galaxy_visibilities.o measurement_set.o data_simulation.o
 
-OBJS = RadioLensfit2.o RadioLensfit-mpi.o Simulate-from-catalog.o data_processing.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o 
-data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o tukey_tapering.o
+OBJS = RadioLensfit2.o RadioLensfit-mpi.o Simulate-from-catalog.o data_processing.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o tukey_tapering.o
 EXEC = RadioLensfit2-mpi RadioLensfit2 Catalog Simulate
 
 #Generate galaxy catalog, simulate visibilities one at a time, and measure its ellipticity
@@ -109,7 +108,7 @@ $(OBJS3): $(INCL)
 all: $(OBJS)
 	$(CC)  $(OBJS1)  $(OPTIONS) $(LIBS) -o $(EXEC1)
 	$(CC)  $(OBJS2)  $(OPTIONS) $(LIBS) -o $(EXEC2)
-        $(CC)  $(OBJS3)  $(OPTIONS) $(LIBS) -o $(EXEC3)
+	$(CC)  $(OBJS3)  $(OPTIONS) $(LIBS) -o $(EXEC3)
 
 $(OBJS): $(INCL)
 
