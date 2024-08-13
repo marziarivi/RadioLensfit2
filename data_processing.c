@@ -126,7 +126,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
         else 
         {
            // extract visibilities, sigma2 and sum_w from my MS (already summed in the facet) for source gal and send them to proc src
-           source_extraction(rank,facet,par,temp_facet_visData, temp_facet_sigma2,temp_count,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_coords, uu_metres, vv_metres, ww_metres, len);
+           source_extraction(rank,facet,par,temp_facet_visData, temp_facet_sigma2,temp_sum,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_coords, uu_metres, vv_metres, ww_metres, len);
 
            *com_time -= MPI_Wtime();
            MPI_Send(temp_sum,size,MPI_DOUBLE,src,src,MPI_COMM_WORLD);
