@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
      cout << "rank " << rank << ": allocated  array weights sum: " << ncells << ", size = " << sizeGbytes  << " GB" << endl;
 
     // allocate facet uv coordinates
-    unsigned int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet);
+    unsigned int facet_ncoords = evaluate_uv_grid_size(len,wavenumbers, num_channels,num_coords, uu_metres, vv_metres, facet, flag);
     double* facet_u = new double[facet_ncoords];
     double* facet_v = new double[facet_ncoords];
     sizeGbytes = (2*facet_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
@@ -460,7 +460,8 @@ int main(int argc, char *argv[])
         }
         // gridding visibilities
         facet = facet_size(R_mu,len);
-        gridding_visibilities(wavenumbers,num_channels,num_coords,uu_metres,vv_metres,visData,sigma2_vis,len,facet,facet_visData,facet_sigma2,sum_w);
+        gridding_visibilities(wavenumbers,num_channels,num_coords,uu_metres,vv_metres,visData,sigma2_vis,len,facet,facet_visData,facet_sigma2,flag,sum_w);
+        // compute facet coordinates
         par.ncoords = evaluate_facet_coords(par.uu, par.vv, len, facet, sum_w);
 #else
         }
