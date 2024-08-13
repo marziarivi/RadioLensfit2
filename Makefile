@@ -59,7 +59,7 @@ OBJS1  = RadioLensfit2.o data_processing.o source_extraction.o galaxy_fitting.o 
 endif 
 
 EXEC2 = Catalog
-OBJS2 = Generate_catalog.o distributions.o utils.o generate_random_values.o
+OBJS2 = generate_catalog.o distributions.o utils.o generate_random_values.o
 
 EXEC3 = Simulate
 OBJS3 = Simulate-from-catalog.o read_catalog.o distributions.o utils.o galaxy_visibilities.o measurement_set.o data_simulation.o
