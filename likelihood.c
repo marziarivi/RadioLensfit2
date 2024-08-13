@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Marzia Rivi
+ * Copyright (c) 2024 Marzia Rivi
  *
  * This file is part of RadioLensfit.
  *
@@ -123,7 +123,7 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
 
 #ifdef FACET
        index = (nRo-1)*(par->ncoords);
-       L_r[nRo] = loglikelihood_r(ee1, ee2,(par->ro)[nRo], par->ncoords,par->sigma2, par->uu, par->vv, par->weights, par->data, &((par->mod)[index]));
+       L_r[nRo] = loglikelihood_r(ee1, ee2,(par->ro)[nRo], par->ncoords,par->sigma2, par->uu, par->vv, par->data, &((par->mod)[index]));
 #else
        index = (nRo-1)*(par->ncoords)*(par->nchannels);
        L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, (par->ro)[nRo], par->ncoords, par->sigma2, par->uu, par->vv, par->ww, par->data, &((par->mod)[index]));
@@ -155,8 +155,7 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
     
 #ifdef FACET
 double loglikelihood_r(double ee1, double ee2, double scale, unsigned long int n_uv_coords, 
-                       const double *variance, double* grid_u, double* grid_v, 
-                       double* weights, complexd* visData, double* visM)
+                       const double *variance, double* grid_u, double* grid_v, complexd* visData, double* visM)
 #else
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                 double* wavenumbers, double ee1, double ee2, double l, double m, double scale, 
@@ -170,7 +169,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
     // generate model and log(likelihood) dependend only on ellipticity and scale-length
 #ifdef FACET
     model_galaxy_visibilities_at_zero(ee1, ee2, scale, n_uv_coords, grid_u, grid_v, variance, visM);
-    error = cross_correlation(n_uv_coords, grid_u, grid_v, weights, visData, visM, &ho, &det_sigma);
+    error = cross_correlation(n_uv_coords, grid_u, grid_v, visData, visM, &ho, &det_sigma);
 #else
     model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, n_uv_coords, uu_metres, vv_metres, ww_metres, variance, visM);
     error = cross_correlation(nchannels, wavenumbers, n_uv_coords, variance, uu_metres, vv_metres, visData, visM, &ho, &det_sigma);
@@ -194,7 +193,7 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
  */
 #ifdef FACET
 int cross_correlation(unsigned long int n_uv_coords, double* grid_u, double* grid_v, 
-                      double* weights, complexd* visData, double* visMod, double* ho, double* det_sigma)
+                      complexd* visData, double* visMod, double* ho, double* det_sigma)
 #else
 int cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
                        const double* variance, double* uu_metres, double* vv_metres, complexd* visData,
