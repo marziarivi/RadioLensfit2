@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     unsigned int num_pols = ms_num_pols(ms);                          // number of polarizations
 
     double efficiency = EFFICIENCY;     // system efficiency
-    double SEFD = SEFD_JKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA antenna
+    double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA antenna
     
 
     double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
