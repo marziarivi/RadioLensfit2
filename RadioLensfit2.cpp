@@ -192,11 +192,6 @@ int main(int argc, char *argv[])
     ms_read_sigma(ms, 0, num_coords, sigma2_vis, &status);
     if (status)
     {
-        cout << "ERROR reading MS - sigma: " << status << endl;
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
         float sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
         for (unsigned long int i = 0; i<num_vis; i++)
              sigma2_vis[i] = sigma2; // visibility noise variance
