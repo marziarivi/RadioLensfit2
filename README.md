@@ -14,6 +14,7 @@ position l,m (RAD) in a disk area
 flux (uJy)
 FWHM/scalelength (arcsec), 
 ellipticity components e1, e2
+
 Distribution parameters can be modified changing the default_params.h
 
 Usage: *Catalog* (number of sources) (effective field of view) (minimum flux)
@@ -42,7 +43,7 @@ Serial version usage: *RadioLensfit2* (source catalog filename) (number of sourc
 
 MPI version usage: *RadioLensfit2-mpi* (source catalog filename) (number of sources) (filename MSs prefix)
 
-For the MPI versions, MS must be split in individual spectral windows. All MS must have the same name ending with the number of the spectral window and extension  ".MS".
+For the MPI versions, the MS must be split in individual spectral windows. All MSs must have the same name ending with the number of the spectral window and extension  ".ms".
 Filename prefix consists in the common part of all the MS name, i.e. (without the final number and extension)  
 
 The list of galaxies with the measured ellipticities is written in a text file called "ellipticities_(nprocs)IF-(Nchannels)ch.txt".
