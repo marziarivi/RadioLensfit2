@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
         cout << "ERROR: bad number of parameters!" << endl;
         cout << "usage: RadioLensfit2-mpi <source catalog filename> <num_sources> <MS filename prefix>" << endl;
         cout << "number of MS must be equal to the number of MPI tasks" << endl;
-        cout << "filename of input MS should be <prefix><IF number>.MS" << endl;
+        cout << "filename of input MS should be <prefix><IF number>.ms" << endl;
       }  
 #ifdef USE_MPI
       MPI_Abort(MPI_COMM_WORLD,1);
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     char filename[100];
-    sprintf(filename,"%s%d.MS",argv[3],rank);   // SKA MS
+    sprintf(filename,"%s%d.ms",argv[3],rank);   // SKA ms
     RL_MeasurementSet* ms = ms_open(filename);
     cout << "rank " << rank << ": reading " << filename << "... " << endl;
 
@@ -240,16 +240,8 @@ int main(int argc, char *argv[])
     ms_read_sigma(ms, 0, num_coords, sigma2_vis, &status);
     if (status)
     {
-        cout << "rank " << rank << ": ERROR reading MS - sigma: " << status << endl;
-#ifdef USE_MPI
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#else
-        exit(EXIT_FAILURE);
-#endif
-    }
-    else
-    {    
+      cout << "rank " << rank << ": ERROR reading MS - sigma: " << status << endl;
+        
       float sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
       for (unsigned long int i = 0; i<num_vis; i++)
          sigma2_vis[i] = sigma2; // visibility noise variance
@@ -480,7 +472,7 @@ int main(int argc, char *argv[])
         temp_sum = new double[ncells];
         temp_facet_visData = new complexd[ncells];
         temp_facet_sigma2 = new double[ncells];
-        sizeGbytes = ncells*(sizeof(complexd)+sizeof(double)+sizeof(unsigned long int))/((double)(1024*1024*1024));
+        sizeGbytes = ncells*(sizeof(complexd)+2*sizeof(double))/((double)(1024*1024*1024));
         cout << "rank " << rank << ": allocated my facet visibilities, variances and weights: " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
