@@ -37,16 +37,20 @@ MPI version is also available.
 Measurement of star forming galaxy ellipticies from a radio weak lensing observation.
 Data visibilities and observation configuration must be provided in a Measurement Set (MS). If the MS contains 4 polarizations, I stokes is computed from them, otherwise a single polarization is expected to contain I stokes.
 The number of galaxies and the corresponding source catalog (ordered by decreasing flux or SNR) containing at least source SNR, position and flux must be provided (size is optional but highly recommended). 
-Source position and flux (and scale factor) are used for source visibilities extraction, then shape measurement is performed according to RadioLensfit methodology: a single model fitting approach where the likelihood is marginalised over position, flux and scalelength source parameters. 
+Source position and flux (and scale factor) are used for source visibilities extraction, then shape measurement is performed according to RadioLensfit methodology: a single model fitting approach where the likelihood is marginalised over position, flux and scalelength source parameters. The list of galaxies with the measured ellipticities is written in a text file called "ellipticities_(nprocs)IF-(Nchannels)ch.txt".
 
 Serial version usage: *RadioLensfit2* (source catalog filename) (number of sources) (filename MS)
 
 MPI version usage: *RadioLensfit2-mpi* (source catalog filename) (number of sources) (filename MSs prefix)
 
-For the MPI versions, the MS must be split in individual spectral windows. All MSs must have the same name ending with the number of the spectral window and extension  ".ms".
-Filename prefix consists in the common part of all the MS name, i.e. (without the final number and extension)  
+*Before running the code*:
 
-The list of galaxies with the measured ellipticities is written in a text file called "ellipticities_(nprocs)IF-(Nchannels)ch.txt".
+- For the MPI versions, the MS must be split in individual spectral windows. All MSs must have the same name ending with the number of the spectral window and extension  ".ms".
+Filename prefix consists in the common part of all the MS name, i.e. (without the final number and extension).  
+
+- Check/change default parameters (prior distributions, faceting, ....) in the *default_params.h* file.
+
+- Default PSF weighting scheme is uniform. But other user weighting scheme functions can be defined and used in the gridding phase (file: evaluate_uv_grid.c), e.g. a tukey_tapering function is implemented (file: tukey_tapering.c).
 
 # Installation
 
@@ -63,9 +67,7 @@ Edit the Makefile:
 - enable/disable reading of fwhm/scalelength from the galaxy catalog (default: SCALELENGTH_ON) 
 - update CASACORE include and library path
 - set the compiler and compilation flags you want to use (default: GNU)
-
-Check/change default parameters (prior distributions, faceting, ....) in the *default_params.h* file. 
-
+- 
 *make all*
 
 # Citing RadioLensfit2
