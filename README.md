@@ -67,7 +67,7 @@ Edit the Makefile:
 - enable/disable reading of fwhm/scalelength from the galaxy catalog (default: SCALELENGTH_ON) 
 - update CASACORE include and library path
 - set the compiler and compilation flags you want to use (default: GNU)
-- 
+
 *make all*
 
 # Citing RadioLensfit2
