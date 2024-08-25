@@ -13,7 +13,7 @@ OPT += -DFACET
 #OPT += -DGAUSSIAN            # Gaussian profile, read FWHM
 #OPT += -DMATCH_EXP           # Sersic profile, Galsim Exponential matched scalelength, read FWHM 
 
-#OPT += -DSCALELENGTH_ON      # use size provided by the catalog
+OPT += -DSCALELENGTH_ON      # use size provided by the catalog
 
 #------------------------------------------------------------------------- 
 
