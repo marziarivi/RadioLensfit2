@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
         float sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
         for (unsigned long int i = 0; i<num_vis; i++)
              sigma2_vis[i] = sigma2; // visibility noise variance
-        cout << "Use theoretical rms: " << sqrt(sigma2) << endl;
+        cout << "Use theoretical rms: " << sqrt(sigma2) << " uJy" << endl;
     }
 
     cout << "rank " << rank << ": MS data total GBytes: " << totGbytes << endl;
