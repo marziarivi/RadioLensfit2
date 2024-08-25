@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     double SEFD = SEFD_SKA;    // System Equivalent Flux Density (in micro-Jy) of each SKA antenna
     
 
-    double ref_frequency_hz = 1.4e+9;  //Reference frequency in Hz at which fluxes are measured
+    double ref_frequency_hz = REF_FREQ;  //Reference frequency in Hz at which fluxes are measured
     
     unsigned int num_baselines = num_stations * (num_stations - 1) / 2;
 
