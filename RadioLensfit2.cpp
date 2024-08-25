@@ -188,15 +188,21 @@ int main(int argc, char *argv[])
     {
         cerr << " bad_alloc caught: " << ba.what() << '\n';
     }
-
+    float sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
     ms_read_sigma(ms, 0, num_coords, sigma2_vis, &status);
     if (status)
-    {
-        float sigma2 = (SEFD*SEFD)/(2.*time_acc*channel_bandwidth_hz*efficiency*efficiency);
+    {   
+        cout << "ERROR reading MS - sigma: " << status << endl;
         for (unsigned long int i = 0; i<num_vis; i++)
              sigma2_vis[i] = sigma2; // visibility noise variance
         cout << "Use theoretical rms: " << sqrt(sigma2) << " uJy" << endl;
     }
+    else
+    {
+      for (unsigned long int i = 0; i<num_vis; i++)
+         if (!sigma2_vis[i])  // if sigma is 0 the use theoretical value
+              sigma2_vis[i] = sigma2; // visibility noise variance
+    }    
 
     cout << "rank " << rank << ": MS data total GBytes: " << totGbytes << endl;
     ms_close(ms); 
