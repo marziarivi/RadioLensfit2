@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     char filename[100];
-    sprintf(filename,"%s%d.MS",argv[1],rank);
+    sprintf(filename,"%s%d.ms",argv[1],rank);
     RL_MeasurementSet* ms = ms_open(filename);
     cout << "rank " << rank << ": reading " << filename << "... " << endl;
 
