@@ -198,7 +198,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int ra
          MPI_Bcast(res,6,MPI_DOUBLE,k,MPI_COMM_WORLD);          
          *com_time += MPI_Wtime();
 #endif
-         if (res[5] < -1e+10 || res[2] < VAR || res[3] < VAR || res[4] < VAR)  // bad measurement
+         if (res[5] <= -1e+10 || res[2] < VAR || res[3] < VAR || res[4] < VAR)  // bad measurement
          {
             if (re_fitting) 
             {
