@@ -63,6 +63,7 @@ Edit the Makefile:
 
 - enable/disable OpenMP (default: enabled)
 - enable/disable MPI (default: enabled)
+- enable/disable FACET (default: enabled, mandatory if MPI is enabled)
 - default source shape model is exponential, other models allowed are GAUSSIAN or MATCH_EXP (Galsim Exponential matched Gaussian FWHM)   
 - enable/disable reading of fwhm/scalelength from the galaxy catalog (default: SCALELENGTH_ON) 
 - update CASACORE include and library path
