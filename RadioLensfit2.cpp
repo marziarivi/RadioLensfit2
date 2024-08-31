@@ -305,7 +305,8 @@ int main(int argc, char *argv[])
     par.acc_time = time_acc;
     par.spec = spec;
     par.wavenumbers = wavenumbers; // wavenumbers for the model
-       
+
+    double *sum_w = 0;
 #ifdef FACET
     // Faceting uv coordinates ----------------------------------------------------------------------------------------
     len = len*wavenumbers[num_channels-1]/(2*PI);    // max len in wavelength units
@@ -315,7 +316,6 @@ int main(int argc, char *argv[])
     unsigned int facet_ncoords = evaluate_uv_grid_size(0,1,len,wavenumbers,num_channels,num_coords, uu_metres, vv_metres, facet, flag);
 
     // allocate partial weights sum (per cell for weighted average)
-    double *sum_w;
     try
     {
         sum_w = new double[ncells];
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
     par.data = visGal;
     par.count = 0;
     par.mod = visMod;
-    par.sigma2 = sigma2_vis;
+    par.sigma2 = (double *) sigma2_vis;
 #endif
     
     cout << "Total Visibilities GBytes: " << totGbytes << endl;
