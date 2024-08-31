@@ -94,9 +94,14 @@ int main(int argc, char *argv[])
 
     // Read Measurement Set --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     char filename[100];
+#ifdef USE_MPI
     sprintf(filename,"%s%d.ms",argv[1],rank);
     RL_MeasurementSet* ms = ms_open(filename);
     cout << "rank " << rank << ": reading " << filename << "... " << endl;
+#else
+    RL_MeasurementSet* ms = ms_open(argv[1]);
+    cout << "rank " << rank << ": reading " << argv[1] << "... " << endl;
+#endif
 
     //double RA = ms_phase_centre_ra_rad(ms);                 // Phase Centre coordinates
     //double Dec = ms_phase_centre_dec_rad(ms);   
