@@ -32,7 +32,7 @@ SUP_INCL = -I. $(CASACORE_INC) $(GSL_INC)
 #OPTIMIZE = -O3 #bad results! -ip -ipo #-xAVX 
 #OPTIMIZE = -O3 -ip -ipo  # using compilers/intel/15.1/133
 
-ifeq (MPI,$(findstring MPI,$(OPT)))
+ifeq (USE_MPI,$(findstring USE_MPI,$(OPT)))
 #  CC  =  mpiicpc
 else
 #  CC  = icpc 
@@ -50,7 +50,10 @@ endif
 
 OPTIONS = -std=gnu++11 -D_GLIBCXX_USE_CXX11_ABI=0 $(OPTIMIZE) $(OPT)
 
-ifeq (MPI,$(findstring MPI,$(OPT)))
+ifeq (USE_MPI,$(findstring USE_MPI,$(OPT)))
+ifneq (FACET,$(findstring FACET,$(OPT)))   # MPI can work only with the FACET mode
+OPT += -DFACET
+endif
 EXEC1 = RadioLensfit2-mpi
 OBJS1  = RadioLensfit2-mpi.o data_processing.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o tukey_tapering.o
 OBJS = RadioLensfit2-mpi.o
