@@ -46,7 +46,7 @@
 extern "C" {
 #endif
 
-#ifdef USE_MPI
+#ifdef FACET
 void data_processing(bool re_fitting, unsigned int *bad_list, int nprocs, int rank, int nsources, double len, unsigned int num_coords,
                      FILE *pFile, likelihood_params *par, double *l, double *m, double *gflux, double *gscale, double *ge1, double *ge2, double *SNR_vis,
                      double *sum_w, complexd *visGal, complexd *visSkyMod, complexd *visData,
