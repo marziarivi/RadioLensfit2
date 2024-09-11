@@ -55,8 +55,8 @@ ifneq (FACET,$(findstring FACET,$(OPT)))   # MPI can work only with the FACET mo
 OPT += -DFACET
 endif
 EXEC1 = RadioLensfit2-mpi
-OBJS1  = RadioLensfit2-mpi.o data_processing.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o tukey_tapering.o
-OBJS = RadioLensfit2-mpi.o
+OBJS1  = RadioLensfit2.o data_processing-mpi.o source_extraction.o galaxy_fitting.o utils.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o  evaluate_uv_grid.o likelihood.o marginalise_r.o measurement_set.o tukey_tapering.o
+OBJS = RadioLensfit2.o
 EXEC = RadioLensfit2-mpi
 else
 EXEC1 = RadioLensfit2
@@ -71,7 +71,7 @@ OBJS2 = generate_catalog.o distributions.o utils.o generate_random_values.o
 EXEC3 = Simulate
 OBJS3 = Simulate-from-catalog.o read_catalog.o distributions.o utils.o galaxy_visibilities.o measurement_set.o data_simulation.o
 
-OBJS += Simulate-from-catalog.o data_processing.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o tukey_tapering.o
+OBJS += RadioLensfit2.o RadioLensfit2-mpi.o Simulate-from-catalog.o data_processing.o data_processing-mpi.o source_extraction.o galaxy_fitting-mpi.o galaxy-fitting.o Simulate.o utils.o generate_catalog.o read_catalog.o data_simulation.o distributions.o galaxy_visibilities.o evaluate_uv_grid.o generate_random_values.o galaxy_fitting.o likelihood.o  marginalise_r.o measurement_set.o tukey_tapering.o
 EXEC += Catalog Simulate
 
 #Generate galaxy catalog, simulate visibilities one at a time, and measure its ellipticity
