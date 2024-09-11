@@ -34,6 +34,9 @@
     argv[1]  source catalog filename 
     argv[2]  number of sources
     argv[3]  MS filename (serial) / prefix (MPI)
+
+    This version allows MS with spectral windows having different number of rows and frequency channels.
+    MPI version is implemented only for the faceting option!
 */
 #ifdef USE_MPI
 #include <mpi.h>
