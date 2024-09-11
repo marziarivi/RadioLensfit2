@@ -18,7 +18,7 @@
  */
 
 
-//  RadioLensfit2-mpi.cpp
+//  RadioLensfit2-mpi.cpp (included in RadioLensfit2.cpp)
 /*
     Measure star forming galaxy ellipticies from a radio weak lensing observation.
     A model fitting approach is adopted where the likelihood is marginalised over position, 
