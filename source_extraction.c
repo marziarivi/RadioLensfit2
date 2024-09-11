@@ -36,10 +36,10 @@ extern "C" {
 void source_extraction(int rank, unsigned int facet, likelihood_params *par, complexd *facet_vis, double *facet_sigma2,
                        double *sum_w, double l0, double m0, double flux, double mu, double e1, double e2,  
                        complexd *visSkyMod, complexd *visData, complexd *visGal, float *sigma2_vis, bool *flag,  
-                       unsigned int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
+                       unsigned long int num_coords, double *uu_metres, double *vv_metres, double *ww_metres, double len)
 #else
 void source_extraction(double l0, double m0, double flux, double mu, double e1, double e2, likelihood_params *par, complexd *visSkyMod, 
-                       complexd *visData, complexd *visGal, float *sigma2_vis, unsigned int num_coords, 
+                       complexd *visData, complexd *visGal, float *sigma2_vis, unsigned long int num_coords, 
                        double *uu_metres, double *vv_metres, double *ww_metres)
 #endif
 {
@@ -55,19 +55,9 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
     
      for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
      {
-#ifdef USE_MPI
         // extract source data visibilities without modifying the sky model
         visGal[i].real += visData[i].real - visSkyMod[i].real;
-        visGal[i].imag += visData[i].imag - visSkyMod[i].imag;
-#else
-        // remove source model from the sky model
-        visSkyMod[i].real -= visGal[i].real;
-        visSkyMod[i].imag -= visGal[i].imag;
-        
-        // remove sky model from the original data (i.e. all other sources approximation) in order to have only the current galaxy data
-        visGal[i].real = visData[i].real - visSkyMod[i].real;
-        visGal[i].imag = visData[i].imag - visSkyMod[i].imag;
-#endif  
+        visGal[i].imag += visData[i].imag - visSkyMod[i].imag;  
      }
     
 #ifdef FACET
@@ -78,8 +68,8 @@ void source_extraction(double l0, double m0, double flux, double mu, double e1, 
    gridding_visibilities(par->wavenumbers, par->nchannels,num_coords,uu_metres,vv_metres,visGal,sigma2_vis,len,facet,facet_vis,facet_sigma2,flag,sum_w);
 #else
    }
-  par->l0 = l0;
-  par->m0 = m0;
+   par->l0 = l0;
+   par->m0 = m0;
 #endif
   
 }
