@@ -50,25 +50,26 @@ typedef struct{
     int numr;
     double *ro;
     double *rprior;
-    unsigned int ncoords;
     unsigned int nchannels;
     double band_factor;
     double acc_time;
     double* spec;
     double* wavenumbers;
-    unsigned long int* count;
-    double* sigma2;
     double* uu;
     double* vv;
     double l0;
     double m0;
     complexd* data;
 #ifdef FACET
+    double* sigma2;
     double* mod;
     unsigned int facet;
+    unsigned int ncoords;
 #else
+    float* sigma2;
     complexd* mod;
     double* ww;
+    unsigned long int ncoords;
 #endif
 } likelihood_params;
 
