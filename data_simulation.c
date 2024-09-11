@@ -41,7 +41,7 @@ extern "C" {
 void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth_hz, 
                      int time_acc, unsigned int num_channels, unsigned int num_baselines, float sigma,
                      unsigned int n_gal, double g1, double g2, double *ge1, double *ge2, double *gflux, double *gscale,
-                     double *l, double *m, double *SNR_vis, unsigned int num_coords, double *uu_metres, double *vv_metres,
+                     double *l, double *m, double *SNR_vis, unsigned long int num_coords, double *uu_metres, double *vv_metres,
                      double *ww_metres, complexd *visGal, complexd* visData)
 {
     
@@ -129,7 +129,7 @@ void data_simulation(double *wavenumbers, double *spec, double channel_bandwidth
 
 // Simulate sky model visibilities
 void sky_model(double *wavenumbers, double *spec, double channel_bandwidth_hz, int time_acc, unsigned int num_channels,
-                     unsigned int n_gal, double *gflux, double *gscale, double *l, double *m, unsigned int num_coords, 
+                     unsigned int n_gal, double *gflux, double *gscale, double *l, double *m, unsigned long int num_coords, 
                      double *uu_metres, double *vv_metres, double *ww_metres, complexd *visGal, complexd* visMod)
 {
     double R_mu, l0, m0;
