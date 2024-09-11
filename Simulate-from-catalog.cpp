@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     //double Dec = ms_phase_centre_dec_rad(ms);   
     unsigned int num_stations = ms_num_stations(ms);        // Number of stations
     unsigned int num_channels = ms_num_channels(ms);        // Number of frequency channels
-    unsigned int num_rows = ms_num_rows(ms);                // Number of rows 
+    unsigned long int num_rows = ms_num_rows(ms);           // Number of rows 
     double freq_start_hz = ms_freq_start_hz(ms);            // Start Frequency, in Hz
     double channel_bandwidth_hz = ms_freq_inc_hz(ms);       // Frequency channel bandwidth, in Hz
     double full_bandwidth_hz = channel_bandwidth_hz * num_channels;  // Frequency total bandwidth, in Hz
