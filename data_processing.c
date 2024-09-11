@@ -89,7 +89,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
 
         // source fitting of this source --------------------------------------------------------------------------------------------------
         long long start_fitting = current_timestamp();
-        int error = source_fitting(par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
+        int error = source_fitting(0, par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
         printf("n. %d flux = %f: measured e = %f , %f \n",gal,flux,mes_e1,mes_e2); fflush(stdout);
         *fitting_time += (double) (current_timestamp() -start_fitting)/1000.;
 
