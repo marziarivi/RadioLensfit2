@@ -85,7 +85,7 @@ int source_fitting(int rank, likelihood_params *par, double *mes_e1, double *mes
     *mes_e2 = gsl_vector_get(s->x, 1);
     *maxL= -s->fval;
    
-    printf("rank %d:  Maximum log likelihood = %f for e = %f,%f \n",rank,*maxL,*mes_e1,*mes_e2);
+    //printf("rank %d:  Maximum log likelihood = %f for e = %f,%f \n",rank,*maxL,*mes_e1,*mes_e2);
     if ((*mes_e1)*(*mes_e1)+(*mes_e2)*(*mes_e2) > 0.65) *maxL = -1e+10;
 
     // Likelihood sampling to compute mean and variance
