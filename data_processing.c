@@ -89,7 +89,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
 
         // source fitting of this source --------------------------------------------------------------------------------------------------
         long long start_fitting = current_timestamp();
-        source_fitting(rank, par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
+        int error = source_fitting(par, &mes_e1, &mes_e2, &var_e1, &var_e2, &oneDimvar, &maxL);
         printf("n. %d flux = %f: measured e = %f , %f \n",gal,flux,mes_e1,mes_e2); fflush(stdout);
         *fitting_time += (double) (current_timestamp() -start_fitting)/1000.;
 
@@ -101,7 +101,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
               mes_e1 = 0.; mes_e2 = 0.;
               fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",flux,ge1[gal],mes_e1,sqrt(var_e1),ge2[gal],mes_e2,sqrt(var_e2),oneDimvar,SNR_vis[gal],l0/(ARCS2RAD),m0/(ARCS2RAD));
             } 
-            else bad_list[nbad] = ind;  // store the index of bad measurements to be fit again at the end
+            else bad_list[nbad] = gal;  // store the index of bad measurements to be fit again at the end
             nbad++;
           }
           else     
@@ -124,7 +124,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
                }
             
                // remove current source model fit from original data
-               data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, res[0], res[1], R_mu,
+               data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, mes_e1, mes_e2, R_mu,
                                            flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                   
                for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
