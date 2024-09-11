@@ -67,9 +67,9 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
         flux = gflux[gal];
         mu = scale_mean(flux);
 #ifndef SCALELENGTH_ON 
-        R_mu[src] = exp(mu);
+        R_mu = exp(mu);
 #else
-        R_mu[src] = gscale[gal];
+        R_mu = gscale[gal];
 #endif
         // set log(prior) for scalelength of source gal
         for (int nRo=1; nRo<par->numr; nRo++)   
@@ -79,12 +79,12 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
         unsigned int facet = facet_size(R_mu,len);
         // extract visibilities, sigma2 and weights from my MS (already summed in the facet) for source gal  
         par->facet = facet;
-        source_extraction(0,facet,par,par->data,par->sigma2,sum_w,l0, m0, flux, R_mu[src], 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_coords, uu_metres, vv_metres, ww_metres, len);
+        source_extraction(0,facet,par,par->data,par->sigma2,sum_w,l0, m0, flux, R_mu, 0., 0., visSkyMod, visData, visGal, sigma2_vis, flag, num_coords, uu_metres, vv_metres, ww_metres, len);
         // compute facet coordinates their number
         par->ncoords = evaluate_facet_coords(par->uu, par->vv, len, par->facet, sum_w);
 #else
         // extract source visibilities without faceting
-        source_extraction(l0, m0, flux, R_mu[k], 0., 0., par, visSkyMod, visData, visGal, sigma2_vis, num_coords, uu_metres, vv_metres, ww_metres);
+        source_extraction(l0, m0, flux, R_mu, 0., 0., par, visSkyMod, visData, visGal, sigma2_vis, num_coords, uu_metres, vv_metres, ww_metres);
 #endif
 
         // source fitting of this source --------------------------------------------------------------------------------------------------
@@ -103,9 +103,9 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
             } 
             else bad_list[nbad] = ind;  // store the index of bad measurements to be fit again at the end
             nbad++;
-         }
-         else     
-         {
+          }
+          else     
+          {
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -114,7 +114,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
                unsigned long int ch_vis = (unsigned long int) ch*num_coords;
          
                // remove current round source model from the sky model
-               data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, 0., 0., R_mu[k],
+               data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, 0., 0., R_mu,
                                            flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                   
                for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
@@ -124,7 +124,7 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
                }
             
                // remove current source model fit from original data
-               data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, res[0], res[1], R_mu[k],
+               data_galaxy_visibilities((par->spec)[ch], (par->wavenumbers)[ch], par->band_factor, par->acc_time, res[0], res[1], R_mu,
                                            flux, l0, m0, num_coords, uu_metres, vv_metres, ww_metres, &(visGal[ch_vis]));
                   
                for (unsigned long int i = ch_vis; i<ch_vis+num_coords; i++)
@@ -140,7 +140,6 @@ void data_processing(bool re_fitting, unsigned int *bad_list, int nsources, doub
     *bad = nbad;
     return;
 }
-
 
 #ifdef __cplusplus
 }
