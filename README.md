@@ -9,7 +9,8 @@ Three tools are provided.
 **1. Generate catalog**
 
 Simulation of a real galaxy catalog ordered by flux within a given field of view (arcmin).
-According to the related distributions (see papers), it randomly generates: 
+According to the related distributions (see paper), it randomly generates: 
+
 position l,m (RAD) in a disk area
 flux (uJy)
 FWHM/scalelength (arcsec), 
@@ -17,7 +18,7 @@ ellipticity components e1, e2
 
 Distribution parameters can be modified changing the default_params.h
 
-Usage: *generate_catalog* (number of sources) (effective field of view) (minimum flux)
+Usage: *generate_catalog* <number of sources> <effective field of view> <minimum flux>
 Output: text file where each line corresponds to a SF galaxy.
 
 **2. Simulate**
