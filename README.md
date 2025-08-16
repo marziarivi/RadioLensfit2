@@ -12,11 +12,14 @@ Simulation of a real galaxy catalog with EXPONENTIAL brigthness profile, ordered
 According to the related distributions (see paper), it randomly generates: 
 
 position l,m (RAD) in a disk area
+
 flux (uJy)
+
 scalelength (arcsec), 
+
 ellipticity components e1, e2
 
-Distribution parameters can be modified changing the file *default_params.h*: maximum flux (200 uJy), galaxy parameter distributions, number of galaxy orientations (10).
+Distribution parameters can be modified by changing the file *default_params.h*: maximum flux (200 uJy), galaxy parameter distributions, number of galaxy orientations (10).
 
 Usage: *Catalog* (number of sources) (effective field of view) (minimum flux)
 
@@ -28,7 +31,9 @@ Simulation of a radio weak lensing observation with a given radio telescope conf
 The source catalog is a text file containing for each source (row) l,m position (rad), flux (uJy), size (arcsec), ellipticity components e1,e2. Source can be modelled either according to the Gaussian profile or Exponential profile (default) by enabling the option in the *makefile*: 
 
 Exponential (default) - size = scalelength
+
 GAUSSIAN - size = FWHM
+
 MATCH_EXP - size = FWHM (Galsim exponential profile matching Gaussian FWHM)
 
 Radio telescope configuration must be provided in a Measurement Set.
