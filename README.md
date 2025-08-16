@@ -8,26 +8,32 @@ Three tools are provided.
 
 **1. Generate catalog**
 
-Simulation of a real galaxy catalog ordered by flux within a given field of view (arcmin).
+Simulation of a real galaxy catalog with EXPONENTIAL brigthness profile, ordered by flux within a given field of view (arcmin).
 According to the related distributions (see paper), it randomly generates: 
 
 position l,m (RAD) in a disk area
 flux (uJy)
-FWHM/scalelength (arcsec), 
+scalelength (arcsec), 
 ellipticity components e1, e2
 
-Distribution parameters can be modified changing the default_params.h
+Distribution parameters can be modified changing the file *default_params.h*: maximum flux (200 uJy), galaxy parameter distributions, number of galaxy orientations (10).
 
-Usage: *generate_catalog* <number of sources> <effective field of view> <minimum flux>
+Usage: *Catalog* (number of sources) (effective field of view) (minimum flux)
+
 Output: text file where each line corresponds to a SF galaxy.
 
-**2. Simulate**
+**2. Simulate visibilities**
 
-Simulation of a radio weak lensing observation with a given reduced cosmic shear and a given source catalog of SF galaxies.
-The source catalog is a text file containing for each source (row) l,m position (rad), flux (uJy), fwhm/scalelength (arcsec), ellipticity components e1,e2. Source can be modelled either according to the Gaussian profile or Exponential profile (Sersic index 1).
+Simulation of a radio weak lensing observation with a given radio telescope configuration, catalog of SF galaxies, and reduced cosmic shear.
+The source catalog is a text file containing for each source (row) l,m position (rad), flux (uJy), size (arcsec), ellipticity components e1,e2. Source can be modelled either according to the Gaussian profile or Exponential profile (default) by enabling the option in the *makefile*: 
+
+Exponential (default) - size = scalelength
+GAUSSIAN - size = FWHM
+MATCH_EXP - size = FWHM (Galsim exponential profile matching Gaussian FWHM)
+
 Radio telescope configuration must be provided in a Measurement Set.
-The effect of the input reduced cosmic shear is applied to galaxies ellipticity. The instrumental gaussian noise variance is computed based on the antenna SEFD of the radiotelescope and time and frequency sampling interval. Signal-to-noise (SNR) is also computed.
-The corresponding simulated visibilities observed by the radio telescope are written in the DATA column of the same Measurement Set (I stokes component). The input catalog is updated with the SNR values, the new file hathe same namewith "_SNR" added at the end.
+The effect of the input reduced cosmic shear is applied to galaxies ellipticity. The instrumental gaussian noise variance is computed based on the antenna SEFD of the radiotelescope, time and frequency sampling interval. Signal-to-noise (SNR) is also computed.
+The corresponding simulated visibilities observed by the radio telescope are written in the DATA column of the same Measurement Set (I stokes component). The input catalog is updated with the SNR values, the new file has the same name with "_SNR" added at the end.
 
 Usage: *Simulate* (filename MS) (source catalog filename) (number of sources) (shear coord_1) (shear coord_2)
  
@@ -46,7 +52,7 @@ MPI version usage: *RadioLensfit2-mpi* (source catalog filename) (number of sour
 
 *Before running the code*:
 
-- For the MPI versions, the MS must be split in individual spectral windows. All MSs must have the same name ending with the number of the spectral window and extension  ".ms".
+- For the MPI versions, the MS must be split in individual spectral windows. All MSs must have the same name, ending with the number of the spectral window and extension  ".ms".
 Filename prefix consists in the common part of all the MS name, i.e. (without the final number and extension).  
 
 - Check/change default parameters (prior distributions, faceting, ....) in the *default_params.h* file.
