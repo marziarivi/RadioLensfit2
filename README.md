@@ -11,13 +11,13 @@ Three tools are provided.
 Simulation of a real galaxy catalog with EXPONENTIAL brigthness profile, ordered by flux within a given field of view (arcmin).
 According to the related distributions (see paper), it randomly generates: 
 
-position l,m (RAD) in a disk area
+- position l,m (RAD) in a disk area
 
-flux (uJy)
+- flux (uJy)
 
-scalelength (arcsec), 
+- scalelength (arcsec), 
 
-ellipticity components e1, e2
+- ellipticity components e1, e2
 
 Distribution parameters can be modified by changing the file *default_params.h*: maximum flux (200 uJy), galaxy parameter distributions, number of galaxy orientations (10).
 
@@ -30,11 +30,11 @@ Output: text file where each line corresponds to a SF galaxy.
 Simulation of a radio weak lensing observation with a given radio telescope configuration, catalog of SF galaxies, and reduced cosmic shear.
 The source catalog is a text file containing for each source (row) l,m position (rad), flux (uJy), size (arcsec), ellipticity components e1,e2. Source can be modelled either according to the Gaussian profile or Exponential profile (default) by enabling the option in the *makefile*: 
 
-Exponential (default) - size = scalelength
+a) Exponential (default) - size = scalelength
 
-GAUSSIAN - size = FWHM
+b) GAUSSIAN - size = FWHM
 
-MATCH_EXP - size = FWHM (Galsim exponential profile matching Gaussian FWHM)
+c) MATCH_EXP - size = FWHM (Galsim exponential profile matching Gaussian FWHM)
 
 Radio telescope configuration must be provided in a Measurement Set.
 The effect of the input reduced cosmic shear is applied to galaxies ellipticity. The instrumental gaussian noise variance is computed based on the antenna SEFD of the radiotelescope, time and frequency sampling interval. Signal-to-noise (SNR) is also computed.
