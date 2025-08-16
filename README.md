@@ -12,11 +12,8 @@ Simulation of a real galaxy catalog with EXPONENTIAL brigthness profile, ordered
 According to the related distributions (see paper), it randomly generates: 
 
 - position l,m (RAD) in a disk area
-
 - flux (uJy)
-
 - scalelength (arcsec), 
-
 - ellipticity components e1, e2
 
 Distribution parameters can be modified by changing the file *default_params.h*: maximum flux (200 uJy), galaxy parameter distributions, number of galaxy orientations (10).
